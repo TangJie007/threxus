@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
- * Vue 适配：canvas + useThrexus(DemoAppModule)。
+ * Vue 适配：canvas + useThrexus(ThreeAppModule)。
  */
 import { ref } from 'vue';
 import { useThrexus } from '@threxus/vue';
-import { DemoAppModule } from './demo-app-module';
+import { ThreeAppModule } from './three';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-useThrexus(DemoAppModule, canvasRef);
+useThrexus(ThreeAppModule, canvasRef);
 </script>
 
 <template>

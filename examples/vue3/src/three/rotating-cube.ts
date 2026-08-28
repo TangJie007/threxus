@@ -1,16 +1,14 @@
 /**
- * 示例根模块：ThreeCoreModule + 旋转立方体。
+ * 旋转立方体 System：挂到默认 Scene，销毁时释放 geometry/material。
  */
 
 import {
   Inject,
   Injectable,
-  Module,
   type OnDispose,
   type OnModuleInit,
   type OnUpdate,
 } from '@threxus/core';
-import { ThreeCoreModule } from '@threxus/three';
 import {
   BoxGeometry,
   Mesh,
@@ -19,11 +17,8 @@ import {
   Scene,
 } from 'three';
 
-/**
- * 向默认 Scene 放入一个旋转立方体；销毁时释放 geometry/material。
- */
 @Injectable()
-class RotatingCube implements OnModuleInit, OnUpdate, OnDispose {
+export class RotatingCube implements OnModuleInit, OnUpdate, OnDispose {
   @Inject(Scene)
   scene: Scene;
 
@@ -65,9 +60,3 @@ class RotatingCube implements OnModuleInit, OnUpdate, OnDispose {
     this.mesh = null;
   }
 }
-
-@Module({
-  imports: [ThreeCoreModule],
-  providers: [RotatingCube],
-})
-export class DemoAppModule {}
