@@ -2,11 +2,8 @@
  * 旋转立方体实体：外观与运动，不进入 DI。
  */
 
-import {
-  BoxGeometry,
-  Mesh,
-  MeshNormalMaterial,
-} from 'three';
+import { BoxGeometry, Mesh, MeshNormalMaterial } from 'three';
+import { disposeObject3D } from '@threxus/three';
 
 /** 创建时的可选属性 */
 export type RotatingOptions = {
@@ -37,13 +34,6 @@ export class RotatingCube {
   }
 
   dispose(): void {
-    this.mesh.geometry.dispose();
-    if (Array.isArray(this.mesh.material)) {
-      for (const material of this.mesh.material) {
-        material.dispose();
-      }
-    } else {
-      this.mesh.material.dispose();
-    }
+    disposeObject3D(this.mesh, false);
   }
 }
