@@ -13,7 +13,10 @@ import {
   type InjectionToken,
   type Provider,
 } from '../types';
-import { describeToken } from '../utils/describe';
+import {
+  circularDependencyError,
+  providerNotFoundError,
+} from '../errors';
 
 /**
  * 内部归一化后的 Provider：统一通过 `resolve` 产出实例。
@@ -111,12 +114,11 @@ export class Container {
 
     const provider = this.providers.get(token);
     if (!provider) {
-      throw new Error(`未找到令牌 "${describeToken(token)}" 的 Provider。`);
+      throw providerNotFoundError(token);
     }
 
     if (this.resolving.has(token)) {
-      const chain = [...this.resolving, token].map(describeToken).join(' -> ');
-      throw new Error(`检测到循环依赖：${chain}`);
+      throw circularDependencyError([...this.resolving, token]);
     }
 
     this.resolving.add(token);

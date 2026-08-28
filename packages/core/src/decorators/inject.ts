@@ -3,6 +3,7 @@
  */
 
 import { writeFieldInjectMetadata } from '../metadata';
+import { invalidDecoratorTargetError } from '../errors';
 import type { InjectionToken } from '../types';
 
 /**
@@ -28,7 +29,7 @@ import type { InjectionToken } from '../types';
 export function Inject(token: InjectionToken) {
   return (_value: undefined, context: ClassFieldDecoratorContext): void => {
     if (context.kind !== 'field') {
-      throw new Error('@Inject() 只能用于装饰类字段。');
+      throw invalidDecoratorTargetError('@Inject()', '装饰类字段');
     }
 
     writeFieldInjectMetadata(context, token);

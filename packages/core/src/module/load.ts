@@ -3,8 +3,13 @@
  */
 
 import { readClassMetadata, readModuleMetadata } from '../metadata';
+import {
+  moduleCircularDependencyError,
+  moduleDependencyNotVisibleError,
+  moduleExportNotProvidedError,
+  moduleNotDecoratedError,
+} from '../errors';
 import type { Constructor, InjectionToken, Provider } from '../types';
-import { describeClass, describeToken } from '../utils/describe';
 import { getProviderToken, type ModuleMetadata } from './types';
 
 /**
@@ -54,8 +59,7 @@ export function loadModule(
     }
 
     if (stack.includes(Mod)) {
-      const cycle = [...stack, Mod].map(describeClass).join(' -> ');
-      throw new Error(`检测到模块循环依赖：${cycle}`);
+      throw moduleCircularDependencyError([...stack, Mod]);
     }
 
     const meta = requireModuleMetadata(Mod);
@@ -84,9 +88,7 @@ export function loadModule(
 function requireModuleMetadata(Mod: Constructor): ModuleMetadata {
   const meta = readModuleMetadata(Mod);
   if (!meta) {
-    throw new Error(
-      `类 "${describeClass(Mod)}" 未使用 @Module() 装饰，无法作为模块加载。`,
-    );
+    throw moduleNotDecoratedError(Mod);
   }
   return meta;
 }
@@ -106,9 +108,7 @@ function resolveExportTokens(
   const localSet = new Set(localTokens);
   for (const token of meta.exports) {
     if (!localSet.has(token)) {
-      throw new Error(
-        `模块 "${describeClass(Mod)}" 的 exports 包含未在 providers 中声明的令牌 "${describeToken(token)}"。`,
-      );
+      throw moduleExportNotProvidedError(Mod, token);
     }
   }
 
@@ -132,10 +132,7 @@ function validateModuleInjections(
   for (const provider of providers) {
     for (const token of collectProviderDependencies(provider)) {
       if (!available.has(token)) {
-        throw new Error(
-          `模块 "${describeClass(Mod)}" 中的 Provider 依赖了不可见令牌 "${describeToken(token)}"。` +
-            `该令牌既不在本模块 providers 中，也未由 imports 的 exports 提供。`,
-        );
+        throw moduleDependencyNotVisibleError(Mod, token);
       }
     }
   }

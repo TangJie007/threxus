@@ -3,6 +3,7 @@
  */
 
 import { writeInjectableMetadata } from '../metadata';
+import { invalidDecoratorTargetError } from '../errors';
 import type { InjectableOptions } from '../types';
 
 /**
@@ -31,7 +32,7 @@ export function Injectable(options: InjectableOptions = {}) {
     context: ClassDecoratorContext<Class>,
   ): void => {
     if (context.kind !== 'class') {
-      throw new Error('@Injectable() 只能用于装饰类。');
+      throw invalidDecoratorTargetError('@Injectable()', '装饰类');
     }
 
     writeInjectableMetadata(context, options.inject ?? []);

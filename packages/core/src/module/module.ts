@@ -3,6 +3,7 @@
  */
 
 import { writeModuleMetadata } from '../metadata';
+import { invalidDecoratorTargetError } from '../errors';
 import type { ModuleOptions } from './types';
 
 /**
@@ -27,7 +28,7 @@ export function Module(options: ModuleOptions = {}) {
     context: ClassDecoratorContext<Class>,
   ): void => {
     if (context.kind !== 'class') {
-      throw new Error('@Module() 只能用于装饰类。');
+      throw invalidDecoratorTargetError('@Module()', '装饰类');
     }
 
     writeModuleMetadata(context, {

@@ -16,7 +16,9 @@ packages/
       decorators/       @Injectable / @Inject
       module/           @Module / loadModule
       container/        Container
+      errors/           ThrexusError 统一错误
       utils/            描述与辅助函数
+    tests/              Vitest 单测
 examples/
   vue3/                 边开发边调试的 playground
     src/usage.ts        改这里试 @threxus/core 用法
@@ -46,5 +48,6 @@ pnpm --filter vue3-example build
 ```bash
 pnpm build       # 通过 Turbo 构建所有工作区包（含缓存）
 pnpm typecheck   # 通过 Turbo 检查类型
+pnpm test        # 通过 Turbo 运行测试（含 @threxus/core）
 pnpm dev         # 通过 Turbo 并行启动库监听与示例开发服务器
 ```

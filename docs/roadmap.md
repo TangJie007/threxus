@@ -18,7 +18,7 @@
 |------|----------------|--------------------|
 | 0 | `@threxus/core` 壳子 | ✅ 已完成 |
 | 1 | Module | ✅ 已完成 |
-| 2 | 测试与错误体验 | 核心路径有单测，报错可读 |
+| 2 | 测试与错误体验 | ✅ 已完成 |
 | 3 | 生命周期 | init / update / dispose 可挂 |
 | 4 | 层级作用域 | App → Scene 可替换、可销毁 |
 | 5 | `@threxus/runtime` | Application + rAF + 约定 Token |
@@ -86,7 +86,7 @@ class AppModule {}
 
 ---
 
-## 阶段 2 — 测试与 DX
+## 阶段 2 — 测试与 DX（✅ 已完成）
 
 **目标：** API 开始定型前锁住行为，避免后面 Three 层返工。
 
@@ -99,8 +99,8 @@ class AppModule {}
 
 ### 2.2 完成标准
 
-- [ ] 核心路径有自动化测试
-- [ ] 故意写错依赖时，报错能直接定位
+- [x] 核心路径有自动化测试（`packages/core/tests`，Vitest）
+- [x] 故意写错依赖时，报错能直接定位（`ThrexusError` + 稳定 `code`）
 
 ---
 
@@ -238,8 +238,8 @@ App Container（单例）
 ## 推荐执行顺序（墙上贴这一段）
 
 ```text
-① Module（core）
-② 单测 + 报错 DX（core）
+① Module（core）✅
+② 单测 + 报错 DX（core）✅
 ③ 生命周期 onInit / onUpdate / onDispose（core）
 ④ App → Scene 子容器（core）
 ⑤ runtime：Application + rAF
@@ -271,7 +271,8 @@ examples/
 
 | 现在就有 | 下一步打开的目录 |
 |----------|------------------|
-| `packages/core/src/{token,types,metadata,decorators,module,container}` | 阶段 2：测试；或阶段 3：`lifecycle/` |
+| `packages/core/src/{token,types,metadata,decorators,module,container,errors}` | 阶段 3：`lifecycle/` |
+| `packages/core/tests` | 已有 Vitest；新能力请补测试 |
 | `examples/vue3/src/usage.ts` | 已用 Module 组装，可继续加场景 |
 | 仅 `@threxus/core` 一个包 | 阶段 5 起再新增 workspace 包 |
 

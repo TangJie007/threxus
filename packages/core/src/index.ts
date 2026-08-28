@@ -15,6 +15,17 @@ export {
   readModuleMetadata,
   isModule,
 } from './metadata';
+export {
+  ThrexusError,
+  ThrexusErrorCode,
+  providerNotFoundError,
+  circularDependencyError,
+  moduleCircularDependencyError,
+  moduleNotDecoratedError,
+  moduleExportNotProvidedError,
+  moduleDependencyNotVisibleError,
+  invalidDecoratorTargetError,
+} from './errors';
 export type {
   ClassMetadata,
   Constructor,
