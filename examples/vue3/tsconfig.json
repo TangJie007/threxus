@@ -12,9 +12,10 @@
       "node"
     ],
     "paths": {
-      "@threxus/core": [
-        "../../packages/core/src/index.ts"
-      ]
+      "@threxus/core": ["../../packages/core/src/index.ts"],
+      "@threxus/runtime": ["../../packages/runtime/src/index.ts"],
+      "@threxus/three": ["../../packages/three/src/index.ts"],
+      "@threxus/vue": ["../../packages/vue/src/index.ts"]
     },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -25,6 +26,9 @@
     "src/**/*.ts",
     "src/**/*.vue",
     "vite.config.ts",
-    "../../packages/core/src/**/*.ts"
+    "../../packages/core/src/**/*.ts",
+    "../../packages/runtime/src/**/*.ts",
+    "../../packages/three/src/**/*.ts",
+    "../../packages/vue/src/**/*.ts"
   ]
 }

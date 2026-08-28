@@ -21,9 +21,9 @@
 | 2 | 测试与错误体验 | ✅ 已完成 |
 | 3 | 生命周期 | ✅ 已完成 |
 | 4 | 层级作用域 | ✅ 已完成 |
-| 5 | `@threxus/runtime` | Application + rAF + 约定 Token |
-| 6 | `@threxus/three` | 与 Three.js 对接的最小封装 |
-| 7 | 框架适配 | Vue / React 挂 canvas 的薄层 |
+| 5 | `@threxus/runtime` | ✅ 已完成 |
+| 6 | `@threxus/three` | ✅ 已完成 |
+| 7 | 框架适配 | ✅ 已完成 |
 | 8 | 打磨与发布 | 文档、示例场景、版本策略 |
 
 **不要提前做：** 完整 Guard/Interceptor、把每个 `Mesh` 封成 Provider、多 canvas 叠加当默认模型。
@@ -156,7 +156,7 @@ App Container（单例）
 
 ---
 
-## 阶段 5 — `@threxus/runtime`（应用运行时）
+## 阶段 5 — `@threxus/runtime`（应用运行时）（✅ 已完成）
 
 **目标：** 与 Three 解耦的「应用壳」：启动、主循环、约定 Token。
 
@@ -171,12 +171,12 @@ App Container（单例）
 
 ### 5.2 完成标准
 
-- [ ] playground 用 Application 启动，而不是手写 `createContainer().load`
-- [ ] 仍可不依赖 `three` 包
+- [x] playground 用 Application 启动，而不是手写 `createContainer().load`
+- [x] 仍可不依赖 `three` 包
 
 ---
 
-## 阶段 6 — `@threxus/three`（Three 对接）
+## 阶段 6 — `@threxus/three`（Three 对接）（✅ 已完成）
 
 **目标：** 最小可用的 Three 封装，**不是**第二个引擎。
 
@@ -198,12 +198,12 @@ App Container（单例）
 
 ### 6.3 完成标准
 
-- [ ] 示例里出现一个 canvas，旋转立方体或等价最小场景
-- [ ] 切换 Scene 作用域时资源可释放（至少 renderer 外的场景对象）
+- [x] 示例里出现一个 canvas，旋转立方体或等价最小场景
+- [x] 切换 Scene 作用域时资源可释放（至少 renderer 外的场景对象；示例立方体在 `onDispose` 释放）
 
 ---
 
-## 阶段 7 — 框架适配（Vue / React）
+## 阶段 7 — 框架适配（Vue / React）（✅ 已完成）
 
 **目标：** UI 框架只负责挂 DOM 与提供 canvas，**不**把 Threxus 做成第二个 Vue。
 
@@ -215,21 +215,21 @@ App Container（单例）
 
 ### 7.2 完成标准
 
-- [ ] Vue 示例：组件挂载出 Three 画面，卸载无泄漏（可用临时调试计数验证）
+- [x] Vue 示例：组件挂载出 Three 画面，卸载无泄漏（`useThrexus` 在 `onBeforeUnmount` dispose）
 
 ---
 
 ## 阶段 8 — 打磨与「封装完成」定义
 
-满足以下可视为 **框架第一版封装完成（v0.1）**：
+### 8. 完成标准（部分已具备）
 
-- [ ] `@threxus/core`：Token、装饰器、Container、Module、生命周期、层级作用域
-- [ ] `@threxus/runtime`：Application + 主循环
-- [ ] `@threxus/three`：Renderer/Scene 约定 Module + 最小渲染
-- [ ] 至少一个完整示例（Vue + 单 canvas 场景）
-- [ ] README：快速开始 + 概念（App/Scene/单例边界）
-- [ ] 构建、类型检查、核心测试通过
-- [ ] 对外 API 有简短迁移/版本说明（ SemVer ：0.x 允许 break）
+- [x] `@threxus/core`：Token、装饰器、Container、Module、生命周期、层级作用域
+- [x] `@threxus/runtime`：Application + 主循环
+- [x] `@threxus/three`：Renderer/Scene 约定 Module + 最小渲染
+- [x] 至少一个完整示例（Vue + 单 canvas 场景）
+- [x] README：快速开始 + 包结构
+- [x] 构建、类型检查、核心测试通过
+- [ ] 对外 API 有简短迁移/版本说明（SemVer：0.x 允许 break）
 
 **v0.1 之后再考虑：** exports 强制模式、transient、插件生态、ECS 可选包、多 canvas 视口。
 
@@ -242,9 +242,9 @@ App Container（单例）
 ② 单测 + 报错 DX（core）✅
 ③ 生命周期 onInit / onUpdate / onDispose（core）✅
 ④ App → Scene 子容器（core）✅
-⑤ runtime：Application + rAF
-⑥ three：最小 Module + 示例出画
-⑦ Vue 挂载/卸载适配
+⑤ runtime：Application + rAF ✅
+⑥ three：最小 Module + 示例出画 ✅
+⑦ Vue 挂载/卸载适配 ✅
 ⑧ 文档与 v0.1 发布准备
 ```
 
@@ -269,11 +269,10 @@ examples/
 
 ## 与当前仓库的衔接
 
-| 现在就有 | 下一步打开的目录 |
-|----------|------------------|
-| `packages/core`（含 Module / Lifecycle / Scope） | 阶段 5：新建 `packages/runtime` |
-| `packages/core/tests` | 已有 Vitest；新能力请补测试 |
-| `examples/vue3/src/usage.ts` | 已演示 Scene A → B 切换 |
-| 仅 `@threxus/core` 一个包 | 阶段 5 起再新增 workspace 包 |
+| 现在就有 | 下一步 |
+|----------|--------|
+| `packages/{core,runtime,three,vue}` | 阶段 8：打磨 README / 版本与发布说明 |
+| `examples/vue3` | 旋转立方体 + `useThrexus` |
+| Vitest | core / runtime / three |
 
 文档版本与代码同步维护：完成某阶段后，把上文对应勾选打成 `[x]`，并在 README「项目结构」中更新包列表。

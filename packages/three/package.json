@@ -1,0 +1,37 @@
+{
+  "name": "@threxus/three",
+  "version": "0.1.0",
+  "description": "Minimal Three.js integration for Threxus",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rslib build",
+    "dev": "rslib build --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@threxus/core": "workspace:*",
+    "@threxus/runtime": "workspace:*"
+  },
+  "peerDependencies": {
+    "three": ">=0.160.0"
+  },
+  "devDependencies": {
+    "@rslib/core": "^0.23.2",
+    "@types/three": "^0.180.0",
+    "three": "^0.180.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

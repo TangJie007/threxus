@@ -11,21 +11,12 @@
 
 ```text
 packages/
-  core/                 @threxus/core，使用 Rslib 编译
-    src/
-      token/            Token / createToken
-      types/            Provider 与注入相关类型
-      metadata/         Symbol.metadata 读写
-      decorators/       @Injectable / @Inject
-      module/           @Module / loadModule
-      container/        Container（层级作用域 + 生命周期）
-      lifecycle/        生命周期钩子接口
-      errors/           ThrexusError 统一错误
-      utils/            描述与辅助函数
-    tests/              Vitest 单测
+  core/       @threxus/core —— Token / Module / Container / Lifecycle / Scope
+  runtime/    @threxus/runtime —— Application + rAF + 约定 Token
+  three/      @threxus/three —— ThreeCoreModule / RenderSystem
+  vue/        @threxus/vue —— useThrexus 薄适配
 examples/
-  vue3/                 边开发边调试的 playground
-    src/usage.ts        改这里试 @threxus/core 用法
+  vue3/       Vue 3 + canvas 旋转立方体（开发调试）
 ```
 
 ## 开始使用
@@ -37,10 +28,9 @@ pnpm install
 pnpm dev
 ```
 
-示例 Vite 会 **alias 到 `packages/core/src`**，改 core 源码或
-`examples/vue3/src/usage.ts` 都会热更新。打开页面后看浏览器控制台。
+示例 Vite 会 alias 到各包 `src`，改 `packages/*/src` 即可热更新。
 
-正式发版构建仍用：
+正式构建：
 
 ```bash
 pnpm build
@@ -50,8 +40,8 @@ pnpm --filter vue3-example build
 ## 常用命令
 
 ```bash
-pnpm build       # 通过 Turbo 构建所有工作区包（含缓存）
-pnpm typecheck   # 通过 Turbo 检查类型
-pnpm test        # 通过 Turbo 运行测试（含 @threxus/core）
-pnpm dev         # 通过 Turbo 并行启动库监听与示例开发服务器
+pnpm build       # Turbo 构建所有工作区包
+pnpm typecheck   # Turbo 类型检查
+pnpm test        # Turbo 测试
+pnpm dev         # 并行库 watch + 示例开发服务器
 ```
