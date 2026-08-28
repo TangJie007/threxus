@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "rslib build",
-    "dev": "rslib build --watch",
+    "dev": "rslib build --watch --no-dts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
