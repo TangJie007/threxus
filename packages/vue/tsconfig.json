@@ -1,10 +1,13 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "rootDir": "src",
     "lib": ["ES2022", "ESNext.Decorators", "DOM"],
     "experimentalDecorators": false,
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "paths": {
+      "@threxus/core": ["../core/src/index.ts"],
+      "@threxus/runtime": ["../runtime/src/index.ts"]
+    }
   },
   "include": ["src"]
 }
