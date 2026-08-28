@@ -8,8 +8,14 @@
       "DOM.Iterable"
     ],
     "types": [
-      "vite/client"
+      "vite/client",
+      "node"
     ],
+    "paths": {
+      "@threxus/core": [
+        "../../packages/core/src/index.ts"
+      ]
+    },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "experimentalDecorators": false,
@@ -18,6 +24,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.vue",
-    "vite.config.ts"
+    "vite.config.ts",
+    "../../packages/core/src/**/*.ts"
   ]
 }

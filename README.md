@@ -14,7 +14,8 @@ packages/
       decorators/       @Injectable / @Inject
       container/        Container
 examples/
-  vue3/                 Vue 3 + Vite 示例
+  vue3/                 边开发边调试的 playground
+    src/usage.ts        改这里试 @threxus/core 用法
 ```
 
 ## 开始使用
@@ -23,12 +24,18 @@ examples/
 
 ```bash
 pnpm install
-pnpm build
-pnpm --filter vue3-example dev
+pnpm dev
 ```
 
-访问终端输出的地址即可查看 Vue 3 示例。示例通过 `workspace:*` 使用本地
-`@threxus/core` 包。
+示例 Vite 会 **alias 到 `packages/core/src`**，改 core 源码或
+`examples/vue3/src/usage.ts` 都会热更新。打开页面后看浏览器控制台。
+
+正式发版构建仍用：
+
+```bash
+pnpm build
+pnpm --filter vue3-example build
+```
 
 ## 常用命令
 
