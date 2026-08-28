@@ -27,7 +27,7 @@ pnpm --filter vue3-example dev
 ## 常用命令
 
 ```bash
-pnpm build       # 构建所有工作区包
-pnpm typecheck   # 检查所有工作区包的类型
-pnpm dev         # 并行启动库监听与示例开发服务器
+pnpm build       # 通过 Turbo 构建所有工作区包（含缓存）
+pnpm typecheck   # 通过 Turbo 检查类型
+pnpm dev         # 通过 Turbo 并行启动库监听与示例开发服务器
 ```
