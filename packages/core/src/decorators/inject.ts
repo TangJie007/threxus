@@ -1,13 +1,34 @@
+/**
+ * `@Inject`：字段级注入（方案 A / 方案 C 辅路径）。
+ */
+
 import { writeFieldInjectMetadata } from '../metadata';
 import type { InjectionToken } from '../types';
 
 /**
- * Declares a field injection token (scheme A). Applied after construction.
+ * 字段装饰器：声明该字段应由容器按令牌解析并赋值。
+ *
+ * 赋值时机：类构造完成之后。适合偶发的跨模块依赖；
+ * 主依赖仍推荐写在 `@Injectable({ inject })` 中。
+ *
+ * @param token - 字段对应的注入令牌
+ * @returns Stage 3 字段装饰器
+ *
+ * @example
+ * ```ts
+ * @Injectable({ inject: [CLOCK] })
+ * class TickerService {
+ *   @Inject(LABEL)
+ *   label!: string;
+ *
+ *   constructor(readonly clock: Clock) {}
+ * }
+ * ```
  */
 export function Inject(token: InjectionToken) {
   return (_value: undefined, context: ClassFieldDecoratorContext): void => {
     if (context.kind !== 'field') {
-      throw new Error('@Inject() can only decorate class fields.');
+      throw new Error('@Inject() 只能用于装饰类字段。');
     }
 
     writeFieldInjectMetadata(context, token);
