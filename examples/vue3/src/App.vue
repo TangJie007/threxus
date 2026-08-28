@@ -15,7 +15,7 @@ useThrexus(ThreeAppModule, canvasRef);
     <header class="bar">
       <p class="eyebrow">@threxus/vue + three</p>
       <h1>Threxus</h1>
-      <p class="hint">旋转立方体：挂载启动，卸载 dispose。</p>
+      <p class="hint">功能原子：Module + System + View。</p>
     </header>
     <canvas ref="canvasRef" class="viewport" />
   </main>
