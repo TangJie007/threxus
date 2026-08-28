@@ -1,15 +1,15 @@
 /**
- * Three 核心模块：Renderer / SceneSystem / CameraSystem / Viewport + 渲染与 resize。
+ * Three 核心模块：Renderer / Scene / Camera / Viewport / Dispose / ECS + 渲染与 resize。
  *
  * 依赖 `@threxus/runtime` 的 `RuntimeModule`（CANVAS 等）。
  * 约定：`WebGLRenderer` 以类本身为 Token；
  * `Scene` / `PerspectiveCamera` Token 兼容指向各自 MAIN；
- * 多场景 / 多机位请注入 {@link SceneSystem} / {@link CameraSystem}。
- * 相机位姿请配 {@link THREE_VIEWPORT}，由 {@link ViewportSystem} 应用；
- * 业务侧 mesh 的 geometry/material 在各自 `onDispose` 中释放；
- * `RenderSystem` 负责 `renderer.dispose()`。
+ * 多场景 / 多机位请注入 {@link SceneService} / {@link CameraService}。
+ * 相机位姿请配 {@link THREE_VIEWPORT}，由 {@link ViewportService} 应用；
+ * 实体 GPU 资源经 {@link DisposeService}；行为经 {@link EntityComponentService}。
+ * `RenderService` 负责 `renderer.dispose()`。
  *
- * 命名：`SceneSystem` 管 Three **场景图**；core 的 SceneScope 是 DI 子容器。
+ * 命名：`SceneService` 管 Three **场景图**；core 的 SceneScope 是 DI 子容器。
  */
 
 import { Module } from '@threxus/core';
@@ -22,12 +22,26 @@ import {
 } from 'three';
 import { THREE_VIEWPORT } from '../tokens';
 import {
-  CameraSystem,
-  RenderSystem,
-  ResizeSystem,
-  SceneSystem,
-  ViewportSystem,
-} from '../systems';
+  AgentBridgeService,
+  AssetService,
+  CameraService,
+  ClipboardService,
+  CommandService,
+  ConfigService,
+  DisposeService,
+  EntityComponentService,
+  GizmoService,
+  HotkeyService,
+  InstancedFoliageService,
+  InteractionService,
+  RenderService,
+  ResizeService,
+  SceneService,
+  SelectionService,
+  SerializeService,
+  SnapshotService,
+  ViewportService,
+} from '../services';
 
 function createRenderer(canvas: HTMLCanvasElement | null): WebGLRenderer {
   const params: WebGLRendererParameters = {
@@ -50,37 +64,65 @@ function createRenderer(canvas: HTMLCanvasElement | null): WebGLRenderer {
       useFactory: (canvas: HTMLCanvasElement | null) => createRenderer(canvas),
       inject: [CANVAS],
     },
-    SceneSystem,
+    SceneService,
     {
       provide: Scene,
-      useFactory: (scenes: SceneSystem) => scenes.get(SceneSystem.MAIN)!,
-      inject: [SceneSystem],
+      useFactory: (scenes: SceneService) => scenes.get(SceneService.MAIN)!,
+      inject: [SceneService],
     },
-    CameraSystem,
+    CameraService,
     {
       provide: PerspectiveCamera,
-      useFactory: (cameras: CameraSystem) =>
-        cameras.get(CameraSystem.MAIN)!,
-      inject: [CameraSystem],
+      useFactory: (cameras: CameraService) =>
+        cameras.get(CameraService.MAIN)!,
+      inject: [CameraService],
     },
     {
       provide: THREE_VIEWPORT,
       useValue: {},
     },
-    ViewportSystem,
-    RenderSystem,
-    ResizeSystem,
+    ViewportService,
+    DisposeService,
+    EntityComponentService,
+    AssetService,
+    SelectionService,
+    InteractionService,
+    SerializeService,
+    CommandService,
+    ConfigService,
+    InstancedFoliageService,
+    GizmoService,
+    SnapshotService,
+    HotkeyService,
+    ClipboardService,
+    AgentBridgeService,
+    RenderService,
+    ResizeService,
   ],
   exports: [
     WebGLRenderer,
-    SceneSystem,
+    SceneService,
     Scene,
-    CameraSystem,
+    CameraService,
     PerspectiveCamera,
     THREE_VIEWPORT,
-    ViewportSystem,
-    RenderSystem,
-    ResizeSystem,
+    ViewportService,
+    DisposeService,
+    EntityComponentService,
+    AssetService,
+    SelectionService,
+    InteractionService,
+    SerializeService,
+    CommandService,
+    ConfigService,
+    InstancedFoliageService,
+    GizmoService,
+    SnapshotService,
+    HotkeyService,
+    ClipboardService,
+    AgentBridgeService,
+    RenderService,
+    ResizeService,
   ],
 })
 export class ThreeCoreModule {}

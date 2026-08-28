@@ -4,15 +4,15 @@
 
 import { Inject, Injectable, type OnDispose, type OnModuleInit } from '@threxus/core';
 import { WebGLRenderer } from 'three';
-import { CameraSystem } from './camera-system';
+import { CameraService } from './camera-service';
 
 @Injectable()
-export class ResizeSystem implements OnModuleInit, OnDispose {
+export class ResizeService implements OnModuleInit, OnDispose {
   @Inject(WebGLRenderer)
   renderer: WebGLRenderer;
 
-  @Inject(CameraSystem)
-  cameras: CameraSystem;
+  @Inject(CameraService)
+  cameras: CameraService;
 
   private readonly onResize = (): void => {
     this.applySize();
@@ -45,3 +45,8 @@ export class ResizeSystem implements OnModuleInit, OnDispose {
     }
   }
 }
+
+/**
+ * @deprecated 使用 {@link ResizeService}
+ */
+export const ResizeSystem = ResizeService;

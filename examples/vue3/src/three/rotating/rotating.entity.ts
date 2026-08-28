@@ -1,5 +1,5 @@
 /**
- * 旋转立方体实体：外观与运动，不进入 DI。
+ * 旋转立方体实体：外观壳，不进 DI；行为由 RotatingComponent 提供。
  */
 
 import { BoxGeometry, Mesh, MeshNormalMaterial } from 'three';
@@ -14,7 +14,7 @@ export type RotatingOptions = {
 
 export class RotatingCube {
   readonly mesh: Mesh;
-  private readonly speed: { x: number; y: number };
+  readonly speed: { x: number; y: number };
 
   constructor(options: RotatingOptions = {}) {
     const size = options.size ?? 1;
@@ -23,14 +23,10 @@ export class RotatingCube {
       new BoxGeometry(size, size, size),
       new MeshNormalMaterial(),
     );
+    this.mesh.userData.threxusType = 'rotating-cube';
     if (options.position) {
       this.mesh.position.set(...options.position);
     }
-  }
-
-  update(dt: number): void {
-    this.mesh.rotation.x += dt * this.speed.x;
-    this.mesh.rotation.y += dt * this.speed.y;
   }
 
   dispose(): void {

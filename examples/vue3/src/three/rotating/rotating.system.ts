@@ -1,34 +1,43 @@
 /**
- * 旋转立方体系统：spawn 实体，由 EntityHost 驱动 update / dispose。
+ * 旋转立方体 Feature：spawn 实体并挂组件；帧循环由 EntityComponentService 驱动。
  *
  * 本身是 DI 单例；实体是普通 class，不进入容器。
- * 相机位姿由根 Module 的 THREE_VIEWPORT 配置，不在此处理。
  */
 
 import {
   Inject,
   Injectable,
-  type EntitySystem,
+  type FeatureLifecycle,
 } from '@threxus/core';
-import { EntityHost, SceneSystem } from '@threxus/three';
+import {
+  EntityComponentService,
+  EntityHost,
+  SceneService,
+} from '@threxus/three';
+import { RotatingComponent } from './rotating.component';
 import { RotatingCube, type RotatingOptions } from './rotating.entity';
 
 export type { RotatingOptions };
 
 @Injectable()
-export class RotatingSystem
+export class RotatingFeature
   extends EntityHost<RotatingCube>
-  implements EntitySystem
+  implements FeatureLifecycle
 {
-  @Inject(SceneSystem)
-  scenes: SceneSystem;
+  @Inject(SceneService)
+  scenes: SceneService;
+
+  @Inject(EntityComponentService)
+  components: EntityComponentService;
 
   protected attach(cube: RotatingCube): void {
-    this.scenes.active.add(cube.mesh);
+    this.scenes.attach(cube.mesh);
+    this.components.add(cube.mesh, new RotatingComponent(cube.speed));
   }
 
   protected detach(cube: RotatingCube): void {
-    this.scenes.active.remove(cube.mesh);
+    this.components.clear(cube.mesh);
+    this.scenes.detach(cube.mesh);
   }
 
   /**
@@ -37,6 +46,9 @@ export class RotatingSystem
   spawnCube(options: RotatingOptions = {}): RotatingCube {
     return this.spawn(new RotatingCube(options));
   }
+
+  /** 组件层已驱动旋转；不再调用 entity.update */
+  override onUpdate(_dt: number): void {}
 
   onModuleInit(): void {
     this.spawnCube({ size: 1, position: [-1.2, 0, 0] });
@@ -47,3 +59,8 @@ export class RotatingSystem
     });
   }
 }
+
+/**
+ * @deprecated 使用 {@link RotatingFeature}
+ */
+export const RotatingSystem = RotatingFeature;

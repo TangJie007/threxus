@@ -1,7 +1,8 @@
 /**
- * 实体宿主基类：统一管理一类普通 Entity 的登记、每帧更新与销毁。
+ * 实体宿主基类：统一管理一类普通 Entity 的登记与销毁。
  *
- * Entity 本身不进 DI；子类 System 实现 attach / detach（通常挂到 Scene）。
+ * Entity 本身不进 DI；子类实现 attach / detach（通常委托 SceneService）。
+ * 每帧行为优先由 EntityComponentService 调度组件；HostEntity.update 仅兼容保留。
  */
 
 import type { OnDispose, OnUpdate } from '@threxus/core';
@@ -10,6 +11,7 @@ import type { OnDispose, OnUpdate } from '@threxus/core';
  * Host 可驱动的最小 Entity 约定。
  *
  * `update` / `dispose` 均为可选；有则由 {@link EntityHost} 调用。
+ * 新代码请把行为放在组件层，而非 Entity.update。
  */
 export type HostEntity = {
   update?(dt: number): void;
@@ -17,7 +19,7 @@ export type HostEntity = {
 };
 
 /**
- * 业务 System 的集合样板：spawn → onUpdate → onDispose。
+ * 业务 Feature 的集合样板：spawn →（可选）onUpdate → onDispose。
  *
  * 子类实现 {@link attach} / {@link detach}，并按需实现 `onModuleInit`。
  *
@@ -71,6 +73,10 @@ export abstract class EntityHost<T extends HostEntity>
     return true;
   }
 
+  /**
+   * 兼容路径：若实体仍实现 update 则调用。
+   * 新代码应依赖 EntityComponentService，无需 Entity.update。
+   */
   onUpdate(dt: number): void {
     const list = this.entities;
     for (let i = 0; i < list.length; i += 1) {

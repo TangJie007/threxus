@@ -36,13 +36,18 @@ export interface OnDispose {
 }
 
 /**
- * 实体系统：同时具备装配、每帧更新与销毁钩子。
+ * 功能模块生命周期：装配、每帧更新与销毁钩子的组合。
  *
- * 用于驱动场景中一类对象的业务 System（本身多为 App/Scene 作用域单例）；
- * 场景里的 Mesh 等一般仍由系统内部持有，不逐个进 DI。
+ * 用于 DI 侧 Feature / Service（App/Scene 作用域单例）；
+ * 场景里的 Mesh 等实体不进 DI，行为由组件层调度。
  */
-export interface EntitySystem
+export interface FeatureLifecycle
   extends OnModuleInit, OnUpdate, OnDispose {}
+
+/**
+ * @deprecated 使用 {@link FeatureLifecycle}；下一发布周期移除。
+ */
+export type EntitySystem = FeatureLifecycle;
 
 /** 可能实现了部分生命周期钩子的实例 */
 export type LifecycleInstance = Partial<

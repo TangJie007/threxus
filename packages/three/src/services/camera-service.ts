@@ -1,7 +1,7 @@
 /**
- * 相机系统：管理一组 PerspectiveCamera，支持切换当前渲染机位。
+ * 相机服务：管理一组 PerspectiveCamera，支持切换当前渲染机位。
  *
- * 默认注册 id 为 {@link CameraSystem.MAIN} 的主相机。
+ * 默认注册 id 为 {@link CameraService.MAIN} 的主相机。
  * 多机位时用 add / setActive；渲染与 resize 走 active。
  */
 
@@ -9,17 +9,17 @@ import { Injectable } from '@threxus/core';
 import { PerspectiveCamera } from 'three';
 
 @Injectable()
-export class CameraSystem {
+export class CameraService {
   /** 默认主相机 id */
   static readonly MAIN = 'main';
 
   private readonly cameras = new Map<string, PerspectiveCamera>();
-  private activeId: string = CameraSystem.MAIN;
+  private activeId: string = CameraService.MAIN;
 
   constructor() {
     const main = new PerspectiveCamera(50, 1, 0.1, 100);
     main.position.z = 3;
-    this.cameras.set(CameraSystem.MAIN, main);
+    this.cameras.set(CameraService.MAIN, main);
   }
 
   /** 当前用于渲染的相机 */
@@ -75,17 +75,17 @@ export class CameraSystem {
   }
 
   /**
-   * 移除相机。不可移除 {@link CameraSystem.MAIN}；若移除的是当前机位则回退到 main。
+   * 移除相机。不可移除 {@link CameraService.MAIN}；若移除的是当前机位则回退到 main。
    */
   remove(id: string): boolean {
-    if (id === CameraSystem.MAIN) {
-      throw new Error(`不可移除默认主相机 "${CameraSystem.MAIN}"。`);
+    if (id === CameraService.MAIN) {
+      throw new Error(`不可移除默认主相机 "${CameraService.MAIN}"。`);
     }
     if (!this.cameras.has(id)) {
       return false;
     }
     if (this.activeId === id) {
-      this.activeId = CameraSystem.MAIN;
+      this.activeId = CameraService.MAIN;
     }
     return this.cameras.delete(id);
   }
@@ -103,3 +103,8 @@ export class CameraSystem {
     return camera;
   }
 }
+
+/**
+ * @deprecated 使用 {@link CameraService}
+ */
+export const CameraSystem = CameraService;

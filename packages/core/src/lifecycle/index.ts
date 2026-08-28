@@ -4,6 +4,7 @@
 
 export type {
   EntitySystem,
+  FeatureLifecycle,
   LifecycleInstance,
   OnApplicationBootstrap,
   OnDispose,

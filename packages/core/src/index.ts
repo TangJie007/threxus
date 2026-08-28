@@ -20,6 +20,7 @@ export {
 } from './lifecycle';
 export type {
   EntitySystem,
+  FeatureLifecycle,
   LifecycleInstance,
   OnApplicationBootstrap,
   OnDispose,

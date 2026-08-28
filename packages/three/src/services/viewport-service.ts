@@ -1,17 +1,17 @@
 /**
  * 视口装配：按 {@link THREE_VIEWPORT} 配置主相机位姿 / fov。
  *
- * 与业务 Entity System 分离，避免功能模块里摆相机。
+ * 与业务 Feature 分离，避免功能模块里摆相机。
  */
 
 import { Inject, Injectable, type OnModuleInit } from '@threxus/core';
 import { THREE_VIEWPORT, type ViewportOptions } from '../tokens';
-import { CameraSystem } from './camera-system';
+import { CameraService } from './camera-service';
 
 @Injectable()
-export class ViewportSystem implements OnModuleInit {
-  @Inject(CameraSystem)
-  cameras: CameraSystem;
+export class ViewportService implements OnModuleInit {
+  @Inject(CameraService)
+  cameras: CameraService;
 
   @Inject(THREE_VIEWPORT)
   options: ViewportOptions;
@@ -32,3 +32,8 @@ export class ViewportSystem implements OnModuleInit {
     }
   }
 }
+
+/**
+ * @deprecated 使用 {@link ViewportService}
+ */
+export const ViewportSystem = ViewportService;
