@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import { createContainer, createToken } from '@threxus/core';
+import { createDemoMessage } from './di-demo';
 
-const messageToken = createToken<string>('welcome-message');
-const container = createContainer().set(
-  messageToken,
-  'Threxus is ready for Three.js applications.',
-);
-const message = container.get(messageToken);
+const message = createDemoMessage();
 </script>
 
 <template>
@@ -15,8 +10,8 @@ const message = container.get(messageToken);
       <p class="eyebrow">Vue 3 example</p>
       <h1>Threxus</h1>
       <p class="description">
-        This example consumes <code>@threxus/core</code> through the pnpm
-        workspace.
+        DI shell: <code>@Injectable({ inject })</code> + field
+        <code>@Inject</code> (Stage 3, zero third-party).
       </p>
       <div class="status">
         <span class="status-dot" aria-hidden="true"></span>

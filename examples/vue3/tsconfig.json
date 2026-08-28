@@ -3,6 +3,7 @@
   "compilerOptions": {
     "lib": [
       "ES2022",
+      "ESNext.Decorators",
       "DOM",
       "DOM.Iterable"
     ],
@@ -10,7 +11,9 @@
       "vite/client"
     ],
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "experimentalDecorators": false,
+    "useDefineForClassFields": true
   },
   "include": [
     "src/**/*.ts",

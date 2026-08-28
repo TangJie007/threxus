@@ -6,9 +6,15 @@
 
 ```text
 packages/
-  core/       @threxus/core，使用 Rslib 编译
+  core/                 @threxus/core，使用 Rslib 编译
+    src/
+      token/            Token / createToken
+      types/            Provider 与注入相关类型
+      metadata/         Symbol.metadata 读写
+      decorators/       @Injectable / @Inject
+      container/        Container
 examples/
-  vue3/       Vue 3 + Vite 示例
+  vue3/                 Vue 3 + Vite 示例
 ```
 
 ## 开始使用

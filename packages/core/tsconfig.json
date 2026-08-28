@@ -2,7 +2,9 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "experimentalDecorators": false
+    "lib": ["ES2022", "ESNext.Decorators", "DOM"],
+    "experimentalDecorators": false,
+    "useDefineForClassFields": true
   },
   "include": [
     "src"
