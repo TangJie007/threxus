@@ -4,7 +4,7 @@
 
 import { Injectable, type OnDispose, type OnModuleInit } from '@threxus/core';
 import type { PerspectiveCamera, WebGLRenderer } from 'three';
-import { CAMERA, WEBGL_RENDERER } from './tokens';
+import { CAMERA, WEBGL_RENDERER } from '../tokens';
 
 @Injectable({ inject: [WEBGL_RENDERER, CAMERA] })
 export class ResizeSystem implements OnModuleInit, OnDispose {

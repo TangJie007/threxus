@@ -6,8 +6,8 @@
  */
 
 import { Module } from '@threxus/core';
-import type { Clock } from './clock';
-import { APPLICATION, CANVAS, CLOCK, type ApplicationRef } from './tokens';
+import type { Clock } from '../clock';
+import { APPLICATION, CANVAS, CLOCK, type ApplicationRef } from '../tokens';
 
 /** Application 启动前写入的运行时绑定 */
 export interface RuntimeBindings {

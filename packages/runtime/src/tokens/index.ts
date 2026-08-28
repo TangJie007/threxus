@@ -3,10 +3,10 @@
  */
 
 import { createToken, type Container } from '@threxus/core';
-import type { Clock } from './clock';
+import type { Clock } from '../clock';
 
 /**
- * Application 在 Token 中的最小形状（避免与 application.ts 循环依赖）。
+ * Application 在 Token 中的最小形状（避免与 application 循环依赖）。
  */
 export interface ApplicationRef {
   readonly container: Container;

@@ -1,5 +1,7 @@
 /**
  * `@threxus/runtime` 公共出口。
+ *
+ * 使用方可只从包名导入，无需关心内部目录划分。
  */
 
 export { RuntimeClock, type Clock } from './clock';
@@ -14,7 +16,7 @@ export {
   provideRuntimeBindings,
   clearRuntimeBindings,
   type RuntimeBindings,
-} from './runtime-module';
+} from './module';
 export {
   ThrexusApplication,
   createApplication,

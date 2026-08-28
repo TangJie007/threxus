@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import babel from '@rolldown/plugin-babel';
+import babel, { type RolldownBabelPreset } from '@rolldown/plugin-babel';
 
 const exampleRoot = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(exampleRoot, '../..');
@@ -21,7 +21,7 @@ const alias = {
  *
  * @see https://vite.dev/guide/migration
  */
-function decoratorPreset(options: Record<string, unknown>) {
+function decoratorPreset(options: Record<string, unknown>): RolldownBabelPreset {
   return {
     preset: () => ({
       plugins: [['@babel/plugin-proposal-decorators', options]],
@@ -31,7 +31,7 @@ function decoratorPreset(options: Record<string, unknown>) {
         code: '@',
       },
     },
-  };
+  } as RolldownBabelPreset;
 }
 
 export default defineConfig({

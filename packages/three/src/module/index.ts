@@ -14,9 +14,8 @@ import {
   WebGLRenderer,
   type WebGLRendererParameters,
 } from 'three';
-import { RenderSystem } from './render-system';
-import { ResizeSystem } from './resize-system';
-import { CAMERA, SCENE, WEBGL_RENDERER } from './tokens';
+import { RenderSystem, ResizeSystem } from '../systems';
+import { CAMERA, SCENE, WEBGL_RENDERER } from '../tokens';
 
 function createRenderer(canvas: HTMLCanvasElement | null): WebGLRenderer {
   const params: WebGLRendererParameters = {

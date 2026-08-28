@@ -4,7 +4,7 @@
 
 import { Injectable, type OnDispose, type OnUpdate } from '@threxus/core';
 import type { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { CAMERA, SCENE, WEBGL_RENDERER } from './tokens';
+import { CAMERA, SCENE, WEBGL_RENDERER } from '../tokens';
 
 @Injectable({ inject: [WEBGL_RENDERER, SCENE, CAMERA] })
 export class RenderSystem implements OnUpdate, OnDispose {

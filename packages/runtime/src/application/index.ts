@@ -8,12 +8,12 @@ import {
   createContainer,
   type Constructor,
 } from '@threxus/core';
-import { RuntimeClock } from './clock';
+import { RuntimeClock } from '../clock';
 import {
   RuntimeModule,
   clearRuntimeBindings,
   provideRuntimeBindings,
-} from './runtime-module';
+} from '../module';
 
 /** `createApplication` / 构造选项 */
 export interface ApplicationOptions {

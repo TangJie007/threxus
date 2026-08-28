@@ -1,8 +1,9 @@
 /**
  * `@threxus/three` 公共出口。
+ *
+ * 使用方可只从包名导入，无需关心内部目录划分。
  */
 
 export { CAMERA, SCENE, WEBGL_RENDERER } from './tokens';
-export { RenderSystem } from './render-system';
-export { ResizeSystem } from './resize-system';
-export { ThreeCoreModule } from './three-core-module';
+export { RenderSystem, ResizeSystem } from './systems';
+export { ThreeCoreModule } from './module';
