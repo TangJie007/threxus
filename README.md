@@ -26,8 +26,7 @@ examples/
 ```text
 AppModule      组装：imports 功能模块 + 可选 THREE_VIEWPORT
 FeatureModule  功能边界：providers 一个或多个 Feature / Service
-Feature        DI 单例：可继承 EntityHost，spawn / 释放一类对象
-Entity         普通 class：持有 Mesh，不进容器
+Feature        DI 单例：可继承 EntityHost，spawn Mesh + 挂组件
 Component      挂在 Object3D.userData，由 EntityComponentService 调度
 ```
 
@@ -39,21 +38,23 @@ Component      挂在 Object3D.userData，由 EntityComponentService 调度
 
 ```ts
 @Injectable()
-class SpinFeature extends EntityHost<SpinCube> implements OnModuleInit {
+class SpinFeature extends EntityHost<Mesh> implements OnModuleInit {
   @Inject(SceneService) scenes: SceneService;
   @Inject(EntityComponentService) components: EntityComponentService;
 
-  protected attach(e: SpinCube) {
-    this.scenes.attach(e.mesh);
-    this.components.add(e.mesh, new SpinComponent());
+  protected attach(mesh: Mesh) {
+    this.scenes.attach(mesh);
   }
-  protected detach(e: SpinCube) {
-    this.components.clear(e.mesh);
-    this.scenes.detach(e.mesh);
+  protected detach(mesh: Mesh) {
+    this.components.clear(mesh);
+    this.scenes.detach(mesh);
+    disposeObject3D(mesh, false);
   }
 
   onModuleInit() {
-    this.spawn(new SpinCube());
+    const mesh = new Mesh(new BoxGeometry(), new MeshNormalMaterial());
+    this.components.add(mesh, new SpinComponent());
+    this.spawn(mesh);
   }
 }
 

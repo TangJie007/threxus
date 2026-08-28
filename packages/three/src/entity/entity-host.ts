@@ -3,27 +3,31 @@
  *
  * Entity 本身不进 DI；子类实现 attach / detach（通常委托 SceneService）。
  * 每帧行为由 EntityComponentService 调度组件，不在此驱动。
+ *
+ * `T` 可为 Mesh、自定义实体壳，或任意对象。
  */
 
 import type { OnDispose } from '@threxus/core';
 
-/**
- * Host 可驱动的最小 Entity 约定。
- *
- * `dispose` 可选；有则由 {@link EntityHost} 在 despawn / onDispose 时调用。
- */
-export type HostEntity = {
-  dispose?(): void;
-};
+type Disposable = { dispose(): void };
+
+function tryDispose(entity: object): void {
+  if (
+    'dispose' in entity &&
+    typeof (entity as Disposable).dispose === 'function'
+  ) {
+    (entity as Disposable).dispose();
+  }
+}
 
 /**
  * 业务 Feature 的集合样板：spawn → onDispose。
  *
  * 子类实现 {@link attach} / {@link detach}，并按需实现生命周期钩子。
  *
- * @typeParam T - 实体类型
+ * @typeParam T - 实体类型（Mesh / 自定义对象等）
  */
-export abstract class EntityHost<T extends HostEntity> implements OnDispose {
+export abstract class EntityHost<T extends object> implements OnDispose {
   private readonly entities: T[] = [];
 
   /** 当前已登记实体（只读） */
@@ -53,7 +57,7 @@ export abstract class EntityHost<T extends HostEntity> implements OnDispose {
   }
 
   /**
-   * 移除单个实体：detach + dispose，并从列表删除。
+   * 移除单个实体：detach + 可选 dispose，并从列表删除。
    *
    * @param entity - 先前 spawn 的实例
    * @returns 是否找到并移除
@@ -65,14 +69,14 @@ export abstract class EntityHost<T extends HostEntity> implements OnDispose {
     }
     this.entities.splice(index, 1);
     this.detach(entity);
-    entity.dispose?.();
+    tryDispose(entity);
     return true;
   }
 
   onDispose(): void {
     for (const entity of this.entities) {
       this.detach(entity);
-      entity.dispose?.();
+      tryDispose(entity);
     }
     this.entities.length = 0;
   }

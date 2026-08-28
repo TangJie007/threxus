@@ -55,7 +55,7 @@ export type {
   SerializeContext,
   ThrexusConfig,
 } from './services';
-export { EntityHost, type HostEntity } from './entity';
+export { EntityHost } from './entity';
 export type { Component, ComponentMap } from './component';
 export {
   createPipeline,

@@ -1,27 +1,40 @@
 /**
- * 旋转立方体 Feature：spawn 实体并挂组件；帧循环由 EntityComponentService 驱动。
- *
- * 本身是 DI 单例；实体是普通 class，不进入容器。
+ * 旋转立方体 Feature：创建 Mesh、挂组件、进场景。
+ * 帧循环由 EntityComponentService 驱动；Mesh 不进 DI。
  */
 
+import { Inject, Injectable, type OnModuleInit } from '@threxus/core';
 import {
-  Inject,
-  Injectable,
-  type OnModuleInit,
-} from '@threxus/core';
-import {
+  disposeObject3D,
   EntityComponentService,
   EntityHost,
   SceneService,
 } from '@threxus/three';
+import { BoxGeometry, Mesh, MeshNormalMaterial } from 'three';
 import { RotatingComponent } from './rotating.component';
-import { RotatingCube, type RotatingOptions } from './rotating.entity';
 
-export type { RotatingOptions };
+export type RotatingOptions = {
+  size?: number;
+  position?: [number, number, number];
+  speed?: { x: number; y: number };
+};
+
+/** 创建立方体 Mesh（原生实体，不进 DI） */
+function createCube(options: RotatingOptions = {}): Mesh {
+  const size = options.size ?? 1;
+  const mesh = new Mesh(
+    new BoxGeometry(size, size, size),
+    new MeshNormalMaterial(),
+  );
+  if (options.position) {
+    mesh.position.set(...options.position);
+  }
+  return mesh;
+}
 
 @Injectable()
 export class RotatingFeature
-  extends EntityHost<RotatingCube>
+  extends EntityHost<Mesh>
   implements OnModuleInit
 {
   @Inject(SceneService)
@@ -30,21 +43,23 @@ export class RotatingFeature
   @Inject(EntityComponentService)
   components: EntityComponentService;
 
-  protected attach(cube: RotatingCube): void {
-    this.scenes.attach(cube.mesh);
-    this.components.add(cube.mesh, new RotatingComponent(cube.speed));
+  protected attach(mesh: Mesh): void {
+    this.scenes.attach(mesh);
   }
 
-  protected detach(cube: RotatingCube): void {
-    this.components.clear(cube.mesh);
-    this.scenes.detach(cube.mesh);
+  protected detach(mesh: Mesh): void {
+    this.components.clear(mesh);
+    this.scenes.detach(mesh);
+    disposeObject3D(mesh, false);
   }
 
-  /**
-   * 按属性创建实体并加入场景。
-   */
-  spawnCube(options: RotatingOptions = {}): RotatingCube {
-    return this.spawn(new RotatingCube(options));
+  spawnCube(options: RotatingOptions = {}): Mesh {
+    const mesh = createCube(options);
+    this.components.add(
+      mesh,
+      new RotatingComponent(options.speed ?? { x: 0.8, y: 1.1 }),
+    );
+    return this.spawn(mesh);
   }
 
   onModuleInit(): void {
