@@ -1,13 +1,10 @@
 /**
- * 每帧渲染：renderer.render(scene, camera)。
+ * 每帧渲染：renderer.render(scene, cameraSystem.active)。
  */
 
 import { Inject, Injectable, type OnDispose, type OnUpdate } from '@threxus/core';
-import {
-  PerspectiveCamera,
-  Scene,
-  WebGLRenderer,
-} from 'three';
+import { Scene, WebGLRenderer } from 'three';
+import { CameraSystem } from './camera-system';
 
 @Injectable()
 export class RenderSystem implements OnUpdate, OnDispose {
@@ -17,11 +14,11 @@ export class RenderSystem implements OnUpdate, OnDispose {
   @Inject(Scene)
   scene: Scene;
 
-  @Inject(PerspectiveCamera)
-  camera: PerspectiveCamera;
+  @Inject(CameraSystem)
+  cameras: CameraSystem;
 
   onUpdate(_dt: number): void {
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.cameras.active);
   }
 
   /**

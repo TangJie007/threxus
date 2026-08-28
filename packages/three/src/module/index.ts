@@ -1,8 +1,10 @@
 /**
- * Three 核心模块：Renderer / Scene / Camera + 渲染与 resize。
+ * Three 核心模块：Renderer / Scene / CameraSystem + 渲染与 resize。
  *
  * 依赖 `@threxus/runtime` 的 `RuntimeModule`（CANVAS 等）。
- * 约定：以 `WebGLRenderer` / `Scene` / `PerspectiveCamera` 类本身为 Token；
+ * 约定：以 `WebGLRenderer` / `Scene` 类本身为 Token；
+ * `PerspectiveCamera` Token 兼容指向主相机（{@link CameraSystem.MAIN}）；
+ * 多机位与当前渲染相机请注入 {@link CameraSystem}。
  * 业务侧 mesh 的 geometry/material 在各自 `onDispose` 中释放；
  * `RenderSystem` 负责 `renderer.dispose()`。
  */
@@ -15,7 +17,7 @@ import {
   WebGLRenderer,
   type WebGLRendererParameters,
 } from 'three';
-import { RenderSystem, ResizeSystem } from '../systems';
+import { CameraSystem, RenderSystem, ResizeSystem } from '../systems';
 
 function createRenderer(canvas: HTMLCanvasElement | null): WebGLRenderer {
   const params: WebGLRendererParameters = {
@@ -30,12 +32,6 @@ function createRenderer(canvas: HTMLCanvasElement | null): WebGLRenderer {
   return renderer;
 }
 
-function createCamera(): PerspectiveCamera {
-  const camera = new PerspectiveCamera(50, 1, 0.1, 100);
-  camera.position.z = 3;
-  return camera;
-}
-
 @Module({
   imports: [RuntimeModule],
   providers: [
@@ -48,9 +44,12 @@ function createCamera(): PerspectiveCamera {
       provide: Scene,
       useFactory: () => new Scene(),
     },
+    CameraSystem,
     {
       provide: PerspectiveCamera,
-      useFactory: () => createCamera(),
+      useFactory: (cameras: CameraSystem) =>
+        cameras.get(CameraSystem.MAIN)!,
+      inject: [CameraSystem],
     },
     RenderSystem,
     ResizeSystem,
@@ -58,6 +57,7 @@ function createCamera(): PerspectiveCamera {
   exports: [
     WebGLRenderer,
     Scene,
+    CameraSystem,
     PerspectiveCamera,
     RenderSystem,
     ResizeSystem,
