@@ -1,0 +1,16 @@
+{
+  "name": "threxus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A dependency injection framework for Three.js",
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "pnpm --recursive --if-present build",
+    "clean": "pnpm --recursive --if-present clean",
+    "dev": "pnpm --parallel --recursive --if-present dev",
+    "typecheck": "pnpm --recursive --if-present typecheck"
+  }
+}
