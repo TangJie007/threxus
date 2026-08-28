@@ -116,8 +116,3 @@ export class SceneService {
     return scene;
   }
 }
-
-/**
- * @deprecated 使用 {@link SceneService}
- */
-export const SceneSystem = SceneService;

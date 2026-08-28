@@ -29,7 +29,6 @@ class FakeCube {
     new BoxGeometry(1, 1, 1),
     new MeshBasicMaterial(),
   );
-  update = vi.fn();
   dispose = vi.fn();
 }
 
@@ -47,7 +46,7 @@ class TestHost extends EntityHost<FakeCube> {
 }
 
 describe('EntityHost', () => {
-  it('spawn / onUpdate / despawn / onDispose 驱动实体', () => {
+  it('spawn / despawn / onDispose 登记实体', () => {
     const host = new TestHost();
     const a = new FakeCube();
     const b = new FakeCube();
@@ -56,10 +55,6 @@ describe('EntityHost', () => {
     host.spawn(b);
     expect(host.getEntities()).toEqual([a, b]);
     expect(host.attached).toEqual([a, b]);
-
-    host.onUpdate(0.016);
-    expect(a.update).toHaveBeenCalledWith(0.016);
-    expect(b.update).toHaveBeenCalledWith(0.016);
 
     expect(host.despawn(a)).toBe(true);
     expect(host.getEntities()).toEqual([b]);

@@ -18,9 +18,9 @@ import type { InjectableOptions } from '../types';
  * @example
  * ```ts
  * @Injectable()
- * class OrbitSystem {
- *   @Inject(Scene)
- *   scene: Scene;
+ * class OrbitFeature {
+ *   @Inject(SceneService)
+ *   scenes: SceneService;
  * }
  *
  * @Injectable({ inject: [CLOCK] })

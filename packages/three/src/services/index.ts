@@ -6,7 +6,7 @@
  */
 
 export { AssetService, type AssetContext, type AssetLoader } from './asset-service';
-export { CameraService, CameraSystem } from './camera-service';
+export { CameraService } from './camera-service';
 export { CommandService, type Command } from './command-service';
 export { ConfigService, type ThrexusConfig } from './config-service';
 export { DisposeService } from './dispose-service';
@@ -26,9 +26,9 @@ export {
   InteractionService,
   type InteractionContext,
 } from './interaction-service';
-export { RenderService, RenderSystem, type RenderContext } from './render-service';
-export { ResizeService, ResizeSystem } from './resize-service';
-export { SceneService, SceneSystem } from './scene-service';
+export { RenderService, type RenderContext } from './render-service';
+export { ResizeService } from './resize-service';
+export { SceneService } from './scene-service';
 export { SelectionService } from './selection-service';
 export {
   SerializeService,
@@ -39,4 +39,4 @@ export {
   type SceneNodeData,
   type SerializeContext,
 } from './serialize-service';
-export { ViewportService, ViewportSystem } from './viewport-service';
+export { ViewportService } from './viewport-service';

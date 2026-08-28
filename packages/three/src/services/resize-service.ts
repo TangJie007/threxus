@@ -45,8 +45,3 @@ export class ResizeService implements OnModuleInit, OnDispose {
     }
   }
 }
-
-/**
- * @deprecated 使用 {@link ResizeService}
- */
-export const ResizeSystem = ResizeService;

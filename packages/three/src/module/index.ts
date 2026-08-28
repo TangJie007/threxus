@@ -3,7 +3,6 @@
  *
  * 依赖 `@threxus/runtime` 的 `RuntimeModule`（CANVAS 等）。
  * 约定：`WebGLRenderer` 以类本身为 Token；
- * `Scene` / `PerspectiveCamera` Token 兼容指向各自 MAIN；
  * 多场景 / 多机位请注入 {@link SceneService} / {@link CameraService}。
  * 相机位姿请配 {@link THREE_VIEWPORT}，由 {@link ViewportService} 应用；
  * 实体 GPU 资源经 {@link DisposeService}；行为经 {@link EntityComponentService}。
@@ -14,12 +13,7 @@
 
 import { Module } from '@threxus/core';
 import { CANVAS, RuntimeModule } from '@threxus/runtime';
-import {
-  PerspectiveCamera,
-  Scene,
-  WebGLRenderer,
-  type WebGLRendererParameters,
-} from 'three';
+import { WebGLRenderer, type WebGLRendererParameters } from 'three';
 import { THREE_VIEWPORT } from '../tokens';
 import {
   AgentBridgeService,
@@ -65,18 +59,7 @@ function createRenderer(canvas: HTMLCanvasElement | null): WebGLRenderer {
       inject: [CANVAS],
     },
     SceneService,
-    {
-      provide: Scene,
-      useFactory: (scenes: SceneService) => scenes.get(SceneService.MAIN)!,
-      inject: [SceneService],
-    },
     CameraService,
-    {
-      provide: PerspectiveCamera,
-      useFactory: (cameras: CameraService) =>
-        cameras.get(CameraService.MAIN)!,
-      inject: [CameraService],
-    },
     {
       provide: THREE_VIEWPORT,
       useValue: {},
@@ -102,9 +85,7 @@ function createRenderer(canvas: HTMLCanvasElement | null): WebGLRenderer {
   exports: [
     WebGLRenderer,
     SceneService,
-    Scene,
     CameraService,
-    PerspectiveCamera,
     THREE_VIEWPORT,
     ViewportService,
     DisposeService,

@@ -7,7 +7,7 @@
 import {
   Inject,
   Injectable,
-  type FeatureLifecycle,
+  type OnModuleInit,
 } from '@threxus/core';
 import {
   EntityComponentService,
@@ -22,7 +22,7 @@ export type { RotatingOptions };
 @Injectable()
 export class RotatingFeature
   extends EntityHost<RotatingCube>
-  implements FeatureLifecycle
+  implements OnModuleInit
 {
   @Inject(SceneService)
   scenes: SceneService;
@@ -47,9 +47,6 @@ export class RotatingFeature
     return this.spawn(new RotatingCube(options));
   }
 
-  /** 组件层已驱动旋转；不再调用 entity.update */
-  override onUpdate(_dt: number): void {}
-
   onModuleInit(): void {
     this.spawnCube({ size: 1, position: [-1.2, 0, 0] });
     this.spawnCube({
@@ -59,8 +56,3 @@ export class RotatingFeature
     });
   }
 }
-
-/**
- * @deprecated 使用 {@link RotatingFeature}
- */
-export const RotatingSystem = RotatingFeature;

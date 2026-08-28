@@ -32,8 +32,3 @@ export class ViewportService implements OnModuleInit {
     }
   }
 }
-
-/**
- * @deprecated 使用 {@link ViewportService}
- */
-export const ViewportSystem = ViewportService;

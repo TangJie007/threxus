@@ -74,8 +74,3 @@ export class RenderService implements OnUpdate, OnDispose {
     canvas.height = 0;
   }
 }
-
-/**
- * @deprecated 使用 {@link RenderService}
- */
-export const RenderSystem = RenderService;

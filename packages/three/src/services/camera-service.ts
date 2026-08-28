@@ -103,8 +103,3 @@ export class CameraService {
     return camera;
   }
 }
-
-/**
- * @deprecated 使用 {@link CameraService}
- */
-export const CameraSystem = CameraService;

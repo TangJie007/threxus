@@ -12,9 +12,8 @@
  * - FeatureModule + Service（可继承 {@link EntityHost}）spawn 一类 Entity
  * - Entity 为普通 class，持有 Mesh，不进 DI；行为优先用组件
  *
- * 场景 / 相机请优先注入 {@link SceneService} / {@link CameraService}
- *（Three **场景图** SceneGraph）；`Scene` / `PerspectiveCamera` Token
- * 仍指向各自 MAIN 以兼容旧写法。
+ * 场景 / 相机注入 {@link SceneService} / {@link CameraService}
+ *（Three **场景图** SceneGraph）。
  *
  * 相机位姿用 {@link THREE_VIEWPORT} + {@link ViewportService}；
  * 勿与 core 的 DI **SceneScope**（`createSceneScope`）混淆。
@@ -24,7 +23,6 @@ export {
   AgentBridgeService,
   AssetService,
   CameraService,
-  CameraSystem,
   ClipboardService,
   CommandService,
   ConfigService,
@@ -35,16 +33,12 @@ export {
   InstancedFoliageService,
   InteractionService,
   RenderService,
-  RenderSystem,
   ResizeService,
-  ResizeSystem,
   SceneService,
-  SceneSystem,
   SelectionService,
   SerializeService,
   SnapshotService,
   ViewportService,
-  ViewportSystem,
   sceneDocumentSchema,
   sceneNodeSchema,
 } from './services';

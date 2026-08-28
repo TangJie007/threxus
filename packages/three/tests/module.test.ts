@@ -17,7 +17,7 @@ import {
 } from '../src/index';
 
 describe('ThreeCoreModule', () => {
-  it('声明为 Module，并导出 SceneService / CameraService / Viewport 与兼容 Token', () => {
+  it('声明为 Module，并导出核心 Service 与 Token', () => {
     expect(isModule(ThreeCoreModule)).toBe(true);
     const meta = readModuleMetadata(ThreeCoreModule)!;
     expect(meta.imports).toContain(RuntimeModule);
@@ -25,15 +25,15 @@ describe('ThreeCoreModule', () => {
       expect.arrayContaining([
         WebGLRenderer,
         SceneService,
-        Scene,
         CameraService,
-        PerspectiveCamera,
         THREE_VIEWPORT,
         ViewportService,
         DisposeService,
         EntityComponentService,
       ]),
     );
+    expect(meta.exports).not.toContain(Scene);
+    expect(meta.exports).not.toContain(PerspectiveCamera);
   });
 });
 

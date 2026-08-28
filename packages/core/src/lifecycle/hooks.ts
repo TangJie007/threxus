@@ -44,11 +44,6 @@ export interface OnDispose {
 export interface FeatureLifecycle
   extends OnModuleInit, OnUpdate, OnDispose {}
 
-/**
- * @deprecated 使用 {@link FeatureLifecycle}；下一发布周期移除。
- */
-export type EntitySystem = FeatureLifecycle;
-
 /** 可能实现了部分生命周期钩子的实例 */
 export type LifecycleInstance = Partial<
   OnModuleInit & OnApplicationBootstrap & OnUpdate & OnDispose

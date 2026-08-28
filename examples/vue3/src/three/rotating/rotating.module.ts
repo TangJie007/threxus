@@ -4,7 +4,7 @@
 
 import { Module } from '@threxus/core';
 import { ThreeCoreModule } from '@threxus/three';
-import { RotatingFeature } from './rotating.system';
+import { RotatingFeature } from './rotating.feature';
 
 @Module({
   imports: [ThreeCoreModule],

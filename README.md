@@ -21,26 +21,36 @@ examples/
 
 ## 心智模型（Three）
 
+四层混合：DI 服务 + 原生实体 + 轻量组件 + 中间件。
+
 ```text
 AppModule      组装：imports 功能模块 + 可选 THREE_VIEWPORT
-FeatureModule  功能边界：providers 一个或多个 System
-System         DI 单例：可继承 EntityHost，spawn / 驱动 / 释放一类对象
-Entity         普通 class：持有 Mesh + update/dispose，不进容器
+FeatureModule  功能边界：providers 一个或多个 Feature / Service
+Feature        DI 单例：可继承 EntityHost，spawn / 释放一类对象
+Entity         普通 class：持有 Mesh，不进容器
+Component      挂在 Object3D.userData，由 EntityComponentService 调度
 ```
 
-- `SceneSystem` / `CameraSystem`：Three **场景图**（SceneGraph）
+- `SceneService` / `CameraService`：Three **场景图**（SceneGraph）
 - core `createSceneScope`：DI **场景作用域**（SceneScope），二者不同
-- 相机位姿用 `THREE_VIEWPORT`，不要写在业务 System 里
+- 相机位姿用 `THREE_VIEWPORT`，不要写在业务 Feature 里
 
 最小功能脚手架：
 
 ```ts
 @Injectable()
-class SpinSystem extends EntityHost<SpinCube> implements EntitySystem {
-  @Inject(SceneSystem) scenes: SceneSystem;
+class SpinFeature extends EntityHost<SpinCube> implements OnModuleInit {
+  @Inject(SceneService) scenes: SceneService;
+  @Inject(EntityComponentService) components: EntityComponentService;
 
-  protected attach(e: SpinCube) { this.scenes.active.add(e.mesh); }
-  protected detach(e: SpinCube) { this.scenes.active.remove(e.mesh); }
+  protected attach(e: SpinCube) {
+    this.scenes.attach(e.mesh);
+    this.components.add(e.mesh, new SpinComponent());
+  }
+  protected detach(e: SpinCube) {
+    this.components.clear(e.mesh);
+    this.scenes.detach(e.mesh);
+  }
 
   onModuleInit() {
     this.spawn(new SpinCube());
@@ -49,7 +59,7 @@ class SpinSystem extends EntityHost<SpinCube> implements EntitySystem {
 
 @Module({
   imports: [ThreeCoreModule],
-  providers: [SpinSystem],
+  providers: [SpinFeature],
 })
 class SpinModule {}
 ```
