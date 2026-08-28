@@ -1,13 +1,15 @@
 /**
- * 示例 Three 根模块：ThreeCoreModule + 业务 System。
+ * 示例 Three 根模块：框架核心 + 业务模块。
  */
 
 import { Module } from '@threxus/core';
 import { ThreeCoreModule } from '@threxus/three';
-import { RotatingCube } from './rotating-cube';
+import { RotatingCubeModule } from './rotating/rotating-cube.module';
 
 @Module({
-  imports: [ThreeCoreModule],
-  providers: [RotatingCube],
+    imports: [
+        ThreeCoreModule, 
+        RotatingCubeModule
+    ],
 })
 export class ThreeAppModule {}

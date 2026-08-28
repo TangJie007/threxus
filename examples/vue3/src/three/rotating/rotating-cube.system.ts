@@ -16,7 +16,7 @@ import {
 } from 'three';
 
 @Injectable()
-export class RotatingCube implements EntitySystem {
+export class RotatingCubeSystem implements EntitySystem {
   @Inject(Scene)
   scene: Scene;
 
