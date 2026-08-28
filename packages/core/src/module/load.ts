@@ -19,6 +19,11 @@ import { isConstructor } from '../types';
 export interface ModuleHost {
   /** 注册 Provider */
   register(...providers: Provider[]): unknown;
+  /**
+   * 祖先容器是否已提供该令牌（不含本容器本地注册）。
+   * 用于场景模块依赖 App 级服务，同时不影响同容器内的 exports 边界。
+   */
+  hasInParent?(token: InjectionToken): boolean;
 }
 
 /**
@@ -72,7 +77,13 @@ export function loadModule(
     const localTokens = meta.providers.map(getProviderToken);
     const exportTokens = resolveExportTokens(Mod, meta, localTokens);
 
-    validateModuleInjections(Mod, meta.providers, localTokens, importViews);
+    validateModuleInjections(
+      Mod,
+      meta.providers,
+      localTokens,
+      importViews,
+      container,
+    );
 
     const view: LoadedModule = { type: Mod, exportTokens };
     loaded.set(Mod, view);
@@ -118,12 +129,15 @@ function resolveExportTokens(
 
 /**
  * 校验本模块 providers 的构造/工厂/字段依赖是否落在可见令牌集合内。
+ *
+ * 可见来源：本地 providers ∪ imports 的 exports ∪ 宿主容器祖先中已有的令牌。
  */
 function validateModuleInjections(
   Mod: Constructor,
   providers: Provider[],
   localTokens: InjectionToken[],
   importViews: LoadedModule[],
+  host: ModuleHost,
 ): void {
   const available = new Set<InjectionToken>([
     ...localTokens,
@@ -132,9 +146,14 @@ function validateModuleInjections(
 
   for (const provider of providers) {
     for (const token of collectProviderDependencies(provider)) {
-      if (!available.has(token)) {
-        throw moduleDependencyNotVisibleError(Mod, token);
+      if (available.has(token)) {
+        continue;
       }
+      // 层级作用域：允许依赖祖先容器已提供的令牌（如 Scene → App.Logger）
+      if (host.hasInParent?.(token)) {
+        continue;
+      }
+      throw moduleDependencyNotVisibleError(Mod, token);
     }
   }
 }

@@ -1,11 +1,7 @@
 /**
  * @threxus/core 使用示例 —— 改这个文件即可边开发边调试。
  *
- * 开发方式：根目录 `pnpm dev`
- * - Vite 直接 alias 到 packages/core/src（改 core 源码立刻热更新）
- * - 打开浏览器控制台看 console 输出
- *
- * 本文件演示：Module + 生命周期（init / update / dispose）。
+ * 本文件演示：App 容器 + Scene 作用域切换（A → B）。
  */
 
 import {
@@ -13,13 +9,12 @@ import {
   createToken,
   Injectable,
   Module,
-  type OnApplicationBootstrap,
   type OnDispose,
-  type OnModuleInit,
   type OnUpdate,
 } from '@threxus/core';
 
 const APP_NAME = createToken<string>('app-name');
+const SCENE_NAME = createToken<string>('scene-name');
 
 @Injectable()
 class Logger {
@@ -28,42 +23,48 @@ class Logger {
   }
 }
 
+/** App 级常驻 */
 @Injectable({ inject: [Logger, APP_NAME] })
-class BootProbe implements OnModuleInit, OnApplicationBootstrap, OnDispose {
+class AppTicker implements OnUpdate, OnDispose {
+  frames = 0;
+
   constructor(
     readonly logger: Logger,
     readonly appName: string,
   ) {}
 
-  onModuleInit(): void {
-    this.logger.info(`onModuleInit (${this.appName})`);
-  }
-
-  onApplicationBootstrap(): void {
-    this.logger.info('onApplicationBootstrap');
+  onUpdate(_dt: number): void {
+    this.frames += 1;
   }
 
   onDispose(): void {
-    this.logger.info('onDispose BootProbe');
+    this.logger.info(`AppTicker dispose（共 ${this.frames} 帧）`);
   }
 }
 
-/** 每帧更新；热路径由容器扁平数组调用 */
-@Injectable({ inject: [Logger] })
-class TickSystem implements OnUpdate, OnDispose {
+/** Scene 级：依赖 App 的 Logger，随场景销毁 */
+@Injectable({ inject: [Logger, SCENE_NAME] })
+class SceneActor implements OnUpdate, OnDispose {
   frames = 0;
 
-  constructor(readonly logger: Logger) {}
+  constructor(
+    readonly logger: Logger,
+    readonly sceneName: string,
+  ) {
+    this.logger.info(`SceneActor enter: ${this.sceneName}`);
+  }
 
-  onUpdate(dt: number): void {
+  onUpdate(_dt: number): void {
     this.frames += 1;
-    if (this.frames <= 3) {
-      this.logger.info(`onUpdate #${this.frames} dt=${dt.toFixed(4)}`);
+    if (this.frames === 1) {
+      this.logger.info(`SceneActor first update: ${this.sceneName}`);
     }
   }
 
   onDispose(): void {
-    this.logger.info(`onDispose TickSystem（共 ${this.frames} 帧）`);
+    this.logger.info(
+      `SceneActor leave: ${this.sceneName}（${this.frames} 帧）`,
+    );
   }
 }
 
@@ -71,29 +72,46 @@ class TickSystem implements OnUpdate, OnDispose {
   providers: [
     Logger,
     { provide: APP_NAME, useValue: 'threxus' },
-    BootProbe,
-    TickSystem,
+    AppTicker,
   ],
 })
 class AppModule {}
 
+@Module({
+  providers: [
+    { provide: SCENE_NAME, useValue: 'Scene-A' },
+    SceneActor,
+  ],
+})
+class SceneAModule {}
+
+@Module({
+  providers: [
+    { provide: SCENE_NAME, useValue: 'Scene-B' },
+    SceneActor,
+  ],
+})
+class SceneBModule {}
+
 export interface RunHandle {
-  /** 首屏展示文案 */
   message: string;
-  /** 停止 rAF 并 dispose 容器 */
   stop: () => void;
 }
 
 /**
- * 加载模块 → init → 用 rAF 打几帧 update → 自动 dispose。
+ * App init → Scene A 若干帧 → 切 Scene B → 再若干帧 → 销毁 App。
  */
 export function run(): RunHandle {
-  const container = createContainer().load(AppModule).init();
-  const ticker = container.get(TickSystem);
+  const app = createContainer().load(AppModule).init();
+  const logger = app.get(Logger);
+  const appTicker = app.get(AppTicker);
+
+  app.createSceneScope(SceneAModule);
 
   let rafId = 0;
   let last = performance.now();
   let stopped = false;
+  let phase: 'a' | 'b' | 'done' = 'a';
 
   const stop = (): void => {
     if (stopped) {
@@ -101,7 +119,7 @@ export function run(): RunHandle {
     }
     stopped = true;
     cancelAnimationFrame(rafId);
-    container.dispose();
+    app.dispose();
   };
 
   const loop = (now: number): void => {
@@ -110,20 +128,26 @@ export function run(): RunHandle {
     }
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
-    container.update(dt);
+    app.update(dt);
 
-    // 演示几帧后自动销毁，方便在控制台看完整生命周期
-    if (ticker.frames >= 3) {
+    if (phase === 'a' && appTicker.frames >= 2) {
+      logger.info('切换场景 A → B');
+      app.createSceneScope(SceneBModule);
+      phase = 'b';
+    } else if (phase === 'b' && appTicker.frames >= 4) {
+      logger.info('结束演示');
+      phase = 'done';
       stop();
       return;
     }
+
     rafId = requestAnimationFrame(loop);
   };
 
   rafId = requestAnimationFrame(loop);
 
   return {
-    message: 'lifecycle: init → rAF update ×3 → dispose（详见控制台）',
+    message: 'scope: App + Scene A → Scene B（详见控制台）',
     stop,
   };
 }

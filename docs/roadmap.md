@@ -20,7 +20,7 @@
 | 1 | Module | ✅ 已完成 |
 | 2 | 测试与错误体验 | ✅ 已完成 |
 | 3 | 生命周期 | ✅ 已完成 |
-| 4 | 层级作用域 | App → Scene 可替换、可销毁 |
+| 4 | 层级作用域 | ✅ 已完成 |
 | 5 | `@threxus/runtime` | Application + rAF + 约定 Token |
 | 6 | `@threxus/three` | 与 Three.js 对接的最小封装 |
 | 7 | 框架适配 | Vue / React 挂 canvas 的薄层 |
@@ -129,7 +129,7 @@ class AppModule {}
 
 ---
 
-## 阶段 4 — 层级作用域（App → Scene）
+## 阶段 4 — 层级作用域（App → Scene）（✅ 已完成）
 
 **目标：** 对应真实 Three 用法——换关卡时丢掉场景层，保留画布层。
 
@@ -145,14 +145,14 @@ App Container（单例）
 ### 4.2 实现清单
 
 1. `Container` 支持 `parent`：子找不到则向父查找。
-2. `createSceneScope()` / `destroy()`：销毁子容器实例并调用 `onDispose`。
+2. `createSceneScope()` / `destroySceneScope()`（子容器亦有 `destroy`）：销毁子容器实例并调用 `onDispose`。
 3. playground 演示：切换「场景 A / 场景 B」，App 级 Logger 仍在，场景服务被替换。
 
 ### 4.3 完成标准
 
-- [ ] 子作用域可覆盖父令牌（可选，若做覆盖需文档写清）
-- [ ] destroy 后不应再持有场景级实例引用
-- [ ] 仍默认单例语义（作用域内单例，不是每次 get 都 new）
+- [x] 子作用域可覆盖父令牌（本地 Provider shadow 父级；见 `get` 查找顺序）
+- [x] destroy 后不应再持有场景级实例引用
+- [x] 仍默认单例语义（作用域内单例，不是每次 get 都 new）
 
 ---
 
@@ -241,7 +241,7 @@ App Container（单例）
 ① Module（core）✅
 ② 单测 + 报错 DX（core）✅
 ③ 生命周期 onInit / onUpdate / onDispose（core）✅
-④ App → Scene 子容器（core）
+④ App → Scene 子容器（core）✅
 ⑤ runtime：Application + rAF
 ⑥ three：最小 Module + 示例出画
 ⑦ Vue 挂载/卸载适配
@@ -271,9 +271,9 @@ examples/
 
 | 现在就有 | 下一步打开的目录 |
 |----------|------------------|
-| `packages/core/src/{…,lifecycle,errors}` | 阶段 4：层级 `Container` parent / Scene scope |
+| `packages/core`（含 Module / Lifecycle / Scope） | 阶段 5：新建 `packages/runtime` |
 | `packages/core/tests` | 已有 Vitest；新能力请补测试 |
-| `examples/vue3/src/usage.ts` | 已演示 Module + 生命周期 |
+| `examples/vue3/src/usage.ts` | 已演示 Scene A → B 切换 |
 | 仅 `@threxus/core` 一个包 | 阶段 5 起再新增 workspace 包 |
 
 文档版本与代码同步维护：完成某阶段后，把上文对应勾选打成 `[x]`，并在 README「项目结构」中更新包列表。

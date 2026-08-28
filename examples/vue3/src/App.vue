@@ -15,8 +15,8 @@ onUnmounted(stop);
       <p class="eyebrow">@threxus/core playground</p>
       <h1>usage.ts</h1>
       <p class="hint">
-        生命周期演示：编辑 <code>usage.ts</code> 或
-        <code>packages/core/src/**</code>。控制台可见 init / update / dispose。
+        层级作用域：App 常驻 + Scene A→B 切换。编辑
+        <code>usage.ts</code> 或 <code>packages/core/src/**</code>，看控制台。
       </p>
       <pre class="output">{{ message }}</pre>
     </section>

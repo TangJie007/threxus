@@ -1,7 +1,9 @@
 /**
  * DI 容器：注册 Provider、解析依赖、缓存单例实例，并驱动生命周期。
  *
- * 当前仅支持默认单例作用域；层级容器放到后续阶段。
+ * 支持层级作用域：子容器找不到令牌时向 `parent` 查找；
+ * 子容器可覆盖父级同名令牌（shadow）。场景切换用 `createSceneScope` /
+ * `destroySceneScope`（或子容器 `destroy`）。
  */
 
 import {
@@ -44,16 +46,24 @@ type NormalizedProvider = {
  *
  * 职责：
  * 1. 注册各类 Provider
- * 2. 按令牌解析并缓存实例（单例）
+ * 2. 按令牌解析并缓存实例（单例，作用域内）
  * 3. 检测循环依赖
  * 4. 根据类元数据完成构造注入与字段注入
  * 5. 通过 `load` 组装 `@Module` 模块图
  * 6. 通过 `init` / `update` / `dispose` 驱动生命周期
+ * 7. 通过 parent / SceneScope 支持 App → Scene 层级
  */
 export class Container {
+  /** 父容器；解析时本地未命中则委托给父级 */
+  private readonly parent: Container | undefined;
+  /** 直接子容器（含当前 sceneScope） */
+  private readonly children = new Set<Container>();
+  /** 当前场景作用域（最多一个；再创建会先销毁旧的） */
+  private sceneScope: Container | undefined;
+
   /** 已注册的 Provider（按令牌索引） */
   private readonly providers = new Map<InjectionToken, NormalizedProvider>();
-  /** 已解析的单例实例缓存 */
+  /** 已解析的单例实例缓存（仅本作用域） */
   private readonly instances = new Map<InjectionToken, unknown>();
   /** 正在解析中的令牌栈，用于环依赖检测 */
   private readonly resolving = new Set<InjectionToken>();
@@ -62,7 +72,7 @@ export class Container {
 
   /** 是否已完成 `init()` */
   private initialized = false;
-  /** 是否已 `dispose()` */
+  /** 是否已 `dispose` / `destroy` */
   private disposed = false;
 
   /**
@@ -72,6 +82,76 @@ export class Container {
   private bootstraps: OnApplicationBootstrap[] = [];
   private updates: OnUpdate[] = [];
   private disposes: OnDispose[] = [];
+
+  /**
+   * @param parent - 可选父容器；传入后构成本地优先、向上查找的层级作用域
+   */
+  constructor(parent?: Container) {
+    this.parent = parent;
+  }
+
+  /**
+   * 父容器（若有）。
+   */
+  getParent(): Container | undefined {
+    return this.parent;
+  }
+
+  /**
+   * 当前场景子作用域（若有）。
+   */
+  getSceneScope(): Container | undefined {
+    return this.sceneScope;
+  }
+
+  /**
+   * 创建一个普通子容器（不自动设为 sceneScope）。
+   *
+   * @returns 子容器
+   */
+  createChild(): Container {
+    this.assertActive();
+    const child = new Container(this);
+    this.children.add(child);
+    return child;
+  }
+
+  /**
+   * 创建（并可选加载）场景作用域。
+   *
+   * - 若已存在场景作用域，会先 `destroySceneScope()`
+   * - 若传入 `sceneModule`，会对子容器执行 `load` + `init`
+   *
+   * 子级可 `get` 到父级 Provider；子级同名令牌会覆盖父级（shadow）。
+   *
+   * @param sceneModule - 场景根模块（可选）
+   * @returns 场景子容器
+   */
+  createSceneScope(sceneModule?: Constructor): Container {
+    this.assertActive();
+    this.destroySceneScope();
+
+    const scope = this.createChild();
+    this.sceneScope = scope;
+
+    if (sceneModule) {
+      scope.load(sceneModule).init();
+    }
+
+    return scope;
+  }
+
+  /**
+   * 销毁当前场景作用域（调用其子树 `onDispose`），App 级实例保留。
+   */
+  destroySceneScope(): void {
+    if (!this.sceneScope) {
+      return;
+    }
+    const scope = this.sceneScope;
+    this.sceneScope = undefined;
+    scope.destroy();
+  }
 
   /**
    * 注册一个或多个 Provider。
@@ -128,7 +208,7 @@ export class Container {
   }
 
   /**
-   * 是否已 `dispose()`。
+   * 是否已 `dispose` / `destroy`。
    */
   isDisposed(): boolean {
     return this.disposed;
@@ -136,8 +216,8 @@ export class Container {
 
   /**
    * 装配生命周期：
-   * 1. 急切解析全部已注册 Provider（保证钩子实例存在）
-   * 2. 扫描实例上的钩子方法，写入扁平数组（只做一次）
+   * 1. 急切解析本作用域全部 Provider
+   * 2. 扫描本作用域实例上的钩子，写入扁平数组（只做一次）
    * 3. 依次调用 `onModuleInit` → `onApplicationBootstrap`
    *
    * @returns 当前容器
@@ -175,7 +255,9 @@ export class Container {
   }
 
   /**
-   * 调用所有 `onUpdate` 实现者；热路径无反射、不读 metadata。
+   * 调用本作用域所有 `onUpdate`；若存在场景作用域则接着更新场景。
+   *
+   * 热路径无反射、不读 metadata。
    *
    * @param dt - 帧间隔（秒），由调用方计算后传入
    */
@@ -185,17 +267,28 @@ export class Container {
     for (let i = 0; i < list.length; i += 1) {
       list[i]!.onUpdate(dt);
     }
+
+    const scene = this.sceneScope;
+    if (scene && !scene.disposed && scene.initialized) {
+      scene.update(dt);
+    }
   }
 
   /**
-   * 逆序调用 `onDispose`，并清空实例与钩子缓存。
+   * 销毁本容器：先销毁全部子容器，再逆序 `onDispose`，并清空本作用域缓存。
    *
-   * 销毁后容器不可再使用。
+   * 销毁后不可再使用。`destroy` 为同义别名（场景语义）。
    */
   dispose(): void {
     if (this.disposed) {
       return;
     }
+
+    for (const child of [...this.children]) {
+      child.dispose();
+    }
+    this.children.clear();
+    this.sceneScope = undefined;
 
     for (let i = this.disposes.length - 1; i >= 0; i -= 1) {
       this.disposes[i]!.onDispose();
@@ -211,23 +304,45 @@ export class Container {
     this.rootModule = undefined;
     this.initialized = false;
     this.disposed = true;
+
+    this.parent?.detachChild(this);
   }
 
   /**
-   * 判断令牌是否已注册（含已缓存实例的情况）。
+   * `dispose` 的场景语义别名。
+   */
+  destroy(): void {
+    this.dispose();
+  }
+
+  /**
+   * 判断令牌是否在本作用域或祖先中已注册。
    *
    * @param token - 注入令牌
    */
   has(token: InjectionToken): boolean {
-    return this.providers.has(token) || this.instances.has(token);
+    if (this.providers.has(token) || this.instances.has(token)) {
+      return true;
+    }
+    return this.hasInParent(token);
   }
 
   /**
-   * 按令牌获取实例；首次解析后缓存为单例。
+   * 仅判断祖先是否已提供令牌（模块可见性校验用，不含本地）。
+   *
+   * @param token - 注入令牌
+   */
+  hasInParent(token: InjectionToken): boolean {
+    return this.parent?.has(token) ?? false;
+  }
+
+  /**
+   * 按令牌获取实例；本作用域单例缓存。
+   *
+   * 查找顺序：本地实例 → 本地 Provider（创建并缓存到本作用域）→ 父容器 `get`。
    *
    * @typeParam T - 期望的实例类型
    * @param token - 注入令牌
-   * @throws 未注册 Provider，或检测到循环依赖时抛出错误
    */
   get<T>(token: InjectionToken<T>): T {
     this.assertActive();
@@ -237,26 +352,30 @@ export class Container {
     }
 
     const provider = this.providers.get(token);
-    if (!provider) {
-      throw providerNotFoundError(token);
+    if (provider) {
+      if (this.resolving.has(token)) {
+        throw circularDependencyError([...this.resolving, token]);
+      }
+
+      this.resolving.add(token);
+      try {
+        const instance = provider.resolve(this);
+        this.instances.set(token, instance);
+        return instance as T;
+      } finally {
+        this.resolving.delete(token);
+      }
     }
 
-    if (this.resolving.has(token)) {
-      throw circularDependencyError([...this.resolving, token]);
+    if (this.parent) {
+      return this.parent.get(token);
     }
 
-    this.resolving.add(token);
-    try {
-      const instance = provider.resolve(this);
-      this.instances.set(token, instance);
-      return instance as T;
-    } finally {
-      this.resolving.delete(token);
-    }
+    throw providerNotFoundError(token);
   }
 
   /**
-   * 解析某个类：若尚未注册则先按类简写注册，再 `get`。
+   * 解析某个类：若本作用域尚未注册则先按类简写注册，再 `get`。
    *
    * @typeParam T - 实例类型
    * @param Class - 目标类构造函数
@@ -266,6 +385,16 @@ export class Container {
       this.register(Class);
     }
     return this.get(Class);
+  }
+
+  /**
+   * 父容器移除已销毁的子引用。
+   */
+  private detachChild(child: Container): void {
+    this.children.delete(child);
+    if (this.sceneScope === child) {
+      this.sceneScope = undefined;
+    }
   }
 
   /**
@@ -306,7 +435,6 @@ export class Container {
         token: provider.provide,
         resolve: () => provider.useValue,
       });
-      // useValue 可立即缓存，后续 get 无需再走 resolve
       this.instances.set(provider.provide, provider.useValue);
       return;
     }
@@ -388,9 +516,9 @@ export class Container {
 }
 
 /**
- * 创建一个空的依赖注入容器。
+ * 创建一个空的根依赖注入容器。
  *
- * @returns 新的 `Container` 实例
+ * @returns 新的根 `Container` 实例
  */
 export function createContainer(): Container {
   return new Container();
