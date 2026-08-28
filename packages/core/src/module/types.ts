@@ -3,6 +3,7 @@
  */
 
 import type { Constructor, InjectionToken, Provider } from '../types';
+import { isConstructor } from '../types';
 
 /**
  * `@Module` 的配置项。
@@ -44,7 +45,7 @@ export interface ModuleMetadata {
  * @param provider - 用户声明的 Provider
  */
 export function getProviderToken(provider: Provider): InjectionToken {
-  if (typeof provider === 'function') {
+  if (isConstructor(provider)) {
     return provider;
   }
   return provider.provide;

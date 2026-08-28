@@ -4,6 +4,9 @@
 
 **实现顺序与完成标准**见 [docs/roadmap.md](./docs/roadmap.md)。
 
+依赖约定：`@threxus/core` 仅适量使用可 tree-shake 的工具（当前为
+`es-toolkit`），代码里必须 **具名导入**，禁止 `import *`。
+
 ## 项目结构
 
 ```text

@@ -85,6 +85,9 @@ export type Provider<T = unknown> =
 /**
  * 判断值是否可作为构造函数 Provider（类简写）。
  *
+ * 使用 `typeof` 以便 TypeScript 正确收窄 `Provider` 联合类型；
+ * 通用函数判断见 `es-toolkit` 的 `isFunction`（生命周期等处使用）。
+ *
  * @param value - 待检测值
  * @returns 若为函数则视为构造函数
  */

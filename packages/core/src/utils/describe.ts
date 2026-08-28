@@ -3,13 +3,14 @@
  */
 
 import type { InjectionToken } from '../types';
+import { isSymbol } from './guards';
 
 /**
  * @param token - 注入令牌
  * @returns 便于阅读的描述
  */
 export function describeToken(token: InjectionToken): string {
-  if (typeof token === 'symbol') {
+  if (isSymbol(token)) {
     return token.description ?? String(token);
   }
 

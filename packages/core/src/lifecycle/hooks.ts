@@ -5,6 +5,8 @@
  * `update()` 热路径只遍历扁平数组，不再读 metadata。
  */
 
+import { isFunction } from '../utils/guards';
+
 /**
  * 模块 providers 已注册且实例已创建后调用（每个实现者一次）。
  */
@@ -48,7 +50,7 @@ export function classHasHook(
   Class: new (...args: any[]) => unknown,
   hook: keyof LifecycleInstance,
 ): boolean {
-  return typeof Class.prototype?.[hook] === 'function';
+  return isFunction(Class.prototype?.[hook]);
 }
 
 /**
@@ -61,5 +63,5 @@ export function instanceHasHook(
   instance: object,
   hook: keyof LifecycleInstance,
 ): boolean {
-  return typeof (instance as LifecycleInstance)[hook] === 'function';
+  return isFunction((instance as LifecycleInstance)[hook]);
 }

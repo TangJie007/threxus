@@ -11,6 +11,7 @@ import {
 } from '../errors';
 import type { Constructor, InjectionToken, Provider } from '../types';
 import { getProviderToken, type ModuleMetadata } from './types';
+import { isConstructor } from '../types';
 
 /**
  * 模块加载所需的最小容器能力（避免与 Container 循环依赖）。
@@ -142,7 +143,7 @@ function validateModuleInjections(
  * 收集 Provider 在解析时会请求的依赖令牌。
  */
 function collectProviderDependencies(provider: Provider): InjectionToken[] {
-  if (typeof provider === 'function') {
+  if (isConstructor(provider)) {
     return collectClassDependencies(provider);
   }
 

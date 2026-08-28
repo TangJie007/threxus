@@ -27,6 +27,7 @@ import {
   type InjectionToken,
   type Provider,
 } from '../types';
+import { isNil } from '../utils/guards';
 
 /**
  * 内部归一化后的 Provider：统一通过 `resolve` 产出实例。
@@ -157,7 +158,7 @@ export class Container {
     this.disposes = [];
 
     for (const instance of this.instances.values()) {
-      if (instance !== null && typeof instance === 'object') {
+      if (!isNil(instance) && typeof instance === 'object') {
         this.collectLifecycle(instance);
       }
     }
