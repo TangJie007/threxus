@@ -1,9 +1,23 @@
 /**
- * DI 容器：注册 Provider、解析依赖、缓存单例实例。
+ * DI 容器：注册 Provider、解析依赖、缓存单例实例，并驱动生命周期。
  *
- * 当前壳子仅支持默认单例作用域；层级容器 / 生命周期等后续扩展。
+ * 当前仅支持默认单例作用域；层级容器放到后续阶段。
  */
 
+import {
+  applicationDisposedError,
+  applicationNotInitializedError,
+  circularDependencyError,
+  providerNotFoundError,
+} from '../errors';
+import {
+  instanceHasHook,
+  type LifecycleInstance,
+  type OnApplicationBootstrap,
+  type OnDispose,
+  type OnModuleInit,
+  type OnUpdate,
+} from '../lifecycle';
 import { readClassMetadata } from '../metadata';
 import { loadModule, type LoadedModule } from '../module/load';
 import type { Token } from '../token';
@@ -13,10 +27,6 @@ import {
   type InjectionToken,
   type Provider,
 } from '../types';
-import {
-  circularDependencyError,
-  providerNotFoundError,
-} from '../errors';
 
 /**
  * 内部归一化后的 Provider：统一通过 `resolve` 产出实例。
@@ -37,6 +47,7 @@ type NormalizedProvider = {
  * 3. 检测循环依赖
  * 4. 根据类元数据完成构造注入与字段注入
  * 5. 通过 `load` 组装 `@Module` 模块图
+ * 6. 通过 `init` / `update` / `dispose` 驱动生命周期
  */
 export class Container {
   /** 已注册的 Provider（按令牌索引） */
@@ -48,6 +59,19 @@ export class Container {
   /** 最近一次 `load` 的根模块视图（若有） */
   private rootModule: LoadedModule | undefined;
 
+  /** 是否已完成 `init()` */
+  private initialized = false;
+  /** 是否已 `dispose()` */
+  private disposed = false;
+
+  /**
+   * 装配期收集的钩子列表（`init` 后固定；`update` 只读本数组）。
+   */
+  private moduleInits: OnModuleInit[] = [];
+  private bootstraps: OnApplicationBootstrap[] = [];
+  private updates: OnUpdate[] = [];
+  private disposes: OnDispose[] = [];
+
   /**
    * 注册一个或多个 Provider。
    *
@@ -55,6 +79,7 @@ export class Container {
    * @returns 当前容器，便于链式调用
    */
   register(...providers: Provider[]): this {
+    this.assertActive();
     for (const provider of providers) {
       this.registerOne(provider);
     }
@@ -76,10 +101,13 @@ export class Container {
   /**
    * 从根模块加载整图：递归 `imports`、注册 `providers`、校验导出边界。
    *
+   * 注意：此时尚未触发生命周期；请接着调用 `init()`。
+   *
    * @param rootModule - 使用 `@Module()` 装饰的根模块类
    * @returns 当前容器
    */
   load(rootModule: Constructor): this {
+    this.assertActive();
     this.rootModule = loadModule(this, rootModule);
     return this;
   }
@@ -89,6 +117,99 @@ export class Container {
    */
   getRootModule(): LoadedModule | undefined {
     return this.rootModule;
+  }
+
+  /**
+   * 是否已完成 `init()`。
+   */
+  isInitialized(): boolean {
+    return this.initialized;
+  }
+
+  /**
+   * 是否已 `dispose()`。
+   */
+  isDisposed(): boolean {
+    return this.disposed;
+  }
+
+  /**
+   * 装配生命周期：
+   * 1. 急切解析全部已注册 Provider（保证钩子实例存在）
+   * 2. 扫描实例上的钩子方法，写入扁平数组（只做一次）
+   * 3. 依次调用 `onModuleInit` → `onApplicationBootstrap`
+   *
+   * @returns 当前容器
+   */
+  init(): this {
+    this.assertActive();
+    if (this.initialized) {
+      return this;
+    }
+
+    for (const token of [...this.providers.keys()]) {
+      this.get(token);
+    }
+
+    this.moduleInits = [];
+    this.bootstraps = [];
+    this.updates = [];
+    this.disposes = [];
+
+    for (const instance of this.instances.values()) {
+      if (instance !== null && typeof instance === 'object') {
+        this.collectLifecycle(instance);
+      }
+    }
+
+    for (let i = 0; i < this.moduleInits.length; i += 1) {
+      this.moduleInits[i]!.onModuleInit();
+    }
+    for (let i = 0; i < this.bootstraps.length; i += 1) {
+      this.bootstraps[i]!.onApplicationBootstrap();
+    }
+
+    this.initialized = true;
+    return this;
+  }
+
+  /**
+   * 调用所有 `onUpdate` 实现者；热路径无反射、不读 metadata。
+   *
+   * @param dt - 帧间隔（秒），由调用方计算后传入
+   */
+  update(dt: number): void {
+    this.assertRunnable();
+    const list = this.updates;
+    for (let i = 0; i < list.length; i += 1) {
+      list[i]!.onUpdate(dt);
+    }
+  }
+
+  /**
+   * 逆序调用 `onDispose`，并清空实例与钩子缓存。
+   *
+   * 销毁后容器不可再使用。
+   */
+  dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+
+    for (let i = this.disposes.length - 1; i >= 0; i -= 1) {
+      this.disposes[i]!.onDispose();
+    }
+
+    this.moduleInits = [];
+    this.bootstraps = [];
+    this.updates = [];
+    this.disposes = [];
+    this.instances.clear();
+    this.providers.clear();
+    this.resolving.clear();
+    this.rootModule = undefined;
+    this.initialized = false;
+    this.disposed = true;
   }
 
   /**
@@ -108,6 +229,8 @@ export class Container {
    * @throws 未注册 Provider，或检测到循环依赖时抛出错误
    */
   get<T>(token: InjectionToken<T>): T {
+    this.assertActive();
+
     if (this.instances.has(token)) {
       return this.instances.get(token) as T;
     }
@@ -142,6 +265,25 @@ export class Container {
       this.register(Class);
     }
     return this.get(Class);
+  }
+
+  /**
+   * 将实例上的钩子方法登记到对应扁平列表（装配期）。
+   */
+  private collectLifecycle(instance: object): void {
+    const life = instance as LifecycleInstance;
+    if (instanceHasHook(instance, 'onModuleInit')) {
+      this.moduleInits.push(life as OnModuleInit);
+    }
+    if (instanceHasHook(instance, 'onApplicationBootstrap')) {
+      this.bootstraps.push(life as OnApplicationBootstrap);
+    }
+    if (instanceHasHook(instance, 'onUpdate')) {
+      this.updates.push(life as OnUpdate);
+    }
+    if (instanceHasHook(instance, 'onDispose')) {
+      this.disposes.push(life as OnDispose);
+    }
   }
 
   /**
@@ -226,6 +368,21 @@ export class Container {
     }
 
     return instance;
+  }
+
+  /** 未销毁即可进行注册 / 解析 */
+  private assertActive(): void {
+    if (this.disposed) {
+      throw applicationDisposedError();
+    }
+  }
+
+  /** 已 init 且未销毁才可 update */
+  private assertRunnable(): void {
+    this.assertActive();
+    if (!this.initialized) {
+      throw applicationNotInitializedError();
+    }
   }
 }
 

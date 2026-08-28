@@ -19,7 +19,7 @@
 | 0 | `@threxus/core` 壳子 | ✅ 已完成 |
 | 1 | Module | ✅ 已完成 |
 | 2 | 测试与错误体验 | ✅ 已完成 |
-| 3 | 生命周期 | init / update / dispose 可挂 |
+| 3 | 生命周期 | ✅ 已完成 |
 | 4 | 层级作用域 | App → Scene 可替换、可销毁 |
 | 5 | `@threxus/runtime` | Application + rAF + 约定 Token |
 | 6 | `@threxus/three` | 与 Three.js 对接的最小封装 |
@@ -104,7 +104,7 @@ class AppModule {}
 
 ---
 
-## 阶段 3 — 生命周期
+## 阶段 3 — 生命周期（✅ 已完成）
 
 **目标：** 装配期与运行期分离；**热路径（每帧）零反射**。
 
@@ -119,13 +119,13 @@ class AppModule {}
 
 实现要点：
 
-- 装饰器或接口标记「实现了某钩子」——**只在装配时扫描一次**。
-- `onUpdate` 放入数组，`for` 循环调用；禁止每帧读 metadata。
+- 实现接口方法即可（`OnModuleInit` 等）；**`init()` 时扫描一次**并缓存。
+- `onUpdate` 放入数组，`update(dt)` 内 `for` 循环调用；禁止每帧读 metadata。
 
 ### 3.2 完成标准
 
-- [ ] 能注册带 `onUpdate` 的服务并在 playground 用 `requestAnimationFrame` 打日志
-- [ ] `onDispose` 可手动触发并清理
+- [x] 能注册带 `onUpdate` 的服务并在 playground 用 `requestAnimationFrame` 打日志
+- [x] `onDispose` 可手动触发并清理
 
 ---
 
@@ -240,7 +240,7 @@ App Container（单例）
 ```text
 ① Module（core）✅
 ② 单测 + 报错 DX（core）✅
-③ 生命周期 onInit / onUpdate / onDispose（core）
+③ 生命周期 onInit / onUpdate / onDispose（core）✅
 ④ App → Scene 子容器（core）
 ⑤ runtime：Application + rAF
 ⑥ three：最小 Module + 示例出画
@@ -271,9 +271,9 @@ examples/
 
 | 现在就有 | 下一步打开的目录 |
 |----------|------------------|
-| `packages/core/src/{token,types,metadata,decorators,module,container,errors}` | 阶段 3：`lifecycle/` |
+| `packages/core/src/{…,lifecycle,errors}` | 阶段 4：层级 `Container` parent / Scene scope |
 | `packages/core/tests` | 已有 Vitest；新能力请补测试 |
-| `examples/vue3/src/usage.ts` | 已用 Module 组装，可继续加场景 |
+| `examples/vue3/src/usage.ts` | 已演示 Module + 生命周期 |
 | 仅 `@threxus/core` 一个包 | 阶段 5 起再新增 workspace 包 |
 
 文档版本与代码同步维护：完成某阶段后，把上文对应勾选打成 `[x]`，并在 README「项目结构」中更新包列表。

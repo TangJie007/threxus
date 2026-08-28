@@ -15,7 +15,8 @@ packages/
       metadata/         Symbol.metadata 读写
       decorators/       @Injectable / @Inject
       module/           @Module / loadModule
-      container/        Container
+      container/        Container（含 init/update/dispose）
+      lifecycle/        生命周期钩子接口
       errors/           ThrexusError 统一错误
       utils/            描述与辅助函数
     tests/              Vitest 单测

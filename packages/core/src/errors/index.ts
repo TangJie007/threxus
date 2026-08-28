@@ -28,6 +28,10 @@ export const ThrexusErrorCode = {
   MODULE_DEPENDENCY_NOT_VISIBLE: 'THREXUS_MODULE_DEPENDENCY_NOT_VISIBLE',
   /** 装饰器用在了错误的声明位置 */
   INVALID_DECORATOR_TARGET: 'THREXUS_INVALID_DECORATOR_TARGET',
+  /** 容器尚未 init 就调用了 update 等运行期 API */
+  APPLICATION_NOT_INITIALIZED: 'THREXUS_APPLICATION_NOT_INITIALIZED',
+  /** 容器已 dispose，禁止再使用 */
+  APPLICATION_DISPOSED: 'THREXUS_APPLICATION_DISPOSED',
 } as const;
 
 export type ThrexusErrorCode =
@@ -152,5 +156,25 @@ export function invalidDecoratorTargetError(
   return new ThrexusError(
     ThrexusErrorCode.INVALID_DECORATOR_TARGET,
     `${decoratorName} 只能用于${expected}。`,
+  );
+}
+
+/**
+ * 容器尚未完成 `init()`。
+ */
+export function applicationNotInitializedError(): ThrexusError {
+  return new ThrexusError(
+    ThrexusErrorCode.APPLICATION_NOT_INITIALIZED,
+    `容器尚未 init()。请先 load(RootModule) 再调用 init()，然后再 update / 业务 get。`,
+  );
+}
+
+/**
+ * 容器已销毁。
+ */
+export function applicationDisposedError(): ThrexusError {
+  return new ThrexusError(
+    ThrexusErrorCode.APPLICATION_DISPOSED,
+    `容器已 dispose()，不能再 get / update / init。请创建新的容器。`,
   );
 }

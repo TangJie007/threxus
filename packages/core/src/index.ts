@@ -7,8 +7,24 @@
 export { createToken, type Token } from './token';
 export { Injectable, Inject } from './decorators';
 export { Module, loadModule, getProviderToken } from './module';
-export type { LoadedModule, ModuleHost, ModuleMetadata, ModuleOptions } from './module';
+export type {
+  LoadedModule,
+  ModuleHost,
+  ModuleMetadata,
+  ModuleOptions,
+} from './module';
 export { Container, createContainer } from './container';
+export {
+  classHasHook,
+  instanceHasHook,
+} from './lifecycle';
+export type {
+  LifecycleInstance,
+  OnApplicationBootstrap,
+  OnDispose,
+  OnModuleInit,
+  OnUpdate,
+} from './lifecycle';
 export {
   THREXUS_METADATA,
   readClassMetadata,
@@ -25,6 +41,8 @@ export {
   moduleExportNotProvidedError,
   moduleDependencyNotVisibleError,
   invalidDecoratorTargetError,
+  applicationNotInitializedError,
+  applicationDisposedError,
 } from './errors';
 export type {
   ClassMetadata,

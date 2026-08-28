@@ -5,23 +5,21 @@
  * - Vite 直接 alias 到 packages/core/src（改 core 源码立刻热更新）
  * - 打开浏览器控制台看 console 输出
  *
- * 本文件演示：Module（imports / providers / exports）+ 构造/字段注入。
+ * 本文件演示：Module + 生命周期（init / update / dispose）。
  */
 
 import {
   createContainer,
   createToken,
-  Inject,
   Injectable,
   Module,
+  type OnApplicationBootstrap,
+  type OnDispose,
+  type OnModuleInit,
+  type OnUpdate,
 } from '@threxus/core';
 
-// ---------- Token ----------
-
 const APP_NAME = createToken<string>('app-name');
-const CLOCK = createToken<{ now: () => number }>('clock');
-
-// ---------- 服务 ----------
 
 @Injectable()
 class Logger {
@@ -30,78 +28,102 @@ class Logger {
   }
 }
 
-/** 仅 CoreModule 内部使用，不导出 */
-@Injectable({ inject: [Logger] })
-class InternalClockFactory {
-  constructor(readonly logger: Logger) {}
-
-  create(): { now: () => number } {
-    this.logger.info('InternalClockFactory.create()');
-    return { now: () => Date.now() };
-  }
-}
-
-@Injectable({ inject: [Logger, CLOCK, APP_NAME] })
-class Greeter {
-  @Inject(APP_NAME)
-  title!: string;
-
+@Injectable({ inject: [Logger, APP_NAME] })
+class BootProbe implements OnModuleInit, OnApplicationBootstrap, OnDispose {
   constructor(
     readonly logger: Logger,
-    readonly clock: { now: () => number },
     readonly appName: string,
-  ) {
-    this.logger.info('Greeter 构造完成');
+  ) {}
+
+  onModuleInit(): void {
+    this.logger.info(`onModuleInit (${this.appName})`);
   }
 
-  greet(name: string): string {
-    const text = `你好, ${name}!（${this.appName} / ${this.clock.now()}）`;
-    this.logger.info(text);
-    return text;
+  onApplicationBootstrap(): void {
+    this.logger.info('onApplicationBootstrap');
+  }
+
+  onDispose(): void {
+    this.logger.info('onDispose BootProbe');
   }
 }
 
-// ---------- 模块 ----------
+/** 每帧更新；热路径由容器扁平数组调用 */
+@Injectable({ inject: [Logger] })
+class TickSystem implements OnUpdate, OnDispose {
+  frames = 0;
+
+  constructor(readonly logger: Logger) {}
+
+  onUpdate(dt: number): void {
+    this.frames += 1;
+    if (this.frames <= 3) {
+      this.logger.info(`onUpdate #${this.frames} dt=${dt.toFixed(4)}`);
+    }
+  }
+
+  onDispose(): void {
+    this.logger.info(`onDispose TickSystem（共 ${this.frames} 帧）`);
+  }
+}
 
 @Module({
   providers: [
     Logger,
-    InternalClockFactory,
     { provide: APP_NAME, useValue: 'threxus' },
-    {
-      provide: CLOCK,
-      useFactory: (factory: InternalClockFactory) => factory.create(),
-      inject: [InternalClockFactory],
-    },
+    BootProbe,
+    TickSystem,
   ],
-  // 不导出 InternalClockFactory ⇒ FeatureModule 不能直接依赖它
-  exports: [Logger, APP_NAME, CLOCK],
-})
-class CoreModule {}
-
-@Module({
-  imports: [CoreModule],
-  providers: [Greeter],
-  // 省略 exports ⇒ Greeter 对外可见
-})
-class FeatureModule {}
-
-@Module({
-  imports: [FeatureModule],
 })
 class AppModule {}
 
-// ---------- 启动 ----------
+export interface RunHandle {
+  /** 首屏展示文案 */
+  message: string;
+  /** 停止 rAF 并 dispose 容器 */
+  stop: () => void;
+}
 
-export function run(): string {
-  const container = createContainer().load(AppModule);
+/**
+ * 加载模块 → init → 用 rAF 打几帧 update → 自动 dispose。
+ */
+export function run(): RunHandle {
+  const container = createContainer().load(AppModule).init();
+  const ticker = container.get(TickSystem);
 
-  const greeter = container.get(Greeter);
-  const message = greeter.greet('module');
+  let rafId = 0;
+  let last = performance.now();
+  let stopped = false;
 
-  console.log('根模块:', container.getRootModule()?.type.name);
-  console.log('单例 Greeter?', container.get(Greeter) === greeter);
-  console.log('字段 title:', greeter.title);
+  const stop = (): void => {
+    if (stopped) {
+      return;
+    }
+    stopped = true;
+    cancelAnimationFrame(rafId);
+    container.dispose();
+  };
 
-  return message;
+  const loop = (now: number): void => {
+    if (stopped) {
+      return;
+    }
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    container.update(dt);
+
+    // 演示几帧后自动销毁，方便在控制台看完整生命周期
+    if (ticker.frames >= 3) {
+      stop();
+      return;
+    }
+    rafId = requestAnimationFrame(loop);
+  };
+
+  rafId = requestAnimationFrame(loop);
+
+  return {
+    message: 'lifecycle: init → rAF update ×3 → dispose（详见控制台）',
+    stop,
+  };
 }

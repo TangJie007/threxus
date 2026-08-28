@@ -38,6 +38,10 @@ importers:
         version: 3.3.11(typescript@6.0.3)
 
   packages/core:
+    dependencies:
+      es-toolkit:
+        specifier: ^1.51.0
+        version: 1.51.0
     devDependencies:
       '@rslib/core':
         specifier: ^0.23.2
@@ -839,6 +843,9 @@ packages:
 
   es-module-lexer@1.7.0:
     resolution: {integrity: sha512-jEQoCwk8hyb2AZziIOLhDqpm5+2ww5uIE6lkO/6jcOCusfk6LhMHpXXfBLXTZ7Ydyt0j4VoUQv6uGNYbdW+kBA==}
+
+  es-toolkit@1.51.0:
+    resolution: {integrity: sha512-zC2lQGkM7QX+Gm6iM3+WIdZJzthsEd14LvRNJneSO2hzyz/zNBENR8+YXWo1cKxgPBtV6ksPYHELbcwBRzmdCw==}
 
   esbuild@0.28.2:
     resolution: {integrity: sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==}
@@ -1772,6 +1779,8 @@ snapshots:
   entities@7.0.1: {}
 
   es-module-lexer@1.7.0: {}
+
+  es-toolkit@1.51.0: {}
 
   esbuild@0.28.2:
     optionalDependencies:
