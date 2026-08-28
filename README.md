@@ -2,6 +2,8 @@
 
 为 Three.js 打造的依赖注入框架。
 
+**实现顺序与完成标准**见 [docs/roadmap.md](./docs/roadmap.md)。
+
 ## 项目结构
 
 ```text
@@ -12,7 +14,9 @@ packages/
       types/            Provider 与注入相关类型
       metadata/         Symbol.metadata 读写
       decorators/       @Injectable / @Inject
+      module/           @Module / loadModule
       container/        Container
+      utils/            描述与辅助函数
 examples/
   vue3/                 边开发边调试的 playground
     src/usage.ts        改这里试 @threxus/core 用法

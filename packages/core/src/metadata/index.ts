@@ -8,7 +8,14 @@
  * 避免与其它库的 metadata 字段冲突。
  */
 
-import type { ClassMetadata, FieldInjection, InjectionToken } from '../types';
+import type { ModuleMetadata } from '../module/types';
+import type {
+  ClassMetadata,
+  Constructor,
+  FieldInjection,
+  InjectionToken,
+  Provider,
+} from '../types';
 
 /**
  * 写入 `context.metadata` / `Class[Symbol.metadata]` 时使用的命名空间键。
@@ -23,6 +30,12 @@ export interface ThrexusMetadata {
   inject?: InjectionToken[];
   /** 字段注入列表 */
   fields?: FieldInjection[];
+  /** `@Module` 声明（仅模块类存在） */
+  module?: {
+    imports: Constructor[];
+    providers: Provider[];
+    exports?: InjectionToken[];
+  };
 }
 
 /** metadata 袋的宽松字典类型 */
@@ -114,6 +127,28 @@ export function writeFieldInjectMetadata(
 }
 
 /**
+ * 写入 `@Module` 配置。
+ *
+ * @param context - 类装饰器上下文
+ * @param options - 模块配置（已由装饰器侧规范化）
+ */
+export function writeModuleMetadata(
+  context: ClassDecoratorContext,
+  options: {
+    imports: Constructor[];
+    providers: Provider[];
+    exports?: InjectionToken[];
+  },
+): void {
+  const meta = ensureMetadataRecord(context);
+  meta.module = {
+    imports: [...options.imports],
+    providers: [...options.providers],
+    exports: options.exports ? [...options.exports] : undefined,
+  };
+}
+
+/**
  * 读取类上的完整注入元数据；若无装饰则返回空列表。
  *
  * 返回值为浅拷贝，避免调用方修改内部缓存结构。
@@ -126,4 +161,34 @@ export function readClassMetadata(target: object): ClassMetadata {
     inject: meta?.inject ? [...meta.inject] : [],
     fields: meta?.fields ? [...meta.fields] : [],
   };
+}
+
+/**
+ * 读取 `@Module` 元数据。
+ *
+ * @param target - 模块类
+ * @returns 规范化后的模块元数据；若未装饰 `@Module` 则返回 `undefined`
+ */
+export function readModuleMetadata(
+  target: object,
+): ModuleMetadata | undefined {
+  const raw = getMetadataRecord(target)?.module;
+  if (!raw) {
+    return undefined;
+  }
+
+  return {
+    imports: [...raw.imports],
+    providers: [...raw.providers],
+    exports: raw.exports ? [...raw.exports] : undefined,
+  };
+}
+
+/**
+ * 判断类是否声明了 `@Module`。
+ *
+ * @param target - 任意类
+ */
+export function isModule(target: object): boolean {
+  return getMetadataRecord(target)?.module !== undefined;
 }

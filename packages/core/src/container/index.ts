@@ -5,6 +5,7 @@
  */
 
 import { readClassMetadata } from '../metadata';
+import { loadModule, type LoadedModule } from '../module/load';
 import type { Token } from '../token';
 import {
   isConstructor,
@@ -12,6 +13,7 @@ import {
   type InjectionToken,
   type Provider,
 } from '../types';
+import { describeToken } from '../utils/describe';
 
 /**
  * 内部归一化后的 Provider：统一通过 `resolve` 产出实例。
@@ -24,19 +26,6 @@ type NormalizedProvider = {
 };
 
 /**
- * 将令牌转为可读字符串，用于错误信息。
- *
- * @param token - 注入令牌
- */
-function describeToken(token: InjectionToken): string {
-  if (typeof token === 'symbol') {
-    return token.description ?? String(token);
-  }
-
-  return token.name || '(匿名类)';
-}
-
-/**
  * 依赖注入容器。
  *
  * 职责：
@@ -44,6 +33,7 @@ function describeToken(token: InjectionToken): string {
  * 2. 按令牌解析并缓存实例（单例）
  * 3. 检测循环依赖
  * 4. 根据类元数据完成构造注入与字段注入
+ * 5. 通过 `load` 组装 `@Module` 模块图
  */
 export class Container {
   /** 已注册的 Provider（按令牌索引） */
@@ -52,6 +42,8 @@ export class Container {
   private readonly instances = new Map<InjectionToken, unknown>();
   /** 正在解析中的令牌栈，用于环依赖检测 */
   private readonly resolving = new Set<InjectionToken>();
+  /** 最近一次 `load` 的根模块视图（若有） */
+  private rootModule: LoadedModule | undefined;
 
   /**
    * 注册一个或多个 Provider。
@@ -76,6 +68,24 @@ export class Container {
    */
   set<T>(token: Token<T> | Constructor<T>, value: T): this {
     return this.register({ provide: token, useValue: value });
+  }
+
+  /**
+   * 从根模块加载整图：递归 `imports`、注册 `providers`、校验导出边界。
+   *
+   * @param rootModule - 使用 `@Module()` 装饰的根模块类
+   * @returns 当前容器
+   */
+  load(rootModule: Constructor): this {
+    this.rootModule = loadModule(this, rootModule);
+    return this;
+  }
+
+  /**
+   * 最近一次成功 `load` 的根模块信息。
+   */
+  getRootModule(): LoadedModule | undefined {
+    return this.rootModule;
   }
 
   /**

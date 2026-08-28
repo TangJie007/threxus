@@ -4,6 +4,8 @@
  * 开发方式：根目录 `pnpm dev`
  * - Vite 直接 alias 到 packages/core/src（改 core 源码立刻热更新）
  * - 打开浏览器控制台看 console 输出
+ *
+ * 本文件演示：Module（imports / providers / exports）+ 构造/字段注入。
  */
 
 import {
@@ -11,14 +13,15 @@ import {
   createToken,
   Inject,
   Injectable,
+  Module,
 } from '@threxus/core';
 
-// ---------- 1. 定义 Token ----------
+// ---------- Token ----------
 
 const APP_NAME = createToken<string>('app-name');
 const CLOCK = createToken<{ now: () => number }>('clock');
 
-// ---------- 2. 写可注入服务 ----------
+// ---------- 服务 ----------
 
 @Injectable()
 class Logger {
@@ -27,9 +30,19 @@ class Logger {
   }
 }
 
+/** 仅 CoreModule 内部使用，不导出 */
+@Injectable({ inject: [Logger] })
+class InternalClockFactory {
+  constructor(readonly logger: Logger) {}
+
+  create(): { now: () => number } {
+    this.logger.info('InternalClockFactory.create()');
+    return { now: () => Date.now() };
+  }
+}
+
 @Injectable({ inject: [Logger, CLOCK, APP_NAME] })
 class Greeter {
-  /** 字段注入（辅路径） */
   @Inject(APP_NAME)
   title!: string;
 
@@ -48,19 +61,46 @@ class Greeter {
   }
 }
 
-// ---------- 3. 组装容器并解析 ----------
+// ---------- 模块 ----------
+
+@Module({
+  providers: [
+    Logger,
+    InternalClockFactory,
+    { provide: APP_NAME, useValue: 'threxus' },
+    {
+      provide: CLOCK,
+      useFactory: (factory: InternalClockFactory) => factory.create(),
+      inject: [InternalClockFactory],
+    },
+  ],
+  // 不导出 InternalClockFactory ⇒ FeatureModule 不能直接依赖它
+  exports: [Logger, APP_NAME, CLOCK],
+})
+class CoreModule {}
+
+@Module({
+  imports: [CoreModule],
+  providers: [Greeter],
+  // 省略 exports ⇒ Greeter 对外可见
+})
+class FeatureModule {}
+
+@Module({
+  imports: [FeatureModule],
+})
+class AppModule {}
+
+// ---------- 启动 ----------
 
 export function run(): string {
-  const container = createContainer()
-    .set(APP_NAME, 'threxus')
-    .set(CLOCK, { now: () => Date.now() })
-    .register(Logger, Greeter);
+  const container = createContainer().load(AppModule);
 
-  const greeter = container.resolve(Greeter);
-  const message = greeter.greet('core');
+  const greeter = container.get(Greeter);
+  const message = greeter.greet('module');
 
-  // 单例：再次 resolve 应是同一实例
-  console.log('单例 Greeter?', container.resolve(Greeter) === greeter);
+  console.log('根模块:', container.getRootModule()?.type.name);
+  console.log('单例 Greeter?', container.get(Greeter) === greeter);
   console.log('字段 title:', greeter.title);
 
   return message;
