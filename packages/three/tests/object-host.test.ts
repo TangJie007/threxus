@@ -1,5 +1,5 @@
 /**
- * EntityHost / dispose / Viewport / EntityComponent / middleware 单测。
+ * ObjectHost / dispose / Viewport / EntityComponent / middleware 单测。
  */
 
 import { describe, expect, it, vi } from 'vitest';
@@ -13,7 +13,7 @@ import {
   CameraService,
   DisposeService,
   EntityComponentService,
-  EntityHost,
+  ObjectHost,
   RenderService,
   THREE_VIEWPORT,
   ThreeCoreModule,
@@ -32,37 +32,37 @@ class FakeCube {
   dispose = vi.fn();
 }
 
-class TestHost extends EntityHost<FakeCube> {
+class TestHost extends ObjectHost<FakeCube> {
   attached: FakeCube[] = [];
   detached: FakeCube[] = [];
 
-  protected attach(entity: FakeCube): void {
-    this.attached.push(entity);
+  protected attach(object: FakeCube): void {
+    this.attached.push(object);
   }
 
-  protected detach(entity: FakeCube): void {
-    this.detached.push(entity);
+  protected detach(object: FakeCube): void {
+    this.detached.push(object);
   }
 }
 
-describe('EntityHost', () => {
-  it('spawn / despawn / onDispose 登记实体', () => {
+describe('ObjectHost', () => {
+  it('spawn / despawn / onDispose 登记对象', () => {
     const host = new TestHost();
     const a = new FakeCube();
     const b = new FakeCube();
 
     host.spawn(a);
     host.spawn(b);
-    expect(host.getEntities()).toEqual([a, b]);
+    expect(host.getObjects()).toEqual([a, b]);
     expect(host.attached).toEqual([a, b]);
 
     expect(host.despawn(a)).toBe(true);
-    expect(host.getEntities()).toEqual([b]);
+    expect(host.getObjects()).toEqual([b]);
     expect(host.detached).toContain(a);
     expect(a.dispose).toHaveBeenCalledOnce();
 
     host.onDispose();
-    expect(host.getEntities()).toEqual([]);
+    expect(host.getObjects()).toEqual([]);
     expect(host.detached).toContain(b);
     expect(b.dispose).toHaveBeenCalledOnce();
   });

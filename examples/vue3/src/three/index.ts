@@ -7,7 +7,10 @@ import { ThreeCoreModule, THREE_VIEWPORT } from '@threxus/three';
 import { RotatingModule } from './rotating/rotating.module';
 
 @Module({
-  imports: [ThreeCoreModule, RotatingModule],
+  imports: [
+    ThreeCoreModule, 
+    RotatingModule
+  ],
   providers: [
     {
       provide: THREE_VIEWPORT,

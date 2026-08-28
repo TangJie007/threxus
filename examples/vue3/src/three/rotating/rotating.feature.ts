@@ -7,7 +7,7 @@ import { Inject, Injectable, type OnModuleInit } from '@threxus/core';
 import {
   disposeObject3D,
   EntityComponentService,
-  EntityHost,
+  ObjectHost,
   SceneService,
 } from '@threxus/three';
 import { BoxGeometry, Mesh, MeshNormalMaterial } from 'three';
@@ -19,7 +19,7 @@ export type RotatingOptions = {
   speed?: { x: number; y: number };
 };
 
-/** 创建立方体 Mesh（原生实体，不进 DI） */
+/** 创建立方体 Mesh（原生对象，不进 DI） */
 function createCube(options: RotatingOptions = {}): Mesh {
   const size = options.size ?? 1;
   const mesh = new Mesh(
@@ -34,7 +34,7 @@ function createCube(options: RotatingOptions = {}): Mesh {
 
 @Injectable()
 export class RotatingFeature
-  extends EntityHost<Mesh>
+  extends ObjectHost<Mesh>
   implements OnModuleInit
 {
   @Inject(SceneService)

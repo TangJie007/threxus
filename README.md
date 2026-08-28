@@ -13,7 +13,7 @@
 packages/
   core/       @threxus/core —— Token / Module / Container / Lifecycle / Scope
   runtime/    @threxus/runtime —— Application + rAF + 约定 Token
-  three/      @threxus/three —— ThreeCoreModule / EntityHost / Viewport
+  three/      @threxus/three —— ThreeCoreModule / ObjectHost / Viewport
   vue/        @threxus/vue —— useThrexus 薄适配
 examples/
   vue3/       Vue 3 + canvas 旋转立方体（开发调试）
@@ -26,7 +26,7 @@ examples/
 ```text
 AppModule      组装：imports 功能模块 + 可选 THREE_VIEWPORT
 FeatureModule  功能边界：providers 一个或多个 Feature / Service
-Feature        DI 单例：可继承 EntityHost，spawn Mesh + 挂组件
+Feature        DI 单例：可继承 ObjectHost，spawn Mesh + 挂组件
 Component      挂在 Object3D.userData，由 EntityComponentService 调度
 ```
 
@@ -38,7 +38,7 @@ Component      挂在 Object3D.userData，由 EntityComponentService 调度
 
 ```ts
 @Injectable()
-class SpinFeature extends EntityHost<Mesh> implements OnModuleInit {
+class SpinFeature extends ObjectHost<Mesh> implements OnModuleInit {
   @Inject(SceneService) scenes: SceneService;
   @Inject(EntityComponentService) components: EntityComponentService;
 
