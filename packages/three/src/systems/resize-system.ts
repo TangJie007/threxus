@@ -2,20 +2,20 @@
  * 根据画布尺寸同步 renderer 与 camera.aspect。
  */
 
-import { Injectable, type OnDispose, type OnModuleInit } from '@threxus/core';
-import type { PerspectiveCamera, WebGLRenderer } from 'three';
-import { CAMERA, WEBGL_RENDERER } from '../tokens';
+import { Inject, Injectable, type OnDispose, type OnModuleInit } from '@threxus/core';
+import { PerspectiveCamera, WebGLRenderer } from 'three';
 
-@Injectable({ inject: [WEBGL_RENDERER, CAMERA] })
+@Injectable()
 export class ResizeSystem implements OnModuleInit, OnDispose {
+  @Inject(WebGLRenderer)
+  renderer: WebGLRenderer;
+
+  @Inject(PerspectiveCamera)
+  camera: PerspectiveCamera;
+
   private readonly onResize = (): void => {
     this.applySize();
   };
-
-  constructor(
-    readonly renderer: WebGLRenderer,
-    readonly camera: PerspectiveCamera,
-  ) {}
 
   onModuleInit(): void {
     this.applySize();

@@ -2,7 +2,8 @@
  * Three 核心模块：Renderer / Scene / Camera + 渲染与 resize。
  *
  * 依赖 `@threxus/runtime` 的 `RuntimeModule`（CANVAS 等）。
- * 约定：业务侧 mesh 的 geometry/material 在各自 `onDispose` 中释放；
+ * 约定：以 `WebGLRenderer` / `Scene` / `PerspectiveCamera` 类本身为 Token；
+ * 业务侧 mesh 的 geometry/material 在各自 `onDispose` 中释放；
  * `RenderSystem` 负责 `renderer.dispose()`。
  */
 
@@ -15,7 +16,6 @@ import {
   type WebGLRendererParameters,
 } from 'three';
 import { RenderSystem, ResizeSystem } from '../systems';
-import { CAMERA, SCENE, WEBGL_RENDERER } from '../tokens';
 
 function createRenderer(canvas: HTMLCanvasElement | null): WebGLRenderer {
   const params: WebGLRendererParameters = {
@@ -40,21 +40,27 @@ function createCamera(): PerspectiveCamera {
   imports: [RuntimeModule],
   providers: [
     {
-      provide: WEBGL_RENDERER,
+      provide: WebGLRenderer,
       useFactory: (canvas: HTMLCanvasElement | null) => createRenderer(canvas),
       inject: [CANVAS],
     },
     {
-      provide: SCENE,
+      provide: Scene,
       useFactory: () => new Scene(),
     },
     {
-      provide: CAMERA,
+      provide: PerspectiveCamera,
       useFactory: () => createCamera(),
     },
     RenderSystem,
     ResizeSystem,
   ],
-  exports: [WEBGL_RENDERER, SCENE, CAMERA, RenderSystem, ResizeSystem],
+  exports: [
+    WebGLRenderer,
+    Scene,
+    PerspectiveCamera,
+    RenderSystem,
+    ResizeSystem,
+  ],
 })
 export class ThreeCoreModule {}

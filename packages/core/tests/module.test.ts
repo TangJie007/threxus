@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   Injectable,
   Module,
-  THREXUS_METADATA,
+  META,
   ThrexusError,
   ThrexusErrorCode,
   createContainer,
@@ -196,12 +196,13 @@ describe('Module.load', () => {
     class ModuleB {}
 
     // 在装饰之后把 A 的 imports 改成 B，构造 A <-> B 环
-    const metadataKey = Symbol.metadata!;
-    const bag = (ModuleA as unknown as Record<symbol, Record<symbol, {
-      module?: { imports: unknown[] };
-    }>>)[metadataKey];
-    const record = bag[THREXUS_METADATA];
-    record.module!.imports = [ModuleB];
+    // 与 metadata 层 shim 一致；避免依赖尚未普及的 Symbol.metadata 类型
+    const metadataKey = Symbol.for('Symbol.metadata');
+    const bag = (ModuleA as unknown as Record<
+      symbol,
+      Record<symbol, { imports: unknown[] }>
+    >)[metadataKey];
+    bag[META.MODULE].imports = [ModuleB];
 
     expect(() => createContainer().load(ModuleA)).toThrow(ThrexusError);
     try {

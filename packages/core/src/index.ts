@@ -26,11 +26,12 @@ export type {
   OnUpdate,
 } from './lifecycle';
 export {
-  THREXUS_METADATA,
+  META,
   readClassMetadata,
   readModuleMetadata,
   isModule,
 } from './metadata';
+export type { InjectableMetadata } from './metadata';
 export {
   ThrexusError,
   ThrexusErrorCode,

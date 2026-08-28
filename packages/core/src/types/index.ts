@@ -32,7 +32,7 @@ export interface InjectableOptions {
   /**
    * 构造函数依赖列表，按顺序解析后传入 `new Class(...deps)`。
    *
-   * 这是方案 C 中的主路径（显式 `inject`）；字段 `@Inject` 为辅路径。
+   * 日常推荐字段 `@Inject`；构造注入适合必须在 `new` 时就绪的依赖。
    */
   inject?: InjectionToken[];
 }

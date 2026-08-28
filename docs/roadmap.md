@@ -6,7 +6,7 @@
 
 - 学 Nest 的 **模块化 DI + 生命周期**，不照搬 HTTP / Controller。
 - 装饰器用 **Stage 3**，**零第三方**（无 `reflect-metadata`）。
-- 注入主路径：`@Injectable({ inject })`；辅路径：字段 `@Inject`。
+- 注入主路径：字段 `@Inject(token)`（类或 `createToken`）；辅路径：`@Injectable({ inject })` 构造注入。
 - 默认场景：**一个应用一个 canvas**；App 级服务单例，场景服务按场景单例，Mesh 等多对象一般不进 DI。
 - **先 core 稳定，再 three / 框架适配**；边开发边用 `examples/vue3/src/usage.ts` 调试。
 
@@ -37,7 +37,7 @@
 已具备：
 
 - `createToken` / `Token`
-- `@Injectable({ inject })`、`@Inject`
+- `@Inject(token)`（主）、`@Injectable({ inject })`（构造辅路径）
 - `Container`：`register` / `set` / `get` / `resolve`
 - Provider：`useValue` / `useClass` / `useFactory` / 类简写
 - 单例缓存、循环依赖检测
@@ -185,10 +185,11 @@ App Container（单例）
 ### 6.1 先做这些
 
 1. 内置 Module：例如 `ThreeCoreModule`，提供：
-   - `WEBGL_RENDERER`（或工厂：传入 canvas）
-   - `SCENE`、默认 `CAMERA`（可覆盖）
+   - `WebGLRenderer`（工厂：传入 canvas）
+   - `Scene`、默认 `PerspectiveCamera`（类本身作 Token，可覆盖）
 2. 与 runtime 协作：resize、render 一次封装在某个 `RenderSystem.onUpdate`
 3. dispose：renderer / geometry / material 的释放约定（文档 + 钩子）
+4. 业务注入示例：`@Inject(Scene)` / `@Inject(PerspectiveCamera)`
 
 ### 6.2 明确不做（本阶段）
 

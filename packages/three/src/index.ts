@@ -1,9 +1,9 @@
 /**
  * `@threxus/three` 公共出口。
  *
- * 使用方可只从包名导入，无需关心内部目录划分。
+ * Three 约定 Token 即 `three` 的类本身（`Scene` / `PerspectiveCamera` / `WebGLRenderer`），
+ * 业务侧从 `three` 导入即可，本包不再二次导出。
  */
 
-export { CAMERA, SCENE, WEBGL_RENDERER } from './tokens';
 export { RenderSystem, ResizeSystem } from './systems';
 export { ThreeCoreModule } from './module';

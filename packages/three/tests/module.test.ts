@@ -5,20 +5,16 @@
 import { describe, expect, it } from 'vitest';
 import { isModule, readModuleMetadata } from '@threxus/core';
 import { RuntimeModule } from '@threxus/runtime';
-import {
-  CAMERA,
-  SCENE,
-  ThreeCoreModule,
-  WEBGL_RENDERER,
-} from '../src/index';
+import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { ThreeCoreModule } from '../src/index';
 
 describe('ThreeCoreModule', () => {
-  it('声明为 Module，并 imports RuntimeModule、导出核心 Token', () => {
+  it('声明为 Module，并 imports RuntimeModule、导出 three 类 Token', () => {
     expect(isModule(ThreeCoreModule)).toBe(true);
     const meta = readModuleMetadata(ThreeCoreModule)!;
     expect(meta.imports).toContain(RuntimeModule);
     expect(meta.exports).toEqual(
-      expect.arrayContaining([WEBGL_RENDERER, SCENE, CAMERA]),
+      expect.arrayContaining([WebGLRenderer, Scene, PerspectiveCamera]),
     );
   });
 });

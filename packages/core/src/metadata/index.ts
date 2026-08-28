@@ -4,8 +4,8 @@
  * 基于 TC39 Stage 3 Decorator Metadata（`Symbol.metadata`），
  * 不引入 `reflect-metadata` 或其他第三方库。
  *
- * 约定：所有 Threxus DI 元数据集中挂在 `THREXUS_METADATA` 键下，
- * 避免与其它库的 metadata 字段冲突。
+ * 约定：各装饰器域使用 `META.*` 独立键挂到 `Class[Symbol.metadata]`，
+ * 避免与其它库或未来扩展域互相踩字段。
  */
 
 import type { ModuleMetadata } from '../module/types';
@@ -18,24 +18,23 @@ import type {
 } from '../types';
 
 /**
- * 写入 `context.metadata` / `Class[Symbol.metadata]` 时使用的命名空间键。
+ * Threxus 元数据键注册表（仅含当前真实使用的域）。
+ *
+ * 读写请走本模块的 `write*` / `read*`，业务侧一般不直接碰 `Symbol.metadata`。
  */
-export const THREXUS_METADATA = Symbol.for('threxus.di');
+export const META = {
+  /** `@Injectable` — `{ inject }` */
+  INJECTABLE: Symbol.for('threxus:injectable'),
+  /** `@Inject` 字段注入点列表 */
+  INJECTIONS: Symbol.for('threxus:injections'),
+  /** `@Module` — ModuleMetadata */
+  MODULE: Symbol.for('threxus:module'),
+} as const;
 
-/**
- * 存储在 metadata 袋中的原始结构（可被多次装饰器增量写入）。
- */
-export interface ThrexusMetadata {
-  /** 构造函数依赖令牌 */
-  inject?: InjectionToken[];
-  /** 字段注入列表 */
-  fields?: FieldInjection[];
-  /** `@Module` 声明（仅模块类存在） */
-  module?: {
-    imports: Constructor[];
-    providers: Provider[];
-    exports?: InjectionToken[];
-  };
+/** `@Injectable` 写入的结构 */
+export interface InjectableMetadata {
+  /** 构造函数依赖令牌（可为空数组） */
+  inject: InjectionToken[];
 }
 
 /** metadata 袋的宽松字典类型 */
@@ -61,40 +60,40 @@ const METADATA_SYMBOL: symbol = (() => {
 })();
 
 /**
- * 从目标类上读取 Threxus 元数据袋（若尚未装饰则返回 `undefined`）。
+ * 读取类上的 Stage 3 metadata 袋（若无则 `undefined`）。
  *
  * @param target - 通常为类构造函数
  */
-function getMetadataRecord(target: object): ThrexusMetadata | undefined {
-  const bag = (target as Record<symbol, MetadataBag | undefined>)[
-    METADATA_SYMBOL
-  ];
-  if (!bag) {
-    return undefined;
-  }
-
-  return bag[THREXUS_METADATA] as ThrexusMetadata | undefined;
+function getBag(target: object): MetadataBag | undefined {
+  return (target as Record<symbol, MetadataBag | undefined>)[METADATA_SYMBOL];
 }
 
 /**
- * 在装饰器 `context.metadata` 上确保存在 Threxus 元数据对象并返回之。
+ * 在装饰器 `context.metadata` 上确保存在袋对象。
  *
- * 类装饰器与字段装饰器共享同一 metadata 对象，因此可安全合并写入。
+ * 类装饰器与字段装饰器共享同一 metadata 对象，因此可安全按键合并写入。
  *
  * @param context - Stage 3 装饰器上下文（需带 `metadata`）
  */
-function ensureMetadataRecord(context: {
+function ensureBag(context: {
   metadata?: DecoratorMetadata | null;
-}): ThrexusMetadata {
-  const bag = (context.metadata ??= {}) as MetadataBag;
-  const existing = bag[THREXUS_METADATA] as ThrexusMetadata | undefined;
-  if (existing) {
-    return existing;
-  }
+}): MetadataBag {
+  return (context.metadata ??= {}) as MetadataBag;
+}
 
-  const created: ThrexusMetadata = {};
-  bag[THREXUS_METADATA] = created;
-  return created;
+/**
+ * 从目标类读取某一 `META` 键。
+ *
+ * @typeParam T - 该键对应的元数据类型
+ * @param target - 类构造函数
+ * @param key - `META.*`
+ */
+function readKey<T>(target: object, key: symbol): T | undefined {
+  const bag = getBag(target);
+  if (!bag) {
+    return undefined;
+  }
+  return bag[key] as T | undefined;
 }
 
 /**
@@ -107,8 +106,9 @@ export function writeInjectableMetadata(
   context: ClassDecoratorContext,
   inject: InjectionToken[],
 ): void {
-  const meta = ensureMetadataRecord(context);
-  meta.inject = inject;
+  const bag = ensureBag(context);
+  const meta: InjectableMetadata = { inject: [...inject] };
+  bag[META.INJECTABLE] = meta;
 }
 
 /**
@@ -121,9 +121,10 @@ export function writeFieldInjectMetadata(
   context: ClassFieldDecoratorContext,
   token: InjectionToken,
 ): void {
-  const meta = ensureMetadataRecord(context);
-  meta.fields ??= [];
-  meta.fields.push({ name: context.name, token });
+  const bag = ensureBag(context);
+  const list = (bag[META.INJECTIONS] as FieldInjection[] | undefined) ?? [];
+  list.push({ name: context.name, token });
+  bag[META.INJECTIONS] = list;
 }
 
 /**
@@ -140,12 +141,13 @@ export function writeModuleMetadata(
     exports?: InjectionToken[];
   },
 ): void {
-  const meta = ensureMetadataRecord(context);
-  meta.module = {
+  const bag = ensureBag(context);
+  const meta: ModuleMetadata = {
     imports: [...options.imports],
     providers: [...options.providers],
     exports: options.exports ? [...options.exports] : undefined,
   };
+  bag[META.MODULE] = meta;
 }
 
 /**
@@ -156,10 +158,11 @@ export function writeModuleMetadata(
  * @param target - 类构造函数
  */
 export function readClassMetadata(target: object): ClassMetadata {
-  const meta = getMetadataRecord(target);
+  const injectable = readKey<InjectableMetadata>(target, META.INJECTABLE);
+  const fields = readKey<FieldInjection[]>(target, META.INJECTIONS);
   return {
-    inject: meta?.inject ? [...meta.inject] : [],
-    fields: meta?.fields ? [...meta.fields] : [],
+    inject: injectable?.inject ? [...injectable.inject] : [],
+    fields: fields ? fields.map((field) => ({ ...field })) : [],
   };
 }
 
@@ -172,7 +175,7 @@ export function readClassMetadata(target: object): ClassMetadata {
 export function readModuleMetadata(
   target: object,
 ): ModuleMetadata | undefined {
-  const raw = getMetadataRecord(target)?.module;
+  const raw = readKey<ModuleMetadata>(target, META.MODULE);
   if (!raw) {
     return undefined;
   }
@@ -190,5 +193,5 @@ export function readModuleMetadata(
  * @param target - 任意类
  */
 export function isModule(target: object): boolean {
-  return getMetadataRecord(target)?.module !== undefined;
+  return readKey<ModuleMetadata>(target, META.MODULE) !== undefined;
 }

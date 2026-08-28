@@ -2,17 +2,23 @@
  * 每帧渲染：renderer.render(scene, camera)。
  */
 
-import { Injectable, type OnDispose, type OnUpdate } from '@threxus/core';
-import type { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { CAMERA, SCENE, WEBGL_RENDERER } from '../tokens';
+import { Inject, Injectable, type OnDispose, type OnUpdate } from '@threxus/core';
+import {
+  PerspectiveCamera,
+  Scene,
+  WebGLRenderer,
+} from 'three';
 
-@Injectable({ inject: [WEBGL_RENDERER, SCENE, CAMERA] })
+@Injectable()
 export class RenderSystem implements OnUpdate, OnDispose {
-  constructor(
-    readonly renderer: WebGLRenderer,
-    readonly scene: Scene,
-    readonly camera: PerspectiveCamera,
-  ) {}
+  @Inject(WebGLRenderer)
+  renderer: WebGLRenderer;
+
+  @Inject(Scene)
+  scene: Scene;
+
+  @Inject(PerspectiveCamera)
+  camera: PerspectiveCamera;
 
   onUpdate(_dt: number): void {
     this.renderer.render(this.scene, this.camera);

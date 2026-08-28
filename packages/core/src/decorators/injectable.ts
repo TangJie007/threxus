@@ -1,5 +1,5 @@
 /**
- * `@Injectable`：标记可注入类，并声明构造函数依赖（方案 B / 方案 C 主路径）。
+ * `@Injectable`：标记可注入类；可选声明构造函数依赖（辅路径）。
  */
 
 import { writeInjectableMetadata } from '../metadata';
@@ -7,22 +7,25 @@ import { invalidDecoratorTargetError } from '../errors';
 import type { InjectableOptions } from '../types';
 
 /**
- * 类装饰器：将 `inject` 令牌列表写入 Decorator Metadata。
+ * 类装饰器：标记该类可由容器实例化。
  *
- * 容器实例化该类时，会按 `inject` 顺序 `get` 依赖并传入构造函数。
- * 若同时存在字段 `@Inject`，字段赋值发生在 `new` 之后。
+ * 日常依赖推荐字段 `@Inject(token)`。
+ * 若构造函数需要参数，再用 `inject` 按顺序声明令牌。
  *
- * @param options - 可注入配置；省略时表示无构造依赖
+ * @param options - 可注入配置；省略或空 `inject` 表示无构造依赖
  * @returns Stage 3 类装饰器
  *
  * @example
  * ```ts
- * @Injectable({ inject: [CLOCK, CAMERA] })
+ * @Injectable()
  * class OrbitSystem {
- *   constructor(
- *     readonly clock: Clock,
- *     readonly camera: Camera,
- *   ) {}
+ *   @Inject(Scene)
+ *   scene: Scene;
+ * }
+ *
+ * @Injectable({ inject: [CLOCK] })
+ * class Ticker {
+ *   constructor(readonly clock: Clock) {}
  * }
  * ```
  */

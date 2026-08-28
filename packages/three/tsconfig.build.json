@@ -4,7 +4,8 @@
     "rootDir": "src",
     "lib": ["ES2022", "ESNext.Decorators", "DOM"],
     "experimentalDecorators": false,
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "strictPropertyInitialization": false
   },
   "include": ["src"]
 }

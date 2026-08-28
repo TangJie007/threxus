@@ -3,32 +3,34 @@
  */
 
 import {
+  Inject,
   Injectable,
   Module,
   type OnDispose,
   type OnModuleInit,
   type OnUpdate,
 } from '@threxus/core';
-import { CAMERA, SCENE, ThreeCoreModule } from '@threxus/three';
+import { ThreeCoreModule } from '@threxus/three';
 import {
   BoxGeometry,
   Mesh,
   MeshNormalMaterial,
-  type PerspectiveCamera,
-  type Scene,
+  PerspectiveCamera,
+  Scene,
 } from 'three';
 
 /**
  * 向默认 Scene 放入一个旋转立方体；销毁时释放 geometry/material。
  */
-@Injectable({ inject: [SCENE, CAMERA] })
+@Injectable()
 class RotatingCube implements OnModuleInit, OnUpdate, OnDispose {
-  private mesh: Mesh | null = null;
+  @Inject(Scene)
+  scene: Scene;
 
-  constructor(
-    readonly scene: Scene,
-    readonly camera: PerspectiveCamera,
-  ) {}
+  @Inject(PerspectiveCamera)
+  camera: PerspectiveCamera;
+
+  private mesh: Mesh | null = null;
 
   onModuleInit(): void {
     const geometry = new BoxGeometry(1, 1, 1);
