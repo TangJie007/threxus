@@ -19,6 +19,7 @@ export {
   instanceHasHook,
 } from './lifecycle';
 export type {
+  EntitySystem,
   LifecycleInstance,
   OnApplicationBootstrap,
   OnDispose,

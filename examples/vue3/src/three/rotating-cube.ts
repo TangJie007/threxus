@@ -1,13 +1,11 @@
 /**
- * 旋转立方体 System：挂到默认 Scene，销毁时释放 geometry/material。
+ * 旋转立方体实体系统：挂到默认 Scene，销毁时释放 geometry/material。
  */
 
 import {
   Inject,
   Injectable,
-  type OnDispose,
-  type OnModuleInit,
-  type OnUpdate,
+  type EntitySystem,
 } from '@threxus/core';
 import {
   BoxGeometry,
@@ -18,7 +16,7 @@ import {
 } from 'three';
 
 @Injectable()
-export class RotatingCube implements OnModuleInit, OnUpdate, OnDispose {
+export class RotatingCube implements EntitySystem {
   @Inject(Scene)
   scene: Scene;
 
