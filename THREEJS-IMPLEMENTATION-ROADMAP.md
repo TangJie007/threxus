@@ -958,6 +958,8 @@ rendering/
 
 ## 15. M11：通用 Feature
 
+> **状态：已完成**（`packages/runtime/src/features/`，见 README）
+
 ### 15.1 目标
 
 用真实功能验证微内核，而不是把通用功能写回 ThreeApp。

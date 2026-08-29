@@ -1,7 +1,7 @@
 /**
  * @threxus/runtime 公共 API 入口。
  *
- * 当前阶段（M0–M10）导出：
+ * 当前阶段（M0–M11）导出：
  * - ThreeApp 工厂与类型
  * - Feature 契约（ThreeFeature / ThreeContext）
  * - Scheduler 与帧回调类型
@@ -10,6 +10,7 @@
  * - InputManager / ScopedInputManager / ThreePointerEvent
  * - RenderPipeline / RenderStage / ScopedRendering
  * - WebGL Context lost/restored（GraphicsState）
+ * - 内置 Feature：Environment / OrbitControls / Selection / Highlight / Stats / Postprocessing
  * - 生命周期原语（CleanupStack / Disposable）
  * - 服务标识（createServiceKey）
  * - 运行时错误（ThrexusError）
@@ -139,6 +140,33 @@ export {
   type NormalizeAssetKeyOptions,
   type TextureLoaderOptions,
 } from './assets';
+export {
+  CameraControlService,
+  PostprocessingService,
+  SelectionService,
+  StatsService,
+  createPassRegistry,
+  environmentFeature,
+  highlightFeature,
+  orbitControlsFeature,
+  postprocessingFeature,
+  selectionFeature,
+  sortPasses,
+  statsFeature,
+  type CameraControlServiceType,
+  type EnvironmentFeatureOptions,
+  type HighlightFeatureOptions,
+  type OrbitControlsFeatureOptions,
+  type PostPass,
+  type PostprocessingFeatureOptions,
+  type PostprocessingServiceType,
+  type RuntimeStats,
+  type SelectionChangeListener,
+  type SelectionFeatureOptions,
+  type SelectionServiceType,
+  type StatsFeatureOptions,
+  type StatsServiceType,
+} from './features';
 export {
   clientToNdc,
   createInputManager,

@@ -10,40 +10,36 @@ Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服�
 
 ```text
 packages/
-  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle / Assets / Input / Rendering
+  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle / Assets / Input / Rendering / Features
 examples/
-  vue3/       M0–M10 演示
+  vue3/       M0–M11 演示
   test/       独立 Three.js 实验项目
 ```
 
 ## 当前实现范围
 
-当前完成 M0–M10：
+当前完成 M0–M11：
 
-- `Disposable` 与 `CleanupStack`
-- 强类型 `ServiceKey`
-- Feature 服务依赖图和稳定拓扑排序
-- FeatureScope、AbortSignal 和反向清理
-- ThreeApp 启动、失败回滚和幂等销毁
-- Scheduler：RAF 循环、`onUpdate` / `onFixedUpdate` / 渲染阶段钩子
-- **WebGL**：Scene / Camera / Renderer、ResizeObserver、DirectRenderPipeline、`ctx.own()`
-- **AssetManager**：Key 规范化、并发合并、Handle 引用计数、延迟释放、`ctx.retain()`、Texture / CubeTexture / File Loader
-- **GLTF**：`acquireGLTF`、`instantiate`（clone / skeleton-clone / shared）、共享 GPU 与实例私有 Material 所有权
-- **Input**：`ctx.input.on`、交互对象注册表、Raycast、冒泡 / `stopPropagation`、enter/leave、click / dblclick、Pointer Capture
-- **RenderPipeline**：唯一主 Pipeline、`RenderStage`、`RendererStateGuard`、临时渲染队列、`ctx.rendering`
-- **WebGL Context**：`GraphicsState`、lost/restored、`ctx.onContextLost` / `onContextRestored`、Pipeline/Feature restore
+- 微内核：Disposable、ServiceKey、FeatureGraph、ThreeApp、Scheduler、WebGL、Assets、GLTF、Input、RenderPipeline、Context restore
+- **内置 Feature（M11）**：
+  - `environmentFeature` — 背景 / 灯光 / 地面
+  - `orbitControlsFeature` — OrbitControls + `CameraControlService`
+  - `selectionFeature` — 点选 + `SelectionService`
+  - `highlightFeature` — 依赖 Selection 的 emissive 高亮
+  - `statsFeature` — FPS / Renderer info / 资产统计
+  - `postprocessingFeature` — 唯一 Composer Pipeline + `PostprocessingService.addPass`
 
 ```ts
-ctx.onContextLost(() => {
-  // 释放临时 GPU 扩展资源
-});
-
-ctx.onContextRestored(async () => {
-  // 重建自定义 framebuffer / Pass
-});
+app
+  .use(environmentFeature({ background: 0x101820 }))
+  .use(orbitControlsFeature({ damping: true }))
+  .use(selectionFeature())
+  .use(highlightFeature())
+  .use(statsFeature())
+  .use(postprocessingFeature());
 ```
 
-通用内置 Feature 属于 **M11**。
+诊断、性能基准与稳定发布属于 **M12**。
 
 ## 开始使用
 
