@@ -17,8 +17,8 @@ useThrexus(FactoryTwinModule, canvasRef);
       <p class="eyebrow">refactor · examples/test → @threxus</p>
       <h1>FactoryTwin</h1>
       <p class="hint">
-        智能工厂数字孪生：Viewer / Composer / Factory / FX 将按模块迁入 Threxus
-        Feature
+        模块 3：材质预设 + 程序化环境已接入。学习文档见
+        <code>src/three/factory/MODULE-3.md</code>
       </p>
     </header>
     <canvas ref="canvasRef" class="viewport" />
