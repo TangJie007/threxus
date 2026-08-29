@@ -1,57 +1,86 @@
-<script lang="ts">
-import { defineComponent, markRaw } from 'vue';
-import type { AppState, RuntimeSnapshot } from '@threxus/runtime';
+<script setup lang="ts">
+import {
+  createThreeApp,
+  type AppState,
+  type RuntimeSnapshot,
+} from '@threxus/runtime';
+import { markRaw, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import { demoCamera } from '../demo/config';
 import { createLifecycleFeatures } from '../demo/lifecycle-features';
-import { ThreeAppSession } from '../demo/three-app-session';
 
-export default defineComponent({
-  data() {
-    return {
-      events: [] as string[],
-      state: 'created' as AppState,
-      snapshot: null as RuntimeSnapshot | null,
-      error: null as string | null,
-      session: null as ThreeAppSession | null,
-    };
-  },
-  methods: {
-    syncFromSession(): void {
-      if (!this.session) {
-        return;
-      }
-      this.state = this.session.state;
-      this.snapshot = this.session.snapshot;
-      this.error = this.session.error;
-    },
-    log(message: string): void {
-      this.events.push(message);
-    },
-    async disposeApp(): Promise<void> {
-      await this.session?.dispose();
-      this.syncFromSession();
-    },
-  },
-  async mounted() {
-    const canvas = this.$refs.canvas as HTMLCanvasElement | undefined;
-    if (!canvas) {
-      this.error = 'Canvas 尚未挂载。';
-      return;
-    }
+const canvasRef = ref<HTMLCanvasElement | null>(null);
+const app = shallowRef(
+  null as ReturnType<typeof createThreeApp> | null,
+);
 
-    this.session = markRaw(
-      new ThreeAppSession({
-        features: createLifecycleFeatures,
-        onLog: (message) => this.log(message),
-        onChange: () => this.syncFromSession(),
-      }),
-    );
+const events = ref<string[]>([]);
+const state = ref<AppState>('created');
+const snapshot = ref<RuntimeSnapshot | null>(null);
+const error = ref<string | null>(null);
 
-    await this.session.mount(canvas);
-    this.syncFromSession();
-  },
-  beforeUnmount() {
-    void this.session?.destroy();
-  },
+function log(message: string): void {
+  events.value.push(message);
+}
+
+function refresh(): void {
+  if (!app.value) {
+    return;
+  }
+  state.value = app.value.state;
+  snapshot.value = app.value.inspect();
+}
+
+async function disposeApp(): Promise<void> {
+  if (!app.value || app.value.state === 'disposed') {
+    return;
+  }
+
+  log('开始 dispose');
+  refresh();
+
+  try {
+    await app.value.dispose();
+  } catch (reason) {
+    error.value = reason instanceof Error ? reason.message : String(reason);
+  }
+
+  refresh();
+  log('App 已完整销毁');
+}
+
+onMounted(async () => {
+  const canvas = canvasRef.value;
+  if (!canvas) {
+    error.value = 'Canvas 尚未挂载。';
+    return;
+  }
+
+  const runtime = createThreeApp({
+    canvas,
+    camera: demoCamera,
+  });
+
+  for (const feature of createLifecycleFeatures(log)) {
+    runtime.use(feature);
+  }
+
+  app.value = markRaw(runtime);
+  log('调用 app.start()');
+  refresh();
+
+  try {
+    await runtime.start();
+    log('App 启动完成');
+  } catch (reason) {
+    error.value = reason instanceof Error ? reason.message : String(reason);
+    log(`启动失败：${error.value}`);
+  }
+
+  refresh();
+});
+
+onBeforeUnmount(() => {
+  void app.value?.dispose();
 });
 </script>
 
@@ -96,6 +125,6 @@ export default defineComponent({
       </article>
     </div>
 
-    <canvas ref="canvas" class="canvas-placeholder" />
+    <canvas ref="canvasRef" class="canvas-placeholder" />
   </section>
 </template>

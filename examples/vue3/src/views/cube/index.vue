@@ -1,51 +1,69 @@
-<script lang="ts">
-import { defineComponent, markRaw } from 'vue';
-import type { AppState, RuntimeSnapshot } from '@threxus/runtime';
-import { CubeSession } from './session';
+<script setup lang="ts">
+import {
+  createThreeApp,
+  type AppState,
+  type RuntimeSnapshot,
+} from '@threxus/runtime';
+import { markRaw, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import { cubeCamera } from './config';
+import { createRotatingBoxFeature } from './features/rotating-box';
 
-export default defineComponent({
-  data() {
-    return {
-      events: [] as string[],
-      state: 'created' as AppState,
-      snapshot: null as RuntimeSnapshot | null,
-      error: null as string | null,
-      session: null as CubeSession | null,
-    };
-  },
-  methods: {
-    syncFromSession(): void {
-      if (!this.session) {
-        return;
-      }
-      this.state = this.session.state;
-      this.snapshot = this.session.snapshot;
-      this.error = this.session.error;
-    },
-    log(message: string): void {
-      this.events.push(message);
-    },
-  },
-  async mounted() {
-    const canvas = this.$refs.canvas as HTMLCanvasElement | undefined;
-    if (!canvas) {
-      this.error = 'Canvas 尚未挂载。';
-      return;
-    }
+const canvasRef = ref<HTMLCanvasElement | null>(null);
+const app = shallowRef(
+  null as ReturnType<typeof createThreeApp> | null,
+);
 
-    this.session = markRaw(
-      new CubeSession({
-        onLog: (message) => this.log(message),
-        onChange: () => this.syncFromSession(),
-      }),
-    );
+const events = ref<string[]>([]);
+const state = ref<AppState>('created');
+const snapshot = ref<RuntimeSnapshot | null>(null);
+const error = ref<string | null>(null);
 
-    await this.session.mount(canvas);
-    this.syncFromSession();
-  },
-  beforeUnmount() {
-    void this.session?.destroy();
-  },
+function log(message: string): void {
+  events.value.push(message);
+}
+
+function refresh(): void {
+  if (!app.value) {
+    return;
+  }
+  state.value = app.value.state;
+  snapshot.value = app.value.inspect();
+}
+
+onMounted(async () => {
+  const canvas = canvasRef.value;
+  if (!canvas) {
+    error.value = 'Canvas 尚未挂载。';
+    return;
+  }
+
+  // 1. 创建 App，绑定 canvas 和相机
+  const runtime = createThreeApp({
+    canvas,
+    camera: cubeCamera,
+  });
+
+  // 2. 注册 Feature（立方体、灯光、旋转逻辑在 features/rotating-box.ts）
+  runtime.use(createRotatingBoxFeature(log));
+
+  app.value = markRaw(runtime);
+  log('调用 app.start()');
+  refresh();
+
+  // 3. 启动运行时
+  try {
+    await runtime.start();
+    log('App 启动完成');
+  } catch (reason) {
+    error.value = reason instanceof Error ? reason.message : String(reason);
+    log(`启动失败：${error.value}`);
+  }
+
+  refresh();
+});
+
+onBeforeUnmount(() => {
+  void app.value?.dispose();
 });
 </script>
 
@@ -55,8 +73,10 @@ export default defineComponent({
       <p class="eyebrow">Threxus M5 · WebGL</p>
       <h1>旋转立方体</h1>
       <p class="hint">
-        本页为独立模块：<code>views/cube/</code> 内包含 Feature、场景配置、
-        App 会话与页面，不依赖其他演示路由。
+        学习用最小结构：本页用 <code>&lt;script setup&gt;</code> 直接
+        <code>createThreeApp</code>，3D 逻辑在
+        <code>features/rotating-box.ts</code>，参数在
+        <code>config.ts</code>。
       </p>
     </header>
 
@@ -88,7 +108,7 @@ export default defineComponent({
 
       <article class="panel scene-panel">
         <h2>WebGL 场景</h2>
-        <canvas ref="canvas" class="cube-canvas" />
+        <canvas ref="canvasRef" class="cube-canvas" />
       </article>
     </div>
   </section>
