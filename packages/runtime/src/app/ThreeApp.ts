@@ -1,3 +1,26 @@
+/**
+ * ThreeApp：运行时入口与状态机。
+ *
+ * 职责：
+ * - 收集 Feature（use）并在 start 时按依赖拓扑序依次 setup。
+ * - 维护 App 级 ServiceContainer 与 FeatureScope 列表。
+ * - 协调 start / dispose 并发、启动失败回滚、dispose 期间 abort。
+ *
+ * App 状态机：
+ * ```text
+ * created → starting → running ⇄ paused
+ *              ↓           ↓
+ *           failed    disposing → disposed
+ * ```
+ *
+ * 销毁顺序：
+ * - 成功安装的 Feature 按**安装顺序的逆序** dispose（后装先拆）。
+ * - 每个 Scope dispose 时 LIFO 执行其 cleanup，并 removeOwner 对应服务。
+ *
+ * M0–M3 尚未包含 Renderer / RAF / 资源加载，仅生命周期与服务契约。
+ */
+
+import { keyBy } from 'es-toolkit';
 import { ThrexusError, toError } from '../errors';
 import { FeatureRegistry } from '../feature/FeatureRegistry';
 import { FeatureScope, type FeatureScopeState } from '../feature/FeatureScope';
@@ -10,25 +33,35 @@ import { isDisposable, type Cleanup, type Disposable } from '../lifecycle/Dispos
 import { ServiceContainer } from '../services/ServiceContainer';
 import type { ServiceKey } from '../services/ServiceKey';
 
+/** App 生命周期状态。详见文件头状态机图。 */
 export type AppState =
+  /** 已创建，可 use / start / dispose。 */
   | 'created'
+  /** 正在启动：解析依赖图、按序 setup Feature。 */
   | 'starting'
+  /** 启动成功，所有 Feature 已 activate。 */
   | 'running'
+  /** 已暂停（M0–M3 仅状态标记，RAF/渲染暂停待 M4+）。 */
   | 'paused'
+  /** 正在销毁：abort → 逆序 dispose Scope → 清空服务。 */
   | 'disposing'
+  /** 已完全销毁（终态）。 */
   | 'disposed'
+  /** 启动失败且已回滚（终态，不可 restart，需 dispose 或重建 App）。 */
   | 'failed';
 
 export interface ThreeAppOptions {
   readonly canvas: HTMLCanvasElement;
 }
 
+/** inspect() 返回的单个 Feature 快照。 */
 export interface FeatureSnapshot {
   readonly name: string;
   readonly state: FeatureScopeState | 'registered';
   readonly cleanupCount: number;
 }
 
+/** inspect() 返回的运行时快照，供调试与 E2E 断言。 */
 export interface RuntimeSnapshot {
   readonly state: AppState;
   readonly services: number;
@@ -46,6 +79,7 @@ export interface ThreeApp extends Disposable {
   inspect(): RuntimeSnapshot;
 }
 
+/** 创建 ThreeApp 实例。canvas 为后续 M4+ 渲染所需的挂载点。 */
 export function createThreeApp(options: ThreeAppOptions): ThreeApp {
   if (!options.canvas) {
     throw new TypeError('createThreeApp requires a canvas.');
@@ -57,11 +91,16 @@ export function createThreeApp(options: ThreeAppOptions): ThreeApp {
 class ThreeAppRuntime implements ThreeApp {
   readonly #registry = new FeatureRegistry();
   readonly #services = new ServiceContainer();
+  /** 注册顺序列表，供 inspect 展示尚未 setup 的 Feature。 */
   readonly #registered: ThreeFeature[] = [];
+  /** 已进入 setup 的 Scope，顺序与拓扑安装序一致。 */
   readonly #scopes: FeatureScope[] = [];
+  /** App 级 AbortController；dispose 在 starting 期间也会触发 abort。 */
   readonly #controller = new AbortController();
   #state: AppState = 'created';
+  /** 并发 start() 共享同一 Promise。 */
   #startPromise: Promise<void> | undefined;
+  /** 并发 dispose() 共享同一 Promise。 */
   #disposePromise: Promise<void> | undefined;
 
   constructor(readonly options: ThreeAppOptions) {}
@@ -152,15 +191,13 @@ class ThreeAppRuntime implements ThreeApp {
   }
 
   inspect(): RuntimeSnapshot {
-    const scopesByName = new Map(
-      this.#scopes.map((scope) => [scope.feature.name, scope]),
-    );
+    const scopesByName = keyBy(this.#scopes, (scope) => scope.feature.name);
 
     return {
       state: this.#state,
       services: this.#services.size,
       features: this.#registered.map((feature) => {
-        const scope = scopesByName.get(feature.name);
+        const scope = scopesByName[feature.name];
         return {
           name: feature.name,
           state: scope?.state ?? 'registered',
@@ -170,6 +207,10 @@ class ThreeAppRuntime implements ThreeApp {
     };
   }
 
+  /**
+   * 启动主流程：解析图 → 按序 setup → 校验契约 → activate。
+   * 任一步失败则回滚已安装的 Scope，App 进入 failed（除非 dispose 抢先）。
+   */
   async #runStart(): Promise<void> {
     try {
       const graph = this.#registry.lockAndResolve();
@@ -215,12 +256,16 @@ class ThreeAppRuntime implements ThreeApp {
     }
   }
 
+  /**
+   * 销毁主流程：等待进行中的 start 结束 → 逆序 dispose Scope → 清空容器。
+   * start 若失败，此处仍尽力清理已创建的 Scope。
+   */
   async #runDispose(): Promise<void> {
     if (this.#startPromise) {
       try {
         await this.#startPromise;
       } catch {
-        // Startup owns its error; disposal still completes all cleanup.
+        // 启动错误由 start 调用方处理；dispose 仍继续清理。
       }
     }
 
@@ -233,6 +278,10 @@ class ThreeAppRuntime implements ThreeApp {
     }
   }
 
+  /**
+   * 逆序销毁所有 Scope，并移除各 Feature 在容器中的服务。
+   * 单个 Scope 失败不阻断其余 Scope 的清理。
+   */
   async #disposeScopes(): Promise<Error[]> {
     const errors: Error[] = [];
 
@@ -254,6 +303,12 @@ class ThreeAppRuntime implements ThreeApp {
     return errors;
   }
 
+  /**
+   * 为 Feature 构造 ThreeContext，并强制执行服务契约：
+   * - provide 仅限 declares provides 中的 Key。
+   * - inject/injectOptional 仅限 declares dependencies + optional + provides。
+   * - provide 时自动注册 cleanup：移除容器条目 + 可选 auto dispose。
+   */
   #createContext(scope: FeatureScope): ThreeContext {
     const feature = scope.feature;
     const declaredDependencies = new Set([
@@ -314,6 +369,7 @@ class ThreeAppRuntime implements ThreeApp {
     };
   }
 
+  /** 确保 declares provides 的每个 Key 都在 setup 中实际 provide 了。 */
   #verifyProvidedServices(scope: FeatureScope): void {
     for (const key of scope.feature.provides ?? []) {
       if (!scope.hasProvided(key)) {
@@ -338,6 +394,7 @@ class ThreeAppRuntime implements ThreeApp {
     }
   }
 
+  /** dispose 在 starting 期间 abort 后，setup 循环应中断并进入回滚。 */
   #throwIfAborted(): void {
     if (this.#controller.signal.aborted) {
       throw this.#controller.signal.reason;
