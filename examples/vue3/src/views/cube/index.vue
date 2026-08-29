@@ -7,6 +7,7 @@ import {
 import { markRaw, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import { cubeCamera } from './config';
 import { createRotatingBoxFeature } from './features/rotating-box';
+import { createSceneFeature } from './features/scene';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const app = shallowRef(
@@ -41,8 +42,8 @@ onMounted(async () => {
   const runtime = createThreeApp({
     canvas,
     camera: cubeCamera,
-  });
-
+  }); 
+  runtime.use(createSceneFeature());
   // 2. 注册 Feature（立方体、灯光、旋转逻辑在 features/rotating-box.ts）
   runtime.use(createRotatingBoxFeature(log));
 

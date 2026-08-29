@@ -13,8 +13,6 @@ export function createRotatingBoxFeature(log: CubeLogger): ThreeFeature {
   return {
     name: 'rotating-box',
     setup(context) {
-      context.scene.background = new Color(cubeSceneConfig.background);
-
       const geometry = new BoxGeometry();
       const material = new MeshStandardMaterial({
         color: cubeSceneConfig.boxColor,
