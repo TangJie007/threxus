@@ -10,15 +10,15 @@ Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服�
 
 ```text
 packages/
-  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle
+  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle / Assets
 examples/
-  vue3/       M0–M6 生命周期 / WebGL / 资产演示
+  vue3/       M0–M7 演示
   test/       独立 Three.js 实验项目
 ```
 
 ## 当前实现范围
 
-当前完成 M0–M6：
+当前完成 M0–M7：
 
 - `Disposable` 与 `CleanupStack`
 - 强类型 `ServiceKey`
@@ -28,35 +28,22 @@ examples/
 - Scheduler：RAF 循环、`onUpdate` / `onFixedUpdate` / 渲染阶段钩子
 - **WebGL**：Scene / Camera / Renderer、ResizeObserver、DirectRenderPipeline、`ctx.own()`
 - **AssetManager**：Key 规范化、并发合并、Handle 引用计数、延迟释放、`ctx.retain()`、Texture / CubeTexture / File Loader
+- **GLTF**：`acquireGLTF`、`instantiate`（clone / skeleton-clone / shared）、共享 GPU 与实例私有 Material 所有权
 
 ```ts
-import { createThreeApp } from '@threxus/runtime';
-import * as THREE from 'three';
+const handle = await ctx.assets.acquireGLTF('/models/machine.glb');
+ctx.retain(handle);
 
-const app = createThreeApp({
-  canvas,
-  camera: { type: 'perspective', position: [3, 2, 5] },
+const instance = handle.value.instantiate({
+  mode: 'auto',
+  materials: 'shared',
 });
-
-app.use({
-  name: 'textured-box',
-  async setup(ctx) {
-    const handle = await ctx.assets.acquireTexture('/floor.webp');
-    ctx.retain(handle);
-
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(),
-      new THREE.MeshStandardMaterial({ map: handle.value }),
-    );
-    ctx.scene.add(mesh);
-    ctx.own(mesh);
-  },
-});
-
-await app.start();
+ctx.scene.add(instance.root);
+ctx.own(instance.root);
+ctx.addCleanup(instance);
 ```
 
-GLTF 实例与共享 GPU 资源属于 **M7**。
+输入与射线交互属于 **M8**。
 
 ## 开始使用
 

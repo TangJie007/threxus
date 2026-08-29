@@ -27,6 +27,7 @@ import {
   createAssetManager,
   createCubeTextureAssetLoader,
   createFileAssetLoader,
+  createGltfAssetLoader,
   createTextureAssetLoader,
   type AssetHandle,
   type AssetLoader,
@@ -224,6 +225,7 @@ class ThreeAppRuntime implements ThreeApp {
       this.#assets.registerLoader(createTextureAssetLoader());
       this.#assets.registerLoader(createCubeTextureAssetLoader());
       this.#assets.registerLoader(createFileAssetLoader());
+      this.#assets.registerLoader(createGltfAssetLoader());
     }
     for (const loader of assetOptions?.loaders ?? []) {
       this.#assets.registerLoader(loader);

@@ -17,6 +17,11 @@ export {
 } from './AssetHandle';
 export type { AssetEntryState } from './AssetCacheEntry';
 export type { AssetLoadContext, AssetLoader } from './AssetLoader';
+export type {
+  AssetLifetimeHooks,
+  BindableAsset,
+} from './AssetLifetime';
+export { isBindableAsset } from './AssetLifetime';
 export {
   createAssetManager,
   type AcquireOptions,
@@ -38,3 +43,20 @@ export {
   createDeferredTestLoader,
   type DeferredTestLoader,
 } from './testing';
+export {
+  GltfAsset,
+  ManagedGltfInstance,
+  cloneMaterialsOnObject,
+  collectSharedResources,
+  createGltfAssetLoader,
+  disposeOwnedInstanceResources,
+  disposeSharedResources,
+  hasSkinnedMesh,
+  type GltfInstance,
+  type GltfInstantiateOptions,
+  type GltfMaterialMode,
+  type GltfSource,
+  type GltfTextureMode,
+  type GltfTreeMode,
+  type SharedGltfResources,
+} from './gltf';

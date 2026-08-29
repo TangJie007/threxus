@@ -12,6 +12,7 @@
 
 import { ThrexusError, toError } from '../errors';
 import type { Disposable } from '../lifecycle/Disposable';
+import { isBindableAsset } from './AssetLifetime';
 import {
   AssetCacheEntry,
   type AssetWaiter,
@@ -29,6 +30,7 @@ import {
   type NormalizeAssetKeyOptions,
 } from './AssetKey';
 import type { AssetLoader } from './AssetLoader';
+import type { GltfAsset } from './gltf/GltfAsset';
 
 export interface AssetManagerOptions extends NormalizeAssetKeyOptions {
   /** 引用归零后延迟释放毫秒数，默认 30_000。 */
@@ -70,6 +72,10 @@ export interface AssetManager extends Disposable {
     urls: readonly string[],
     options?: AcquireOptions,
   ): Promise<AssetHandle<import('three').CubeTexture>>;
+  acquireGLTF(
+    source: string,
+    options?: AcquireOptions,
+  ): Promise<AssetHandle<GltfAsset>>;
   preload(
     type: string,
     source: string,
@@ -186,6 +192,13 @@ class AssetManagerRuntime implements AssetManager, AssetHandleHost {
         ...(isPlainObject(options.loaderOptions) ? options.loaderOptions : {}),
       },
     });
+  }
+
+  acquireGLTF(
+    source: string,
+    options: AcquireOptions = {},
+  ): Promise<AssetHandle<GltfAsset>> {
+    return this.acquire('gltf', source, options);
   }
 
   async preload(
@@ -342,6 +355,7 @@ class AssetManagerRuntime implements AssetManager, AssetHandleHost {
 
         entry.asset = asset;
         entry.state = 'ready';
+        this.#bindAssetLifetime(entry);
 
         const waiters = [...entry.waiters];
         entry.waiters.clear();
@@ -528,6 +542,34 @@ class AssetManagerRuntime implements AssetManager, AssetHandleHost {
     if (errors.length > 0) {
       throw new AggregateError(errors, 'AssetManager disposal failed.');
     }
+  }
+
+  #bindAssetLifetime<T>(entry: AssetCacheEntry<T>): void {
+    if (!isBindableAsset(entry.asset)) {
+      return;
+    }
+
+    entry.asset.bindLifetime({
+      retain: () => {
+        if (this.#disposed) {
+          return;
+        }
+        entry.refs += 1;
+        entry.clearReleaseTimer();
+        if (entry.state === 'release-pending') {
+          entry.state = 'ready';
+        }
+      },
+      release: () => {
+        if (this.#disposed) {
+          return;
+        }
+        entry.refs = Math.max(0, entry.refs - 1);
+        if (entry.refs === 0 && entry.state === 'ready') {
+          this.#scheduleRelease(entry);
+        }
+      },
+    });
   }
 
   #trackHandle<T>(handle: ManagedAssetHandle<T>): ManagedAssetHandle<T> {

@@ -722,6 +722,8 @@ expect(loader.calls).toBe(1)
 
 ## 11. M7：GLTF 实例与共享 GPU 资源
 
+> **状态：已完成**（`packages/runtime/src/assets/gltf/`，见 README 当前实现范围）
+
 ### 11.1 目标
 
 解决 GLTF 对象树不能直接多父级挂载，以及克隆后 GPU 资源共享的问题。

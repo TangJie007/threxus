@@ -1,12 +1,12 @@
 /**
  * @threxus/runtime 公共 API 入口。
  *
- * 当前阶段（M0–M6）导出：
+ * 当前阶段（M0–M7）导出：
  * - ThreeApp 工厂与类型
  * - Feature 契约（ThreeFeature / ThreeContext）
  * - Scheduler 与帧回调类型
  * - 渲染类型（Camera / Renderer Options）
- * - AssetManager / AssetHandle / Loader
+ * - AssetManager / AssetHandle / Loader / GLTF 实例
  * - 生命周期原语（CleanupStack / Disposable）
  * - 服务标识（createServiceKey）
  * - 运行时错误（ThrexusError）
@@ -81,10 +81,12 @@ export {
   createCubeTextureAssetLoader,
   createDeferredTestLoader,
   createFileAssetLoader,
+  createGltfAssetLoader,
   createTextureAssetLoader,
   normalizeAssetKey,
   resolveAssetSource,
   stableSerialize,
+  GltfAsset,
   type AcquireOptions,
   type AssetEntryState,
   type AssetHandle,
@@ -93,14 +95,22 @@ export {
   type AssetKeyParts,
   type AssetLoadContext,
   type AssetLoader,
+  type AssetLifetimeHooks,
   type AssetManager,
   type AssetManagerOptions,
   type AssetManagerSnapshot,
   type AssetPin,
+  type BindableAsset,
   type CubeTextureLoaderOptions,
   type DeferredTestLoader,
   type FileAssetResult,
   type FileLoaderOptions,
+  type GltfInstance,
+  type GltfInstantiateOptions,
+  type GltfMaterialMode,
+  type GltfSource,
+  type GltfTextureMode,
+  type GltfTreeMode,
   type NormalizeAssetKeyOptions,
   type TextureLoaderOptions,
 } from './assets';
