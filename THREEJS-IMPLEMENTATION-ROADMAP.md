@@ -860,6 +860,8 @@ dblclick
 
 ## 13. M9：RenderPipeline 与渲染扩展
 
+> **状态：已完成**（`packages/runtime/src/rendering/`，见 README 当前实现范围）
+
 ### 13.1 目标
 
 支持后处理、Overlay 和临时渲染，同时保持唯一主渲染控制权。

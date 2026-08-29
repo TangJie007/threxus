@@ -10,15 +10,15 @@ Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服�
 
 ```text
 packages/
-  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle / Assets / Input
+  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle / Assets / Input / Rendering
 examples/
-  vue3/       M0–M8 演示
+  vue3/       M0–M9 演示
   test/       独立 Three.js 实验项目
 ```
 
 ## 当前实现范围
 
-当前完成 M0–M8：
+当前完成 M0–M9：
 
 - `Disposable` 与 `CleanupStack`
 - 强类型 `ServiceKey`
@@ -30,18 +30,25 @@ examples/
 - **AssetManager**：Key 规范化、并发合并、Handle 引用计数、延迟释放、`ctx.retain()`、Texture / CubeTexture / File Loader
 - **GLTF**：`acquireGLTF`、`instantiate`（clone / skeleton-clone / shared）、共享 GPU 与实例私有 Material 所有权
 - **Input**：`ctx.input.on`、交互对象注册表、Raycast、冒泡 / `stopPropagation`、enter/leave、click / dblclick、Pointer Capture
+- **RenderPipeline**：唯一主 Pipeline、`RenderStage`、`RendererStateGuard`、临时渲染队列、`ctx.rendering`
 
 ```ts
-ctx.input.on(mesh, 'click', (event) => {
-  console.log(event.object.name, event.point);
+ctx.rendering.addStage({
+  name: 'labels-overlay',
+  stage: 'overlay',
+  priority: 0,
+  render(context) {
+    // overlay draw
+  },
 });
 
-ctx.input.on(mesh, 'pointerenter', () => {
-  mesh.scale.setScalar(1.05);
+ctx.rendering.setPipeline(composerPipeline);
+await ctx.rendering.withRendererState(async (renderer) => {
+  // 临时改 RT / viewport，结束后自动恢复
 });
 ```
 
-渲染管线扩展属于 **M9**。
+WebGL Context 丢失与恢复属于 **M10**。
 
 ## 开始使用
 

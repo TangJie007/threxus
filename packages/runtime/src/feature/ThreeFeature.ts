@@ -14,6 +14,7 @@ import type { AssetHandle } from '../assets/AssetHandle';
 import type { AssetManager } from '../assets/AssetManager';
 import type { ScopedInputManager } from '../input/ScopedInputManager';
 import type { Cleanup, Disposable } from '../lifecycle/Disposable';
+import type { ScopedRendering } from '../rendering/ScopedRendering';
 import type { CameraChangedEvent } from '../rendering/types';
 import type {
   FixedUpdateCallback,
@@ -50,6 +51,8 @@ export interface ThreeContext {
   readonly assets: AssetManager;
   /** 有作用域的 3D Pointer 输入；注册随 Feature 自动解绑。 */
   readonly input: ScopedInputManager;
+  /** 有作用域的渲染扩展：Pipeline / Stage / 临时状态保护。 */
+  readonly rendering: ScopedRendering;
   /** Feature 级取消信号；App dispose 或 Feature 回滚时触发。 */
   readonly signal: AbortSignal;
 

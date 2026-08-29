@@ -50,6 +50,15 @@ const interactive: ThreeFeature = {
       event.stopPropagation();
     });
     disposable.dispose();
+
+    context.rendering.addStage({
+      name: 'labels',
+      stage: 'overlay',
+      priority: 0,
+      render(renderContext) {
+        void renderContext.renderer;
+      },
+    });
   },
 };
 void interactive;

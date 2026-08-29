@@ -1,4 +1,4 @@
-import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { Color, PerspectiveCamera, Scene, Vector4, WebGLRenderer } from 'three';
 import { vi } from 'vitest';
 
 type Listener = EventListenerOrEventListenerObject;
@@ -65,6 +65,13 @@ export function createTestCanvas(
 
 /** Node 环境占位 WebGLRenderer，避免创建真实 GL 上下文。 */
 export function createMockRenderer(canvas: HTMLCanvasElement): WebGLRenderer {
+  const viewport = new Vector4(0, 0, 640, 480);
+  const scissor = new Vector4(0, 0, 640, 480);
+  let scissorTest = false;
+  let renderTarget: unknown = null;
+  const clearColor = new Color(0, 0, 0);
+  let clearAlpha = 1;
+
   const renderer = Object.create(WebGLRenderer.prototype) as WebGLRenderer & {
     render: ReturnType<typeof vi.fn>;
     dispose: ReturnType<typeof vi.fn>;
@@ -76,8 +83,64 @@ export function createMockRenderer(canvas: HTMLCanvasElement): WebGLRenderer {
   renderer.dispose = vi.fn();
   renderer.setSize = vi.fn();
   renderer.setPixelRatio = vi.fn();
-  Object.defineProperty(renderer, 'domElement', { value: canvas, configurable: true });
+  Object.defineProperty(renderer, 'domElement', {
+    value: canvas,
+    configurable: true,
+  });
   renderer.shadowMap = { enabled: false } as WebGLRenderer['shadowMap'];
+
+  renderer.autoClear = true;
+  renderer.autoClearColor = true;
+  renderer.autoClearDepth = true;
+  renderer.autoClearStencil = true;
+  renderer.xr = { enabled: false } as WebGLRenderer['xr'];
+
+  renderer.getRenderTarget = vi.fn(() => renderTarget as never);
+  renderer.setRenderTarget = vi.fn((target) => {
+    renderTarget = target;
+  });
+  renderer.getViewport = vi.fn((target: Vector4) => target.copy(viewport));
+  renderer.setViewport = vi.fn((...args: unknown[]) => {
+    if (args[0] instanceof Vector4) {
+      viewport.copy(args[0]);
+      return;
+    }
+    viewport.set(
+      Number(args[0]),
+      Number(args[1]),
+      Number(args[2]),
+      Number(args[3]),
+    );
+  });
+  renderer.getScissor = vi.fn((target: Vector4) => target.copy(scissor));
+  renderer.setScissor = vi.fn((...args: unknown[]) => {
+    if (args[0] instanceof Vector4) {
+      scissor.copy(args[0]);
+      return;
+    }
+    scissor.set(
+      Number(args[0]),
+      Number(args[1]),
+      Number(args[2]),
+      Number(args[3]),
+    );
+  });
+  renderer.getScissorTest = vi.fn(() => scissorTest);
+  renderer.setScissorTest = vi.fn((value: boolean) => {
+    scissorTest = value;
+  });
+  renderer.getClearColor = vi.fn((target: Color) => target.copy(clearColor));
+  renderer.getClearAlpha = vi.fn(() => clearAlpha);
+  renderer.setClearColor = vi.fn((color: Color | number, alpha?: number) => {
+    if (typeof color === 'number') {
+      clearColor.set(color);
+    } else {
+      clearColor.copy(color);
+    }
+    if (alpha !== undefined) {
+      clearAlpha = alpha;
+    }
+  });
 
   return renderer;
 }

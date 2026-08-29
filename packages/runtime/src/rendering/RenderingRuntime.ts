@@ -1,7 +1,7 @@
 /**
- * 渲染运行时：Scene / Camera / Renderer、Resize、Pipeline 与相机切换。
+ * 渲染运行时：Scene / Camera / Renderer、Resize、Pipeline、Stage 与临时渲染队列。
  *
- * 在 App start 时初始化，Feature setup 期间通过 ThreeContext 访问。
+ * 在 App start 时初始化，Feature setup 期间通过 ThreeContext.rendering 访问。
  * App dispose 时按所有权释放 app 自有 Renderer。
  */
 
@@ -15,11 +15,24 @@ import { DirectRenderPipeline } from './DirectRenderPipeline';
 import { OwnedObjectRegistry } from './OwnedObjectRegistry';
 import { resolvePixelRatio } from './PixelRatioController';
 import type { RenderPipeline } from './RenderPipeline';
+import { RenderOperationQueue } from './RenderOperationQueue';
+import type { RenderStage } from './RenderStage';
 import { resolveRenderer, resolveScene } from './RendererFactory';
+import {
+  captureRendererState,
+  restoreRendererState,
+  withRendererStateGuard,
+} from './RendererStateGuard';
+import { RenderingRegistry } from './RenderingRegistry';
 import { ResizeController } from './ResizeController';
+import {
+  createScopedRendering,
+  type ScopedRendering,
+} from './ScopedRendering';
 import type {
   CameraChangedEvent,
   Ownership,
+  RenderContext,
   RenderSize,
   RenderingInitOptions,
 } from './types';
@@ -37,6 +50,9 @@ export interface RenderingSnapshot {
   readonly sceneOwnership: Ownership;
   readonly rendererOwnership: Ownership;
   readonly cameraOwnership: Ownership;
+  readonly pipeline: string;
+  readonly pipelineOwner: string | null;
+  readonly stages: number;
 }
 
 export class RenderingRuntime implements Disposable {
@@ -45,7 +61,9 @@ export class RenderingRuntime implements Disposable {
   readonly #canvas: HTMLCanvasElement;
   readonly #ownership = new CoreObjectOwnership();
   readonly #ownedObjects = new OwnedObjectRegistry();
-  readonly #pipeline: RenderPipeline;
+  readonly #defaultPipeline = new DirectRenderPipeline();
+  readonly #registry: RenderingRegistry;
+  readonly #operationQueue = new RenderOperationQueue();
   readonly #resizeController: ResizeController | undefined;
   readonly #pixelRatioOption: RenderingInitOptions['pixelRatio'];
   readonly #cameraChangedListeners = new Set<
@@ -54,9 +72,12 @@ export class RenderingRuntime implements Disposable {
 
   #camera: Camera;
   #disposed = false;
+  #orthoFrustumSize = 10;
 
   constructor(options: RenderingInitOptions) {
     this.#canvas = options.canvas;
+    this.#registry = new RenderingRegistry(this.#defaultPipeline);
+
     const sceneResolved = resolveScene(options.scene);
     this.scene = this.#ownership.register(
       sceneResolved.value,
@@ -84,7 +105,6 @@ export class RenderingRuntime implements Disposable {
     }
 
     this.#pixelRatioOption = options.pixelRatio;
-    this.#pipeline = new DirectRenderPipeline();
 
     const resizeEnabled = this.#isResizeEnabled(options.resize);
     if (resizeEnabled) {
@@ -94,7 +114,7 @@ export class RenderingRuntime implements Disposable {
         getCamera: () => this.#camera,
         getPixelRatio: () => resolvePixelRatio(this.#pixelRatioOption),
         onResize: (size) => {
-          this.#pipeline.setSize(size);
+          this.#registry.pipeline.setSize(size);
         },
       });
       if (isOrthographicCameraOptions(options.camera)) {
@@ -107,10 +127,12 @@ export class RenderingRuntime implements Disposable {
     }
   }
 
-  #orthoFrustumSize = 10;
-
   get camera(): Camera {
     return this.#camera;
+  }
+
+  get pipeline(): RenderPipeline {
+    return this.#registry.pipeline;
   }
 
   get canRender(): boolean {
@@ -120,13 +142,17 @@ export class RenderingRuntime implements Disposable {
     return this.#hasNonZeroCanvasSize();
   }
 
+  createScope(scope: FeatureScope): ScopedRendering {
+    return createScopedRendering(this, scope);
+  }
+
   setCamera(camera: Camera, ownership: Ownership = 'external'): void {
     this.#assertNotDisposed();
     const previous = this.#camera;
     this.#camera = this.#ownership.register(camera, ownership);
     this.#notifyCameraChanged(previous, this.#camera);
     this.#resizeController?.apply();
-    this.#pipeline.setSize(this.#currentSize());
+    this.#registry.pipeline.setSize(this.#currentSize());
   }
 
   onCameraChanged(listener: (event: CameraChangedEvent) => void): Disposable {
@@ -143,20 +169,61 @@ export class RenderingRuntime implements Disposable {
     scope.addCleanup(disposable);
   }
 
+  setPipeline(pipeline: RenderPipeline, owner: string): void {
+    this.#assertNotDisposed();
+    this.#registry.setPipeline(pipeline, owner);
+    pipeline.setSize(this.#currentSize());
+  }
+
+  async restoreDefaultPipeline(owner: string): Promise<void> {
+    const previous = this.#registry.restoreDefaultPipeline(owner);
+    this.#defaultPipeline.setSize(this.#currentSize());
+    if (previous) {
+      await previous.dispose();
+    }
+  }
+
+  addStage(stage: RenderStage, scopeId: string): Disposable {
+    this.#assertNotDisposed();
+    const registered = this.#registry.addStage(stage, scopeId);
+    let disposed = false;
+    return {
+      dispose: () => {
+        if (disposed) {
+          return;
+        }
+        disposed = true;
+        this.#registry.removeStage(registered);
+      },
+    };
+  }
+
+  withRendererState<T>(
+    task: (renderer: WebGLRenderer) => T | Promise<T>,
+  ): Promise<T> {
+    this.#assertNotDisposed();
+    return this.#operationQueue.runExclusive(() =>
+      withRendererStateGuard(this.renderer, task),
+    );
+  }
+
   render(): void {
     this.#assertNotDisposed();
     if (!this.canRender) {
       return;
     }
 
-    this.#pipeline.render({
-      scene: this.scene,
-      camera: this.#camera,
-      renderer: this.renderer,
+    this.#operationQueue.runFrame(() => {
+      const context = this.#createRenderContext();
+      this.#runStages('before-main-render', context);
+      this.#registry.pipeline.render(context);
+      this.#runStages('after-main-render', context);
+      this.#runStages('overlay', context);
     });
   }
 
   inspect(): RenderingSnapshot {
+    const registry = this.#registry.inspect();
     return {
       width: this.#resizeController?.width ?? 0,
       height: this.#resizeController?.height ?? 0,
@@ -165,6 +232,9 @@ export class RenderingRuntime implements Disposable {
       sceneOwnership: this.#ownership.get(this.scene) ?? 'external',
       rendererOwnership: this.#ownership.get(this.renderer) ?? 'external',
       cameraOwnership: this.#ownership.get(this.#camera) ?? 'external',
+      pipeline: registry.pipelineName,
+      pipelineOwner: registry.pipelineOwner,
+      stages: registry.stages,
     };
   }
 
@@ -175,12 +245,43 @@ export class RenderingRuntime implements Disposable {
     this.#disposed = true;
 
     this.#resizeController?.dispose();
-    this.#pipeline.dispose();
+
+    const custom = this.#registry.isCustomPipeline
+      ? this.#registry.pipeline
+      : null;
+    this.#registry.clear();
+    void this.#defaultPipeline.dispose();
+    if (custom) {
+      void custom.dispose();
+    }
+
     this.#cameraChangedListeners.clear();
 
     if (this.#ownership.shouldDispose(this.renderer)) {
       this.renderer.dispose();
     }
+  }
+
+  #runStages(
+    phase: 'before-main-render' | 'after-main-render' | 'overlay',
+    context: RenderContext,
+  ): void {
+    for (const stage of this.#registry.stagesFor(phase)) {
+      const snapshot = captureRendererState(this.renderer);
+      try {
+        stage.render(context);
+      } finally {
+        restoreRendererState(this.renderer, snapshot);
+      }
+    }
+  }
+
+  #createRenderContext(): RenderContext {
+    return {
+      scene: this.scene,
+      camera: this.#camera,
+      renderer: this.renderer,
+    };
   }
 
   #notifyCameraChanged(previous: Camera, current: Camera): void {
@@ -192,8 +293,8 @@ export class RenderingRuntime implements Disposable {
 
   #currentSize(): RenderSize {
     return {
-      width: this.#resizeController?.width ?? 0,
-      height: this.#resizeController?.height ?? 0,
+      width: this.#resizeController?.width ?? this.#canvas.clientWidth,
+      height: this.#resizeController?.height ?? this.#canvas.clientHeight,
       pixelRatio: resolvePixelRatio(this.#pixelRatioOption),
     };
   }
@@ -209,7 +310,7 @@ export class RenderingRuntime implements Disposable {
       this.#updateCameraAspect(width, height);
     }
 
-    this.#pipeline.setSize({ width, height, pixelRatio });
+    this.#registry.pipeline.setSize({ width, height, pixelRatio });
   }
 
   #updateCameraAspect(width: number, height: number): void {

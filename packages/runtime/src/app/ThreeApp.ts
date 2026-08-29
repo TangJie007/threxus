@@ -20,6 +20,7 @@
  * M5 增加 WebGL Renderer、Scene、Camera 与 Resize。
  * M6 增加 AssetManager 与 ctx.retain。
  * M8 增加 InputManager 与 ctx.input。
+ * M9 增加 RenderPipeline 扩展与 ctx.rendering。
  */
 
 import type { Camera, Scene, WebGLRenderer } from 'three';
@@ -533,6 +534,7 @@ class ThreeAppRuntime implements ThreeApp {
       renderer: this.#requireRendering().renderer,
       assets: this.#assets,
       input: this.#requireInput().createScope(scope),
+      rendering: this.#requireRendering().createScope(scope),
       signal: scope.signal,
 
       addCleanup: (cleanup: Cleanup): Disposable =>

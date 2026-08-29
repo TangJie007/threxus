@@ -95,13 +95,14 @@ onBeforeUnmount(() => {
 <template>
   <section class="view cube-view">
     <header class="bar">
-      <p class="eyebrow">Threxus M5–M8 · WebGL + Assets + GLTF + Input</p>
+      <p class="eyebrow">Threxus M5–M9 · WebGL + Assets + GLTF + Input + Pipeline</p>
       <h1>旋转立方体</h1>
       <p class="hint">
         M6：<code>acquireTexture</code> 贴图立方体（上方）；
         M7：<code>acquireGLTF</code> + <code>instantiate</code> 多实例
         （下方，Geometry 共享）；
-        M8：点击/悬停上方立方体（<code>ctx.input.on</code>）。
+        M8：点击/悬停上方立方体（<code>ctx.input.on</code>）；
+        M9：<code>ctx.rendering.addStage</code> overlay。
       </p>
     </header>
 
@@ -126,6 +127,14 @@ onBeforeUnmount(() => {
         <div class="status-row">
           <span>交互监听</span>
           <strong>{{ snapshot?.input?.listeners ?? 0 }}</strong>
+        </div>
+        <div class="status-row">
+          <span>Pipeline</span>
+          <strong>{{ snapshot?.rendering?.pipeline ?? '-' }}</strong>
+        </div>
+        <div class="status-row">
+          <span>RenderStage</span>
+          <strong>{{ snapshot?.rendering?.stages ?? 0 }}</strong>
         </div>
         <p v-if="error" class="error">{{ error }}</p>
       </article>
