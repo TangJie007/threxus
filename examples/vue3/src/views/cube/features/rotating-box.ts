@@ -10,11 +10,12 @@ import { cubeBoxes, cubeSceneConfig, cubeTextureUrl } from '../config';
 import type { CubeLogger } from '../types';
 
 /**
- * 立方体 Feature（M6 共享贴图）。
+ * 立方体 Feature（M6 共享贴图 + M8 Pointer 交互）。
  *
  * 1. `acquireTexture` 加载（同 URL 并发会合并成一次请求）
  * 2. `retain(handle)` 把引用绑到 Feature；销毁时自动 release
- * 3. 不要对 handle.value 手动 texture.dispose()——由 AssetManager 负责
+ * 3. `ctx.input.on` 注册 click / hover；Feature dispose 时自动解绑
+ * 4. 不要对 handle.value 手动 texture.dispose()——由 AssetManager 负责
  */
 export function createRotatingBoxFeature(log: CubeLogger): ThreeFeature {
   return {
@@ -83,6 +84,21 @@ export function createRotatingBoxFeature(log: CubeLogger): ThreeFeature {
       }
 
       log(`M6 rotating-box：${meshes.length} 个贴图立方体`);
+
+      for (const [index, mesh] of meshes.entries()) {
+        mesh.name = `cube-box-${index}`;
+        context.input.on(mesh, 'pointerenter', () => {
+          mesh.scale.setScalar(cubeBoxes[index]!.size * 1.08);
+          context.invalidate();
+        });
+        context.input.on(mesh, 'pointerleave', () => {
+          mesh.scale.setScalar(cubeBoxes[index]!.size);
+          context.invalidate();
+        });
+        context.input.on(mesh, 'click', () => {
+          log(`M8 click：${mesh.name}`);
+        });
+      }
 
       context.onUpdate(({ delta }) => {
         meshes.forEach((mesh, index) => {

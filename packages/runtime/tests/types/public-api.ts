@@ -35,7 +35,21 @@ const consumer: ThreeFeature = {
 
 declare const canvas: HTMLCanvasElement;
 declare const renderer: import('three').WebGLRenderer;
+declare const mesh: import('three').Object3D;
 
 const app = createThreeApp({ canvas, renderer, renderMode: 'on-demand', resize: false });
 app.use(provider).use(consumer);
 void app.start();
+
+const interactive: ThreeFeature = {
+  name: 'interactive',
+  setup(context) {
+    const disposable = context.input.on(mesh, 'click', (event) => {
+      void event.object;
+      void event.point;
+      event.stopPropagation();
+    });
+    disposable.dispose();
+  },
+};
+void interactive;

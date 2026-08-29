@@ -10,15 +10,15 @@ Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服�
 
 ```text
 packages/
-  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle / Assets
+  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle / Assets / Input
 examples/
-  vue3/       M0–M7 演示
+  vue3/       M0–M8 演示
   test/       独立 Three.js 实验项目
 ```
 
 ## 当前实现范围
 
-当前完成 M0–M7：
+当前完成 M0–M8：
 
 - `Disposable` 与 `CleanupStack`
 - 强类型 `ServiceKey`
@@ -29,21 +29,19 @@ examples/
 - **WebGL**：Scene / Camera / Renderer、ResizeObserver、DirectRenderPipeline、`ctx.own()`
 - **AssetManager**：Key 规范化、并发合并、Handle 引用计数、延迟释放、`ctx.retain()`、Texture / CubeTexture / File Loader
 - **GLTF**：`acquireGLTF`、`instantiate`（clone / skeleton-clone / shared）、共享 GPU 与实例私有 Material 所有权
+- **Input**：`ctx.input.on`、交互对象注册表、Raycast、冒泡 / `stopPropagation`、enter/leave、click / dblclick、Pointer Capture
 
 ```ts
-const handle = await ctx.assets.acquireGLTF('/models/machine.glb');
-ctx.retain(handle);
-
-const instance = handle.value.instantiate({
-  mode: 'auto',
-  materials: 'shared',
+ctx.input.on(mesh, 'click', (event) => {
+  console.log(event.object.name, event.point);
 });
-ctx.scene.add(instance.root);
-ctx.own(instance.root);
-ctx.addCleanup(instance);
+
+ctx.input.on(mesh, 'pointerenter', () => {
+  mesh.scale.setScalar(1.05);
+});
 ```
 
-输入与射线交互属于 **M8**。
+渲染管线扩展属于 **M9**。
 
 ## 开始使用
 

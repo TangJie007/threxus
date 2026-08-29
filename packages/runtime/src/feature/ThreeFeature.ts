@@ -12,6 +12,7 @@
 import type { Camera, Object3D, Scene, WebGLRenderer } from 'three';
 import type { AssetHandle } from '../assets/AssetHandle';
 import type { AssetManager } from '../assets/AssetManager';
+import type { ScopedInputManager } from '../input/ScopedInputManager';
 import type { Cleanup, Disposable } from '../lifecycle/Disposable';
 import type { CameraChangedEvent } from '../rendering/types';
 import type {
@@ -47,6 +48,8 @@ export interface ThreeContext {
   readonly renderer: WebGLRenderer;
   /** 共享资产管理器。 */
   readonly assets: AssetManager;
+  /** 有作用域的 3D Pointer 输入；注册随 Feature 自动解绑。 */
+  readonly input: ScopedInputManager;
   /** Feature 级取消信号；App dispose 或 Feature 回滚时触发。 */
   readonly signal: AbortSignal;
 

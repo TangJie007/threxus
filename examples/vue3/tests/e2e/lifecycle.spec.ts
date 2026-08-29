@@ -28,6 +28,7 @@ test('shows rotating box on dedicated route', async ({ page }) => {
   await expect(events.filter({ hasText: 'M6 acquireTexture' })).toHaveCount(1);
   await expect(events.filter({ hasText: 'M7 acquireGLTF' })).toHaveCount(1);
   await expect(events.filter({ hasText: 'M7 instantiate' })).toHaveCount(2);
+  await expect(page.getByText('交互监听')).toBeVisible();
 });
 
 test('shows partial-scope and active-feature rollback', async ({ page }) => {

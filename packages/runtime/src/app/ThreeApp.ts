@@ -19,6 +19,7 @@
  *
  * M5 增加 WebGL Renderer、Scene、Camera 与 Resize。
  * M6 增加 AssetManager 与 ctx.retain。
+ * M8 增加 InputManager 与 ctx.input。
  */
 
 import type { Camera, Scene, WebGLRenderer } from 'three';
@@ -43,6 +44,12 @@ import type {
   ThreeContext,
   ThreeFeature,
 } from '../feature/ThreeFeature';
+import {
+  createInputManager,
+  type InputManager,
+  type InputManagerOptions,
+  type InputManagerSnapshot,
+} from '../input';
 import { isDisposable, type Cleanup, type Disposable } from '../lifecycle/Disposable';
 import {
   RenderingRuntime,
@@ -113,6 +120,8 @@ export interface ThreeAppOptions {
     readonly registerDefaultLoaders?: boolean;
     readonly loaders?: readonly AssetLoader[];
   };
+  /** InputManager 选项（click 容差、touch-action、穿透分发等）。 */
+  readonly input?: Omit<InputManagerOptions, 'canvas' | 'getCamera'>;
 }
 
 /** inspect() 返回的单个 Feature 快照。 */
@@ -129,6 +138,7 @@ export interface RuntimeSnapshot {
   readonly scheduler: SchedulerSnapshot;
   readonly rendering: RenderingSnapshot | null;
   readonly assets: AssetManagerSnapshot;
+  readonly input: InputManagerSnapshot | null;
   readonly features: readonly FeatureSnapshot[];
 }
 
@@ -173,6 +183,7 @@ class ThreeAppRuntime implements ThreeApp {
   readonly #controller = new AbortController();
   readonly #scheduler: Scheduler;
   readonly #assets: AssetManager;
+  #input: InputManager | undefined;
   #rendering: RenderingRuntime | undefined;
   #pendingCamera:
     | {
@@ -378,6 +389,7 @@ class ThreeAppRuntime implements ThreeApp {
       scheduler: this.#scheduler.inspect(),
       rendering: this.#rendering?.inspect() ?? null,
       assets: this.#assets.inspect(),
+      input: this.#input?.inspect() ?? null,
       features: this.#registered.map((feature) => {
         const scope = scopesByName[feature.name];
         return {
@@ -423,6 +435,7 @@ class ThreeAppRuntime implements ThreeApp {
       this.#state = 'running';
       this.#scheduler.start();
     } catch (error) {
+      this.#disposeInput();
       await this.#disposeRendering();
       const rollbackErrors = await this.#disposeScopes();
 
@@ -455,6 +468,7 @@ class ThreeAppRuntime implements ThreeApp {
     }
 
     const errors = await this.#disposeScopes();
+    this.#disposeInput();
     await this.#disposeRendering();
     this.#scheduler.dispose();
     try {
@@ -518,6 +532,7 @@ class ThreeAppRuntime implements ThreeApp {
       camera: this.#requireRendering().camera,
       renderer: this.#requireRendering().renderer,
       assets: this.#assets,
+      input: this.#requireInput().createScope(scope),
       signal: scope.signal,
 
       addCleanup: (cleanup: Cleanup): Disposable =>
@@ -639,6 +654,38 @@ class ThreeAppRuntime implements ThreeApp {
     this.#scheduler.setRenderHook(() => {
       this.#rendering?.render();
     });
+
+    const inputOptions = this.options.input;
+    this.#input = createInputManager({
+      canvas: this.options.canvas,
+      getCamera: () => this.#requireRendering().camera,
+      ...(inputOptions?.clickMoveTolerance !== undefined
+        ? { clickMoveTolerance: inputOptions.clickMoveTolerance }
+        : {}),
+      ...(inputOptions?.clickDuration !== undefined
+        ? { clickDuration: inputOptions.clickDuration }
+        : {}),
+      ...(inputOptions?.allIntersections !== undefined
+        ? { allIntersections: inputOptions.allIntersections }
+        : {}),
+      ...(inputOptions?.touchAction !== undefined
+        ? { touchAction: inputOptions.touchAction }
+        : {}),
+      ...(inputOptions?.onComplexTransformWarning !== undefined
+        ? {
+            onComplexTransformWarning:
+              inputOptions.onComplexTransformWarning,
+          }
+        : {}),
+    });
+  }
+
+  #disposeInput(): void {
+    if (!this.#input) {
+      return;
+    }
+    this.#input.dispose();
+    this.#input = undefined;
   }
 
   async #disposeRendering(): Promise<void> {
@@ -657,6 +704,16 @@ class ThreeAppRuntime implements ThreeApp {
       );
     }
     return this.#rendering;
+  }
+
+  #requireInput(): InputManager {
+    if (!this.#input) {
+      throw new ThrexusError(
+        'APP_STATE',
+        'Input is not initialized. Call start() first.',
+      );
+    }
+    return this.#input;
   }
 
   /** 注册调度任务并绑定 FeatureScope 生命周期。 */

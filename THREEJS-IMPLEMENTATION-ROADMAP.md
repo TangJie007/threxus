@@ -789,6 +789,8 @@ gltf.instantiate({
 
 ## 12. M8：InputManager
 
+> **状态：已完成**（`packages/runtime/src/input/`，见 README 当前实现范围）
+
 ### 12.1 目标
 
 提供有作用域、可清理、命中规则确定的 3D Pointer 交互。

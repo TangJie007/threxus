@@ -1,12 +1,13 @@
 /**
  * @threxus/runtime 公共 API 入口。
  *
- * 当前阶段（M0–M7）导出：
+ * 当前阶段（M0–M8）导出：
  * - ThreeApp 工厂与类型
  * - Feature 契约（ThreeFeature / ThreeContext）
  * - Scheduler 与帧回调类型
  * - 渲染类型（Camera / Renderer Options）
  * - AssetManager / AssetHandle / Loader / GLTF 实例
+ * - InputManager / ScopedInputManager / ThreePointerEvent
  * - 生命周期原语（CleanupStack / Disposable）
  * - 服务标识（createServiceKey）
  * - 运行时错误（ThrexusError）
@@ -114,3 +115,15 @@ export {
   type NormalizeAssetKeyOptions,
   type TextureLoaderOptions,
 } from './assets';
+export {
+  clientToNdc,
+  createInputManager,
+  type InputManager,
+  type InputManagerOptions,
+  type InputManagerSnapshot,
+  type NdcPoint,
+  type ScopedInputManager,
+  type ThreePointerEvent,
+  type ThreePointerEventType,
+  type ThreePointerHandler,
+} from './input';
