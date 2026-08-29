@@ -1,0 +1,41 @@
+{
+  "generated": "2026-08-29T06:16:16.588Z",
+  "models": [
+    {
+      "file": "assets/models/robot-arm.glb",
+      "name": "RobotArm",
+      "meshes": 7,
+      "triangles": 584,
+      "materials": 7,
+      "nodes": 12,
+      "sizeKB": 31.6
+    },
+    {
+      "file": "assets/models/conveyor.glb",
+      "name": "ConveyorModule",
+      "meshes": 4,
+      "triangles": 544,
+      "materials": 7,
+      "nodes": 5,
+      "sizeKB": 27.9
+    },
+    {
+      "file": "assets/models/cabinet.glb",
+      "name": "ControlCabinet",
+      "meshes": 5,
+      "triangles": 288,
+      "materials": 7,
+      "nodes": 6,
+      "sizeKB": 18.6
+    },
+    {
+      "file": "assets/models/agv.glb",
+      "name": "AGV",
+      "meshes": 5,
+      "triangles": 328,
+      "materials": 7,
+      "nodes": 6,
+      "sizeKB": 19
+    }
+  ]
+}
