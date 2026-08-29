@@ -1,7 +1,7 @@
 /**
  * @threxus/runtime 公共 API 入口。
  *
- * 当前阶段（M0–M11）导出：
+ * 当前阶段（M0–M12）导出：
  * - ThreeApp 工厂与类型
  * - Feature 契约（ThreeFeature / ThreeContext）
  * - Scheduler 与帧回调类型
@@ -11,6 +11,7 @@
  * - RenderPipeline / RenderStage / ScopedRendering
  * - WebGL Context lost/restored（GraphicsState）
  * - 内置 Feature：Environment / OrbitControls / Selection / Highlight / Stats / Postprocessing
+ * - 诊断：Logger / inspectRuntime / lifecycle warnings
  * - 生命周期原语（CleanupStack / Disposable）
  * - 服务标识（createServiceKey）
  * - 运行时错误（ThrexusError）
@@ -167,6 +168,18 @@ export {
   type StatsFeatureOptions,
   type StatsServiceType,
 } from './features';
+export {
+  createLogger,
+  inspectRuntime,
+  shouldEnableLifecycleWarnings,
+  warnLifecycle,
+  type CreateLoggerOptions,
+  type DiagnosticSnapshot,
+  type LifecycleWarningOptions,
+  type LogLevel,
+  type Logger,
+  type RendererInfoSnapshot,
+} from './diagnostics';
 export {
   clientToNdc,
   createInputManager,

@@ -22,6 +22,11 @@ import type { RenderingRuntime } from '../../rendering/RenderingRuntime';
 import type { Scheduler } from '../../scheduler/Scheduler';
 import { ServiceContainer } from '../../services/ServiceContainer';
 import {
+  shouldEnableLifecycleWarnings,
+  warnLifecycle,
+  type Logger,
+} from '../../diagnostics';
+import {
   createAppAssets,
   createAppScheduler,
   createInputSubsystem,
@@ -51,6 +56,8 @@ export class ThreeAppRuntime implements ThreeApp {
   readonly #controller = new AbortController();
   readonly #scheduler: Scheduler;
   readonly #assets: AssetManager;
+  readonly #logger: Logger | undefined;
+  readonly #lifecycleWarnings: boolean;
   #input: InputManager | undefined;
   #rendering: RenderingRuntime | undefined;
   #pendingCamera: PendingCamera | undefined;
@@ -62,6 +69,10 @@ export class ThreeAppRuntime implements ThreeApp {
   #disposePromise: Promise<void> | undefined;
 
   constructor(readonly options: ThreeAppOptions) {
+    this.#logger = options.diagnostics?.logger;
+    this.#lifecycleWarnings = shouldEnableLifecycleWarnings(
+      options.diagnostics?.lifecycleWarnings,
+    );
     this.#scheduler = createAppScheduler(
       options,
       () => this.#state === 'running' && this.#graphicsState === 'available',
@@ -99,6 +110,12 @@ export class ThreeAppRuntime implements ThreeApp {
 
   use(feature: ThreeFeature): this {
     if (this.#state !== 'created') {
+      if (this.#lifecycleWarnings) {
+        warnLifecycle(
+          this.#logger,
+          `use("${feature.name}") called while app is ${this.#state}; features must be registered before start().`,
+        );
+      }
       throw new ThrexusError(
         'APP_STATE',
         `Cannot register feature "${feature.name}" while app is ${this.#state}.`,
@@ -200,6 +217,9 @@ export class ThreeAppRuntime implements ThreeApp {
     }
 
     this.#state = 'disposing';
+    if (this.#lifecycleWarnings) {
+      this.#logger?.info('Application disposing.');
+    }
     this.#scheduler.stop();
     this.#controller.abort(new Error('Application is being disposed.'));
     for (const scope of this.#scopes) {

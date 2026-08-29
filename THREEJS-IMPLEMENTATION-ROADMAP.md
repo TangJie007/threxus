@@ -1024,6 +1024,8 @@ Postprocessing 验证：
 
 ## 16. M12：诊断、性能与稳定发布
 
+> **状态：已完成**（`packages/runtime/src/diagnostics/` + perf/memory 测试 + `docs/BROWSER_MATRIX.md`）
+
 ### 16.1 诊断能力
 
 实现：

@@ -4,42 +4,42 @@
 
 Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服务、异步初始化和结构化销毁。
 
-完整设计见 [THREEJS-ENCAPSULATION-DESIGN.md](./THREEJS-ENCAPSULATION-DESIGN.md)，实施顺序见 [THREEJS-IMPLEMENTATION-ROADMAP.md](./THREEJS-IMPLEMENTATION-ROADMAP.md)。
+完整设计见 [THREEJS-ENCAPSULATION-DESIGN.md](./THREEJS-ENCAPSULATION-DESIGN.md)，实施顺序见 [THREEJS-IMPLEMENTATION-ROADMAP.md](./THREEJS-IMPLEMENTATION-ROADMAP.md)。浏览器矩阵见 [docs/BROWSER_MATRIX.md](./docs/BROWSER_MATRIX.md)。
 
 ## 项目结构
 
 ```text
 packages/
-  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle / Assets / Input / Rendering / Features
+  runtime/    @threxus/runtime —— App / Feature / Assets / Input / Rendering / Features / Diagnostics
 examples/
-  vue3/       M0–M11 演示
+  vue3/       M0–M12 演示
   test/       独立 Three.js 实验项目
+docs/
+  BROWSER_MATRIX.md
 ```
 
 ## 当前实现范围
 
-当前完成 M0–M11：
+**M0–M12 已完成（核心稳定版范围）**：
 
 - 微内核：Disposable、ServiceKey、FeatureGraph、ThreeApp、Scheduler、WebGL、Assets、GLTF、Input、RenderPipeline、Context restore
-- **内置 Feature（M11）**：
-  - `environmentFeature` — 背景 / 灯光 / 地面
-  - `orbitControlsFeature` — OrbitControls + `CameraControlService`
-  - `selectionFeature` — 点选 + `SelectionService`
-  - `highlightFeature` — 依赖 Selection 的 emissive 高亮
-  - `statsFeature` — FPS / Renderer info / 资产统计
-  - `postprocessingFeature` — 唯一 Composer Pipeline + `PostprocessingService.addPass`
+- 内置 Feature：Environment / OrbitControls / Selection / Highlight / Stats / Postprocessing
+- **诊断（M12）**：`createLogger`、`inspectRuntime`、生命周期警告、性能/内存基线测试、浏览器矩阵文档
 
 ```ts
-app
-  .use(environmentFeature({ background: 0x101820 }))
-  .use(orbitControlsFeature({ damping: true }))
-  .use(selectionFeature())
-  .use(highlightFeature())
-  .use(statsFeature())
-  .use(postprocessingFeature());
-```
+import { createLogger, createThreeApp, inspectRuntime } from '@threxus/runtime';
 
-诊断、性能基准与稳定发布属于 **M12**。
+const app = createThreeApp({
+  canvas,
+  diagnostics: {
+    logger: createLogger({ level: 'warn' }),
+    lifecycleWarnings: true,
+  },
+});
+
+await app.start();
+console.log(inspectRuntime(app).summary);
+```
 
 ## 开始使用
 

@@ -2,6 +2,7 @@
  * ThreeApp 配置、快照与相机切换选项。
  */
 
+import type { Logger } from '../../diagnostics/Logger';
 import type {
   AssetLoader,
   AssetManagerOptions,
@@ -56,6 +57,12 @@ export interface ThreeAppOptions {
   };
   /** InputManager 选项（click 容差、touch-action、穿透分发等）。 */
   readonly input?: Omit<InputManagerOptions, 'canvas' | 'getCamera'>;
+  /** 诊断：日志与生命周期警告。 */
+  readonly diagnostics?: {
+    readonly logger?: Logger;
+    /** 默认非 production 开启。 */
+    readonly lifecycleWarnings?: boolean;
+  };
 }
 
 /** inspect() 返回的单个 Feature 快照。 */
