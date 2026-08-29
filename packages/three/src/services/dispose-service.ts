@@ -1,7 +1,10 @@
 /**
- * 销毁服务：统一回收 Object3D 的 GPU 资源。
+ * 销毁服务：业务侧回收 Object3D GPU 资源的**唯一入口**。
  *
- * 实体不进 DI；销毁经本服务，不手写散落的 dispose。
+ * 约定：Feature / 业务代码请注入本服务调用 `dispose`；
+ * 底层工具 `disposeObject3D` 仅供本服务内部使用，业务勿直接调用。
+ *
+ * 对象本身不进 DI。
  */
 
 import { Injectable } from '@threxus/core';

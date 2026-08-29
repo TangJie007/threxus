@@ -1,12 +1,14 @@
 /**
- * 编辑器扩展服务骨架（Gizmo / Snapshot / Hotkey / Clipboard / AgentBridge）。
+ * 编辑器扩展服务骨架（experimental / 未完成）。
  *
- * 本阶段提供可注入单例与最小 API，后续按编辑器需求填充实现。
+ * 提供可注入单例与最小 API 占位，便于模块组装与后续填充。
+ * **不保证**交互手柄、撤销联动、跨端 Agent 等生产行为；API 可能变更。
  */
 
 import { Injectable } from '@threxus/core';
 import type { Object3D, WebGLRenderer } from 'three';
 
+/** @experimental 变换手柄占位 */
 @Injectable()
 export class GizmoService {
   private target: Object3D | null = null;
@@ -24,11 +26,9 @@ export class GizmoService {
   }
 }
 
+/** @experimental 截图占位（需在渲染后调用） */
 @Injectable()
 export class SnapshotService {
-  /**
-   * 从 renderer 读取像素为 data URL（需在渲染后调用）。
-   */
   captureDataUrl(
     renderer: WebGLRenderer,
     type = 'image/png',
@@ -37,6 +37,7 @@ export class SnapshotService {
   }
 }
 
+/** @experimental 快捷键占位 */
 @Injectable()
 export class HotkeyService {
   private readonly handlers = new Map<string, (event: KeyboardEvent) => void>();
@@ -68,6 +69,7 @@ export class HotkeyService {
   }
 }
 
+/** @experimental 剪贴板占位 */
 @Injectable()
 export class ClipboardService {
   async writeText(text: string): Promise<void> {
@@ -84,6 +86,7 @@ export class ClipboardService {
   }
 }
 
+/** @experimental Agent 桥接占位 */
 @Injectable()
 export class AgentBridgeService {
   private readonly listeners = new Set<(payload: unknown) => void>();

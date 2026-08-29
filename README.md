@@ -33,7 +33,8 @@ Component      挂在 Object3D.userData，由 ComponentService 调度
 - `SceneService` / `CameraService`：Three **场景图**（SceneGraph）
 - core `createSceneScope`：DI **场景作用域**（SceneScope），二者不同
 - 相机位姿用 `THREE_VIEWPORT`，不要写在业务 Feature 里
-- 可选能力按需 imports：`ThreeAssetModule` / `ThreeInteractionModule` / `ThreeSerializeModule` / `ThreeEditorModule`
+- 可选能力按需 imports：`ThreeAssetModule` / `ThreeInteractionModule` / `ThreeSerializeModule` / `ThreeEditorModule`（编辑器模块为 experimental 骨架）
+- GPU 销毁统一走 `DisposeService`；组件类型键推荐 `createComponentType()`
 
 最小功能脚手架：
 

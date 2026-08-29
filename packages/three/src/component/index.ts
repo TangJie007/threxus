@@ -10,18 +10,39 @@ import type { Object3D } from 'three';
 export const COMPONENTS_USERDATA_KEY = 'threxusComponents';
 
 /**
+ * 组件类型键：推荐 {@link createComponentType} 生成 symbol，避免字符串拼写冲突。
+ * 仍兼容字面量 string。
+ */
+export type ComponentType = string | symbol;
+
+/**
+ * 创建唯一组件类型键（推荐用法）。
+ *
+ * @example
+ * ```ts
+ * export const ROTATING = createComponentType('rotating');
+ * class RotatingComponent implements Component {
+ *   readonly type = ROTATING;
+ * }
+ * ```
+ */
+export function createComponentType(description: string): symbol {
+  return Symbol(description);
+}
+
+/**
  * 组件最小接口。
  */
 export interface Component {
-  /** 组件类型键（同 object 上唯一） */
-  readonly type: string;
+  /** 同 object 上唯一；推荐 symbol */
+  readonly type: ComponentType;
   onAttach?(object: Object3D): void;
   onDetach?(object: Object3D): void;
   update?(dt: number, object: Object3D): void;
 }
 
 /** Object3D.userData 上的组件 Map */
-export type ComponentMap = Map<string, Component>;
+export type ComponentMap = Map<ComponentType, Component>;
 
 /**
  * 读取或创建对象上的组件袋。

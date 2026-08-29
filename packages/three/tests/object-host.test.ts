@@ -18,6 +18,7 @@ import {
   THREE_VIEWPORT,
   ThreeCoreModule,
   ViewportService,
+  createComponentType,
   createPipeline,
   createSyncPipeline,
   disposeObject3D,
@@ -70,7 +71,24 @@ describe('ObjectHost', () => {
 });
 
 describe('disposeObject3D / DisposeService', () => {
-  it('释放 Mesh 的 geometry 与 material', () => {
+  it('DisposeService 是业务回收入口', () => {
+    const geometry = new BoxGeometry(1, 1, 1);
+    const material = new MeshBasicMaterial();
+    const mesh = new Mesh(geometry, material);
+    const parent = new Mesh();
+    parent.add(mesh);
+    const geoDispose = vi.spyOn(geometry, 'dispose');
+    const matDispose = vi.spyOn(material, 'dispose');
+
+    const service = new DisposeService();
+    service.dispose(mesh, { recursive: false, detach: true });
+
+    expect(mesh.parent).toBeNull();
+    expect(geoDispose).toHaveBeenCalledOnce();
+    expect(matDispose).toHaveBeenCalledOnce();
+  });
+
+  it('底层 disposeObject3D 仍可用于单测', () => {
     const geometry = new BoxGeometry(1, 1, 1);
     const material = new MeshBasicMaterial();
     const mesh = new Mesh(geometry, material);
@@ -81,17 +99,6 @@ describe('disposeObject3D / DisposeService', () => {
 
     expect(geoDispose).toHaveBeenCalledOnce();
     expect(matDispose).toHaveBeenCalledOnce();
-  });
-
-  it('DisposeService.dispose 可 detach', () => {
-    const parent = new Mesh();
-    const geometry = new BoxGeometry(1, 1, 1);
-    const material = new MeshBasicMaterial();
-    const mesh = new Mesh(geometry, material);
-    parent.add(mesh);
-    const service = new DisposeService();
-    service.dispose(mesh, { recursive: false, detach: true });
-    expect(mesh.parent).toBeNull();
   });
 });
 
@@ -146,23 +153,27 @@ describe('CameraService fov smoke', () => {
 });
 
 describe('ComponentService', () => {
-  it('add / update / remove 组件', () => {
+  it('add / update / remove 组件；无 update 不进热路径', () => {
     const ecs = new ComponentService();
     const mesh = new Mesh();
     const updates: number[] = [];
-    const comp: Component = {
-      type: 'spin',
+    const spin: Component = {
+      type: createComponentType('spin'),
       update(dt) {
         updates.push(dt);
       },
     };
+    const tag: Component = {
+      type: createComponentType('tag'),
+    };
 
-    ecs.add(mesh, comp);
-    expect(ecs.has(mesh, 'spin')).toBe(true);
+    ecs.add(mesh, tag);
+    ecs.add(mesh, spin);
+    expect(ecs.has(mesh, spin.type)).toBe(true);
     ecs.onUpdate(0.01);
     expect(updates).toEqual([0.01]);
 
-    expect(ecs.remove(mesh, 'spin')).toBe(true);
+    expect(ecs.remove(mesh, spin.type)).toBe(true);
     ecs.onUpdate(0.02);
     expect(updates).toEqual([0.01]);
   });

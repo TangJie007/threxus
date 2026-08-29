@@ -52,7 +52,8 @@ export type {
   ThrexusConfig,
 } from './services';
 export { ObjectHost, SceneObjectHost } from './host';
-export type { Component, ComponentMap } from './component';
+export type { Component, ComponentMap, ComponentType } from './component';
+export { createComponentType, COMPONENTS_USERDATA_KEY } from './component';
 export {
   createPipeline,
   createSyncPipeline,
@@ -63,6 +64,7 @@ export {
   type SyncNext,
   type SyncPipeline,
 } from './middleware';
+/** @internal 业务请使用 DisposeService */
 export { disposeObject3D } from './utils';
 export { THREE_VIEWPORT, type ViewportOptions } from './tokens';
 export {
