@@ -12,13 +12,13 @@ Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服�
 packages/
   runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle
 examples/
-  vue3/       M0–M5 生命周期与 WebGL 演示
+  vue3/       M0–M6 生命周期 / WebGL / 资产演示
   test/       独立 Three.js 实验项目
 ```
 
 ## 当前实现范围
 
-当前完成 M0–M5：
+当前完成 M0–M6：
 
 - `Disposable` 与 `CleanupStack`
 - 强类型 `ServiceKey`
@@ -27,6 +27,7 @@ examples/
 - ThreeApp 启动、失败回滚和幂等销毁
 - Scheduler：RAF 循环、`onUpdate` / `onFixedUpdate` / 渲染阶段钩子
 - **WebGL**：Scene / Camera / Renderer、ResizeObserver、DirectRenderPipeline、`ctx.own()`
+- **AssetManager**：Key 规范化、并发合并、Handle 引用计数、延迟释放、`ctx.retain()`、Texture / CubeTexture / File Loader
 
 ```ts
 import { createThreeApp } from '@threxus/runtime';
@@ -38,24 +39,24 @@ const app = createThreeApp({
 });
 
 app.use({
-  name: 'rotating-box',
-  setup(ctx) {
+  name: 'textured-box',
+  async setup(ctx) {
+    const handle = await ctx.assets.acquireTexture('/floor.webp');
+    ctx.retain(handle);
+
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(),
-      new THREE.MeshStandardMaterial(),
+      new THREE.MeshStandardMaterial({ map: handle.value }),
     );
     ctx.scene.add(mesh);
     ctx.own(mesh);
-    ctx.onUpdate(({ delta }) => {
-      mesh.rotation.y += delta;
-    });
   },
 });
 
 await app.start();
 ```
 
-资产加载（AssetManager）属于 **M6**。
+GLTF 实例与共享 GPU 资源属于 **M7**。
 
 ## 开始使用
 

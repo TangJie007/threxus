@@ -18,10 +18,22 @@
  * - 每个 Scope dispose 时 LIFO 执行其 cleanup，并 removeOwner 对应服务。
  *
  * M5 增加 WebGL Renderer、Scene、Camera 与 Resize。
+ * M6 增加 AssetManager 与 ctx.retain。
  */
 
 import type { Camera, Scene, WebGLRenderer } from 'three';
 import { keyBy } from 'es-toolkit';
+import {
+  createAssetManager,
+  createCubeTextureAssetLoader,
+  createFileAssetLoader,
+  createTextureAssetLoader,
+  type AssetHandle,
+  type AssetLoader,
+  type AssetManager,
+  type AssetManagerOptions,
+  type AssetManagerSnapshot,
+} from '../assets';
 import { ThrexusError, toError } from '../errors';
 import { FeatureRegistry } from '../feature/FeatureRegistry';
 import { FeatureScope, type FeatureScopeState } from '../feature/FeatureScope';
@@ -95,6 +107,11 @@ export interface ThreeAppOptions {
   readonly errorPolicy?: SchedulerErrorPolicy;
   /** 自定义 RAF 驱动（测试用）。 */
   readonly rafDriver?: RafDriver;
+  /** AssetManager 选项；默认注册 texture / cube-texture / file Loader。 */
+  readonly assets?: AssetManagerOptions & {
+    readonly registerDefaultLoaders?: boolean;
+    readonly loaders?: readonly AssetLoader[];
+  };
 }
 
 /** inspect() 返回的单个 Feature 快照。 */
@@ -110,6 +127,7 @@ export interface RuntimeSnapshot {
   readonly services: number;
   readonly scheduler: SchedulerSnapshot;
   readonly rendering: RenderingSnapshot | null;
+  readonly assets: AssetManagerSnapshot;
   readonly features: readonly FeatureSnapshot[];
 }
 
@@ -123,6 +141,7 @@ export interface ThreeApp extends Disposable {
   readonly scene: Scene;
   readonly camera: Camera;
   readonly renderer: WebGLRenderer;
+  readonly assets: AssetManager;
 
   use(feature: ThreeFeature): this;
   start(): Promise<void>;
@@ -152,6 +171,7 @@ class ThreeAppRuntime implements ThreeApp {
   /** App 级 AbortController；dispose 在 starting 期间也会触发 abort。 */
   readonly #controller = new AbortController();
   readonly #scheduler: Scheduler;
+  readonly #assets: AssetManager;
   #rendering: RenderingRuntime | undefined;
   #pendingCamera:
     | {
@@ -185,6 +205,29 @@ class ThreeAppRuntime implements ThreeApp {
         ? { rafDriver: options.rafDriver }
         : {}),
     });
+
+    const assetOptions = options.assets;
+    this.#assets = createAssetManager({
+      ...(assetOptions?.releaseDelayMs !== undefined
+        ? { releaseDelayMs: assetOptions.releaseDelayMs }
+        : {}),
+      ...(assetOptions?.failureBackoffMs !== undefined
+        ? { failureBackoffMs: assetOptions.failureBackoffMs }
+        : {}),
+      ...(assetOptions?.baseURI !== undefined
+        ? { baseURI: assetOptions.baseURI }
+        : {}),
+    });
+
+    const registerDefaults = assetOptions?.registerDefaultLoaders !== false;
+    if (registerDefaults) {
+      this.#assets.registerLoader(createTextureAssetLoader());
+      this.#assets.registerLoader(createCubeTextureAssetLoader());
+      this.#assets.registerLoader(createFileAssetLoader());
+    }
+    for (const loader of assetOptions?.loaders ?? []) {
+      this.#assets.registerLoader(loader);
+    }
   }
 
   get state(): AppState {
@@ -205,6 +248,10 @@ class ThreeAppRuntime implements ThreeApp {
 
   get renderer(): WebGLRenderer {
     return this.#requireRendering().renderer;
+  }
+
+  get assets(): AssetManager {
+    return this.#assets;
   }
 
   use(feature: ThreeFeature): this {
@@ -328,6 +375,7 @@ class ThreeAppRuntime implements ThreeApp {
       services: this.#services.size,
       scheduler: this.#scheduler.inspect(),
       rendering: this.#rendering?.inspect() ?? null,
+      assets: this.#assets.inspect(),
       features: this.#registered.map((feature) => {
         const scope = scopesByName[feature.name];
         return {
@@ -407,6 +455,11 @@ class ThreeAppRuntime implements ThreeApp {
     const errors = await this.#disposeScopes();
     await this.#disposeRendering();
     this.#scheduler.dispose();
+    try {
+      await this.#assets.dispose();
+    } catch (error) {
+      errors.push(toError(error));
+    }
     this.#services.clear();
     this.#state = 'disposed';
 
@@ -462,10 +515,17 @@ class ThreeAppRuntime implements ThreeApp {
       scene: this.#requireRendering().scene,
       camera: this.#requireRendering().camera,
       renderer: this.#requireRendering().renderer,
+      assets: this.#assets,
       signal: scope.signal,
 
       addCleanup: (cleanup: Cleanup): Disposable =>
         scope.addCleanup(cleanup),
+
+      retain: <T>(handle: AssetHandle<T>): void => {
+        scope.addCleanup(() => {
+          handle.dispose();
+        });
+      },
 
       provide: <T>(
         key: ServiceKey<T>,

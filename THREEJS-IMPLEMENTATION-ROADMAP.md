@@ -639,6 +639,8 @@ await app.start()
 
 ## 10. M6：AssetManager 与资源所有权
 
+> **状态：已完成**（`packages/runtime/src/assets/`，见 README 当前实现范围）
+
 ### 10.1 目标
 
 实现共享资产的加载、缓存、引用和释放。

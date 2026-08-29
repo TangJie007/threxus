@@ -1,11 +1,12 @@
 /**
  * @threxus/runtime 公共 API 入口。
  *
- * 当前阶段（M0–M5）导出：
+ * 当前阶段（M0–M6）导出：
  * - ThreeApp 工厂与类型
  * - Feature 契约（ThreeFeature / ThreeContext）
  * - Scheduler 与帧回调类型
  * - 渲染类型（Camera / Renderer Options）
+ * - AssetManager / AssetHandle / Loader
  * - 生命周期原语（CleanupStack / Disposable）
  * - 服务标识（createServiceKey）
  * - 运行时错误（ThrexusError）
@@ -74,3 +75,32 @@ export {
   type ServiceKey,
 } from './services/ServiceKey';
 export { ThrexusError, type ThrexusErrorCode } from './errors';
+export {
+  ReleasedAssetHandleError,
+  createAssetManager,
+  createCubeTextureAssetLoader,
+  createDeferredTestLoader,
+  createFileAssetLoader,
+  createTextureAssetLoader,
+  normalizeAssetKey,
+  resolveAssetSource,
+  stableSerialize,
+  type AcquireOptions,
+  type AssetEntryState,
+  type AssetHandle,
+  type AssetHandleState,
+  type AssetKey,
+  type AssetKeyParts,
+  type AssetLoadContext,
+  type AssetLoader,
+  type AssetManager,
+  type AssetManagerOptions,
+  type AssetManagerSnapshot,
+  type AssetPin,
+  type CubeTextureLoaderOptions,
+  type DeferredTestLoader,
+  type FileAssetResult,
+  type FileLoaderOptions,
+  type NormalizeAssetKeyOptions,
+  type TextureLoaderOptions,
+} from './assets';

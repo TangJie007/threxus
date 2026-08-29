@@ -10,6 +10,8 @@
  */
 
 import type { Camera, Object3D, Scene, WebGLRenderer } from 'three';
+import type { AssetHandle } from '../assets/AssetHandle';
+import type { AssetManager } from '../assets/AssetManager';
 import type { Cleanup, Disposable } from '../lifecycle/Disposable';
 import type { CameraChangedEvent } from '../rendering/types';
 import type {
@@ -43,6 +45,8 @@ export interface ThreeContext {
   readonly scene: Scene;
   readonly camera: Camera;
   readonly renderer: WebGLRenderer;
+  /** 共享资产管理器。 */
+  readonly assets: AssetManager;
   /** Feature 级取消信号；App dispose 或 Feature 回滚时触发。 */
   readonly signal: AbortSignal;
 
@@ -54,6 +58,9 @@ export interface ThreeContext {
   inject<T>(key: ServiceKey<T>): T;
   injectOptional<T>(key: ServiceKey<T>): T | undefined;
   addCleanup(cleanup: Cleanup): Disposable;
+
+  /** 将 Handle 绑定到当前 Feature；Feature 销毁时自动 release。 */
+  retain<T>(handle: AssetHandle<T>): void;
 
   /** 每帧 update 阶段回调；注册自动加入当前 FeatureScope。 */
   onUpdate(callback: UpdateCallback, options?: TaskOptions): Disposable;

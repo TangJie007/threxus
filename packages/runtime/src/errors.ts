@@ -12,14 +12,18 @@
 /** 运行时错误码，按模块/契约划分。 */
 export type ThrexusErrorCode =
   | 'APP_STATE'
+  | 'ASSET_LOAD'
+  | 'ASSET_STATE'
   | 'CLEANUP_STATE'
   | 'DUPLICATE_FEATURE'
   | 'DUPLICATE_SERVICE'
   | 'FEATURE_DEPENDENCY_CYCLE'
   | 'FEATURE_SETUP'
   | 'MISSING_SERVICE'
+  | 'RELEASED_ASSET_HANDLE'
   | 'SCOPE_STATE'
-  | 'SERVICE_CONTRACT';
+  | 'SERVICE_CONTRACT'
+  | 'UNKNOWN_LOADER';
 
 /** 带错误码的运行时异常。 */
 export class ThrexusError extends Error {

@@ -8,6 +8,9 @@ export const cubeSceneConfig = {
   lightPosition: [3, 4, 5] as const,
 } as const;
 
+/** M6：public/textures/checker.png，经 AssetManager 加载。 */
+export const cubeTextureUrl = '/textures/checker.png';
+
 /** 多个立方体：位置 / 颜色 / 初始旋转 / 尺寸 / 自转速度。 */
 export const cubeBoxes = [
   {

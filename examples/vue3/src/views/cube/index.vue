@@ -38,20 +38,19 @@ onMounted(async () => {
     return;
   }
 
-  // 1. 创建 App，绑定 canvas 和相机
   const runtime = createThreeApp({
     canvas,
     camera: cubeCamera,
-  }); 
+    // 演示用：引用归零后尽快释放，方便观察 dispose 行为
+    assets: { releaseDelayMs: 0 },
+  });
   runtime.use(createSceneFeature());
-  // 2. 注册 Feature（立方体、灯光、旋转逻辑在 features/rotating-box.ts）
   runtime.use(createRotatingBoxFeature(log));
 
   app.value = markRaw(runtime);
   log('调用 app.start()');
   refresh();
 
-  // 3. 启动运行时
   try {
     await runtime.start();
     log('App 启动完成');
@@ -71,13 +70,12 @@ onBeforeUnmount(() => {
 <template>
   <section class="view cube-view">
     <header class="bar">
-      <p class="eyebrow">Threxus M5 · WebGL</p>
+      <p class="eyebrow">Threxus M5–M6 · WebGL + Assets</p>
       <h1>旋转立方体</h1>
       <p class="hint">
-        学习用最小结构：本页用 <code>&lt;script setup&gt;</code> 直接
-        <code>createThreeApp</code>，3D 逻辑在
-        <code>features/rotating-box.ts</code>，参数在
-        <code>config.ts</code>。
+        M6：<code>acquireTexture</code> 加载
+        <code>/textures/checker.png</code>，
+        <code>retain</code> 绑定 Feature 生命周期；同 URL 并发 acquire 会合并为一次加载。
       </p>
     </header>
 
@@ -92,8 +90,12 @@ onBeforeUnmount(() => {
           <strong>{{ snapshot?.scheduler.frame ?? 0 }}</strong>
         </div>
         <div class="status-row">
-          <span>渲染模式</span>
-          <strong>{{ snapshot?.scheduler.renderMode ?? '-' }}</strong>
+          <span>资产条目</span>
+          <strong>{{ snapshot?.assets.entries ?? 0 }}</strong>
+        </div>
+        <div class="status-row">
+          <span>资产引用</span>
+          <strong>{{ snapshot?.assets.totalRefs ?? 0 }}</strong>
         </div>
         <p v-if="error" class="error">{{ error }}</p>
       </article>
