@@ -39,16 +39,16 @@ export type InteractionContext = {
 @Injectable()
 export class InteractionService implements OnModuleInit, OnDispose {
   @Inject(CANVAS)
-  canvas: HTMLCanvasElement | null;
+  canvas!: HTMLCanvasElement | null;
 
   @Inject(SceneService)
-  scenes: SceneService;
+  scenes!: SceneService;
 
   @Inject(CameraService)
-  cameras: CameraService;
+  cameras!: CameraService;
 
   @Inject(SelectionService)
-  selection: SelectionService;
+  selection!: SelectionService;
 
   private readonly raycaster = new Raycaster();
   private readonly middlewares: Middleware<InteractionContext>[] = [];

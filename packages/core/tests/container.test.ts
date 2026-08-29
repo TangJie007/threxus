@@ -77,6 +77,22 @@ describe('Container', () => {
     expect(container.resolve(Tagged).label).toBe('ok');
   });
 
+  it('子类继承基类上的字段 @Inject', () => {
+    const LABEL = createToken<string>('label');
+
+    class BaseTagged {
+      @Inject(LABEL)
+      label!: string;
+    }
+
+    @Injectable()
+    class Tagged extends BaseTagged {}
+
+    const container = createContainer().set(LABEL, 'from-base').register(Tagged);
+
+    expect(container.resolve(Tagged).label).toBe('from-base');
+  });
+
   it('useFactory 按 inject 解析参数', () => {
     const A = createToken<number>('a');
     const SUM = createToken<number>('sum');

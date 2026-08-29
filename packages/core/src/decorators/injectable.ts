@@ -20,7 +20,7 @@ import type { InjectableOptions } from '../types';
  * @Injectable()
  * class OrbitFeature {
  *   @Inject(SceneService)
- *   scenes: SceneService;
+ *   scenes!: SceneService;
  * }
  *
  * @Injectable({ inject: [CLOCK] })

@@ -9,10 +9,10 @@ import { CameraService } from './camera-service';
 @Injectable()
 export class ResizeService implements OnModuleInit, OnDispose {
   @Inject(WebGLRenderer)
-  renderer: WebGLRenderer;
+  renderer!: WebGLRenderer;
 
   @Inject(CameraService)
-  cameras: CameraService;
+  cameras!: CameraService;
 
   private readonly onResize = (): void => {
     this.applySize();

@@ -3,13 +3,8 @@
  * 帧循环由 ComponentService 驱动；Mesh 不进 DI。
  */
 
-import { Inject, Injectable, type OnModuleInit } from '@threxus/core';
-import {
-  ComponentService,
-  disposeObject3D,
-  ObjectHost,
-  SceneService,
-} from '@threxus/three';
+import { Injectable, type OnModuleInit } from '@threxus/core';
+import { SceneObjectHost } from '@threxus/three';
 import { BoxGeometry, Mesh, MeshNormalMaterial } from 'three';
 import { RotatingComponent } from './rotating.component';
 
@@ -34,25 +29,9 @@ function createCube(options: RotatingOptions = {}): Mesh {
 
 @Injectable()
 export class RotatingFeature
-  extends ObjectHost<Mesh>
+  extends SceneObjectHost<Mesh>
   implements OnModuleInit
 {
-  @Inject(SceneService)
-  scenes: SceneService;
-
-  @Inject(ComponentService)
-  components: ComponentService;
-
-  protected attach(mesh: Mesh): void {
-    this.scenes.attach(mesh);
-  }
-
-  protected detach(mesh: Mesh): void {
-    this.components.clear(mesh);
-    this.scenes.detach(mesh);
-    disposeObject3D(mesh, false);
-  }
-
   spawnCube(options: RotatingOptions = {}): Mesh {
     const mesh = createCube(options);
     this.components.add(

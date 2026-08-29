@@ -29,7 +29,7 @@
 
 - GizmoService / SnapshotService / ConfigService
 
-- EntityComponentService（组件调度中心）
+- ComponentService（组件调度中心）
 
 - InstancedFoliageService（海量实例管理器）
 
@@ -77,7 +77,7 @@
 
 ✅ 挂载在 Object3D\.userData
 
-✅ 由 EntityComponentService 统一每帧调度
+✅ 由 ComponentService 统一每帧调度
 
 适合：旋转、摆动、动画、锁定、可拾取、AI标记
 

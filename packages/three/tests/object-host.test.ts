@@ -19,6 +19,7 @@ import {
   ThreeCoreModule,
   ViewportService,
   createPipeline,
+  createSyncPipeline,
   disposeObject3D,
   type Component,
 } from '../src/index';
@@ -167,8 +168,8 @@ describe('ComponentService', () => {
   });
 });
 
-describe('createPipeline / RenderService.use', () => {
-  it('中间件可短路跳过 terminal', async () => {
+describe('createPipeline / createSyncPipeline / RenderService.use', () => {
+  it('异步中间件可短路跳过 terminal', async () => {
     const calls: string[] = [];
     const pipeline = createPipeline<{ skip?: boolean }>([
       async (ctx, next) => {
@@ -190,7 +191,29 @@ describe('createPipeline / RenderService.use', () => {
     expect(calls).toEqual(['mw', 'mw', 'terminal']);
   });
 
-  it('RenderService.use 注册中间件', () => {
+  it('同步中间件可短路且不返回 Promise', () => {
+    const calls: string[] = [];
+    const pipeline = createSyncPipeline<{ skip?: boolean }>([
+      (ctx, next) => {
+        calls.push('mw');
+        if (ctx.skip) {
+          return;
+        }
+        next();
+      },
+    ]);
+    pipeline({ skip: true }, () => {
+      calls.push('terminal');
+    });
+    expect(calls).toEqual(['mw']);
+
+    pipeline({ skip: false }, () => {
+      calls.push('terminal');
+    });
+    expect(calls).toEqual(['mw', 'mw', 'terminal']);
+  });
+
+  it('RenderService.use 注册同步中间件', () => {
     const service = new RenderService();
     service.use((_ctx, next) => next());
     expect(service).toBeInstanceOf(RenderService);

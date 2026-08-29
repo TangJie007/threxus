@@ -26,7 +26,7 @@ examples/
 ```text
 AppModule      组装：imports ThreeCoreModule + 功能模块 + 可选 THREE_VIEWPORT
 FeatureModule  功能边界：providers 一个或多个 Feature
-Feature        DI 单例：可继承 ObjectHost，spawn Mesh + 挂组件
+Feature        DI 单例：可继承 SceneObjectHost，spawn Mesh + 挂组件
 Component      挂在 Object3D.userData，由 ComponentService 调度
 ```
 
@@ -39,19 +39,7 @@ Component      挂在 Object3D.userData，由 ComponentService 调度
 
 ```ts
 @Injectable()
-class SpinFeature extends ObjectHost<Mesh> implements OnModuleInit {
-  @Inject(SceneService) scenes: SceneService;
-  @Inject(ComponentService) components: ComponentService;
-
-  protected attach(mesh: Mesh) {
-    this.scenes.attach(mesh);
-  }
-  protected detach(mesh: Mesh) {
-    this.components.clear(mesh);
-    this.scenes.detach(mesh);
-    disposeObject3D(mesh, false);
-  }
-
+class SpinFeature extends SceneObjectHost<Mesh> implements OnModuleInit {
   onModuleInit() {
     const mesh = new Mesh(new BoxGeometry(), new MeshNormalMaterial());
     this.components.add(mesh, new SpinComponent());

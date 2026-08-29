@@ -20,10 +20,10 @@ import type { InjectionToken } from '../types';
  * @Injectable()
  * class OrbitFeature {
  *   @Inject(SceneService)
- *   scenes: SceneService;
+ *   scenes!: SceneService;
  *
  *   @Inject(CLOCK)
- *   clock: Clock;
+ *   clock!: Clock;
  * }
  * ```
  */

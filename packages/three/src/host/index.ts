@@ -3,3 +3,4 @@
  */
 
 export { ObjectHost } from './object-host';
+export { SceneObjectHost } from './scene-object-host';

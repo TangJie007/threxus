@@ -11,10 +11,10 @@ import { CameraService } from './camera-service';
 @Injectable()
 export class ViewportService implements OnModuleInit {
   @Inject(CameraService)
-  cameras: CameraService;
+  cameras!: CameraService;
 
   @Inject(THREE_VIEWPORT)
-  options: ViewportOptions;
+  options!: ViewportOptions;
 
   onModuleInit(): void {
     const camera = this.cameras.active;

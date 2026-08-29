@@ -47,7 +47,7 @@ export type DeserializeContext = {
 @Injectable()
 export class SerializeService {
   @Inject(SceneService)
-  scenes: SceneService;
+  scenes!: SceneService;
 
   private readonly serializeMw: Middleware<SerializeContext>[] = [];
   private readonly deserializeMw: Middleware<DeserializeContext>[] = [];

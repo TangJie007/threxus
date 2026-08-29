@@ -153,16 +153,36 @@ export function writeModuleMetadata(
 /**
  * 读取类上的完整注入元数据；若无装饰则返回空列表。
  *
+ * 字段注入会沿原型链向上合并（子类同名覆盖基类），便于 Feature 继承基类上的 `@Inject`。
+ * 构造注入只读本类的 `@Injectable({ inject })`。
+ *
  * 返回值为浅拷贝，避免调用方修改内部缓存结构。
  *
  * @param target - 类构造函数
  */
 export function readClassMetadata(target: object): ClassMetadata {
   const injectable = readKey<InjectableMetadata>(target, META.INJECTABLE);
-  const fields = readKey<FieldInjection[]>(target, META.INJECTIONS);
+  const fields: FieldInjection[] = [];
+  const seen = new Set<string | symbol>();
+
+  let current: object | null = target;
+  while (current && current !== Function.prototype) {
+    const list = readKey<FieldInjection[]>(current, META.INJECTIONS);
+    if (list) {
+      for (const field of list) {
+        if (seen.has(field.name)) {
+          continue;
+        }
+        seen.add(field.name);
+        fields.push({ ...field });
+      }
+    }
+    current = Object.getPrototypeOf(current);
+  }
+
   return {
     inject: injectable?.inject ? [...injectable.inject] : [],
-    fields: fields ? fields.map((field) => ({ ...field })) : [],
+    fields,
   };
 }
 

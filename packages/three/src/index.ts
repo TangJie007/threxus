@@ -51,13 +51,17 @@ export type {
   SerializeContext,
   ThrexusConfig,
 } from './services';
-export { ObjectHost } from './host';
+export { ObjectHost, SceneObjectHost } from './host';
 export type { Component, ComponentMap } from './component';
 export {
   createPipeline,
+  createSyncPipeline,
   type Middleware,
   type Next,
   type Pipeline,
+  type SyncMiddleware,
+  type SyncNext,
+  type SyncPipeline,
 } from './middleware';
 export { disposeObject3D } from './utils';
 export { THREE_VIEWPORT, type ViewportOptions } from './tokens';

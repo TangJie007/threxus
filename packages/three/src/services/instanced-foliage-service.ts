@@ -26,10 +26,10 @@ export type FoliageInstance = {
 @Injectable()
 export class InstancedFoliageService implements OnDispose {
   @Inject(SceneService)
-  scenes: SceneService;
+  scenes!: SceneService;
 
   @Inject(DisposeService)
-  disposeService: DisposeService;
+  disposeService!: DisposeService;
 
   private mesh: InstancedMesh | null = null;
   private capacity = 0;

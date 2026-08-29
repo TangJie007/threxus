@@ -1,5 +1,7 @@
 /**
- * 每帧渲染：经 Render 中间件链后执行 renderer.render。
+ * 每帧渲染：经**同步** Render 中间件链后执行 renderer.render。
+ *
+ * Render 中间件必须同步；异步逻辑请放 Asset / Interaction 等链。
  */
 
 import { Inject, Injectable, type OnDispose, type OnUpdate } from '@threxus/core';
@@ -9,9 +11,9 @@ import {
   WebGLRenderer,
 } from 'three';
 import {
-  createPipeline,
-  type Middleware,
-  type Pipeline,
+  createSyncPipeline,
+  type SyncMiddleware,
+  type SyncPipeline,
 } from '../middleware';
 import { CameraService } from './camera-service';
 import { SceneService } from './scene-service';
@@ -22,30 +24,30 @@ export type RenderContext = {
   renderer: WebGLRenderer;
   scene: Scene;
   camera: PerspectiveCamera;
-  /** 设为 false 可跳过实际 render（短路后仍可调用 next） */
+  /** 设为 true 可跳过实际 render */
   skipRender?: boolean;
 };
 
 @Injectable()
 export class RenderService implements OnUpdate, OnDispose {
   @Inject(WebGLRenderer)
-  renderer: WebGLRenderer;
+  renderer!: WebGLRenderer;
 
   @Inject(SceneService)
-  scenes: SceneService;
+  scenes!: SceneService;
 
   @Inject(CameraService)
-  cameras: CameraService;
+  cameras!: CameraService;
 
-  private readonly middlewares: Middleware<RenderContext>[] = [];
-  private pipeline: Pipeline<RenderContext> = createPipeline();
+  private readonly middlewares: SyncMiddleware<RenderContext>[] = [];
+  private pipeline: SyncPipeline<RenderContext> = createSyncPipeline();
 
   /**
-   * 注册 Render 中间件（按注册顺序）。
+   * 注册同步 Render 中间件（按注册顺序）。
    */
-  use(middleware: Middleware<RenderContext>): this {
+  use(middleware: SyncMiddleware<RenderContext>): this {
     this.middlewares.push(middleware);
-    this.pipeline = createPipeline(this.middlewares);
+    this.pipeline = createSyncPipeline(this.middlewares);
     return this;
   }
 
@@ -56,7 +58,7 @@ export class RenderService implements OnUpdate, OnDispose {
       scene: this.scenes.active,
       camera: this.cameras.active,
     };
-    void this.pipeline(ctx, (c) => {
+    this.pipeline(ctx, (c) => {
       if (c.skipRender) {
         return;
       }
@@ -65,7 +67,7 @@ export class RenderService implements OnUpdate, OnDispose {
   }
 
   /**
-   * 释放 renderer；实体 GPU 资源经 DisposeService。
+   * 释放 renderer；场景对象 GPU 资源经 DisposeService。
    */
   onDispose(): void {
     this.renderer.dispose();
