@@ -1,5 +1,5 @@
 {
-  "name": "threxus",
+  "name": "@threxus/runtime",
   "version": "0.1.0",
   "description": "A feature-oriented runtime for maintainable Three.js applications",
   "type": "module",

@@ -11,7 +11,7 @@
       "node"
     ],
     "paths": {
-      "threxus": ["../../packages/core/src/index.ts"]
+      "@threxus/runtime": ["../../packages/runtime/src/index.ts"]
     },
     "verbatimModuleSyntax": true,
     "useDefineForClassFields": true
@@ -20,6 +20,6 @@
     "src/**/*.ts",
     "src/**/*.vue",
     "vite.config.ts",
-    "../../packages/core/src/**/*.ts"
+    "../../packages/runtime/src/**/*.ts"
   ]
 }

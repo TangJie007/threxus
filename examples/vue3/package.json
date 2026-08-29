@@ -11,7 +11,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "threxus": "workspace:*",
+    "@threxus/runtime": "workspace:*",
     "vue": "^3.5.42",
     "vue-router": "^5.3.0"
   },

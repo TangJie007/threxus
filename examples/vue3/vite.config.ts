@@ -7,7 +7,7 @@ const exampleRoot = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(exampleRoot, '../..');
 
 const alias = {
-  threxus: path.resolve(repoRoot, 'packages/core/src/index.ts'),
+  '@threxus/runtime': path.resolve(repoRoot, 'packages/runtime/src/index.ts'),
 };
 
 export default defineConfig({

@@ -10,7 +10,7 @@ Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服�
 
 ```text
 packages/
-  core/       threxus —— App / Feature / Service / Lifecycle
+  runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle
 examples/
   vue3/       M0–M3 生命周期与失败回滚演示
   test/       独立 Three.js 实验项目
@@ -31,7 +31,7 @@ import {
   createServiceKey,
   createThreeApp,
   type ThreeFeature,
-} from 'threxus';
+} from '@threxus/runtime';
 
 const Clock = createServiceKey<{ now(): number }>('clock');
 
@@ -76,7 +76,7 @@ pnpm build
 pnpm build
 pnpm typecheck
 pnpm test
-pnpm --dir packages/core test:types
-pnpm --dir packages/core test:browser
+pnpm --dir packages/runtime test:types
+pnpm --dir packages/runtime test:browser
 pnpm --dir examples/vue3 test:e2e
 ```

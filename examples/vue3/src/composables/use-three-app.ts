@@ -4,7 +4,7 @@ import {
   type RuntimeSnapshot,
   type ThreeApp,
   type ThreeFeature,
-} from 'threxus';
+} from '@threxus/runtime';
 import {
   onBeforeUnmount,
   onMounted,

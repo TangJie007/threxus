@@ -1,7 +1,7 @@
 import {
   createServiceKey,
   type ThreeFeature,
-} from 'threxus';
+} from '@threxus/runtime';
 
 export type DemoLogger = (message: string) => void;
 
