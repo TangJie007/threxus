@@ -7,23 +7,17 @@
     "build": "vue-tsc --noEmit && vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@threxus/core": "workspace:*",
-    "@threxus/runtime": "workspace:*",
-    "@threxus/three": "workspace:*",
-    "@threxus/vue": "workspace:*",
-    "three": "^0.180.0",
+    "threxus": "workspace:*",
     "vue": "^3.5.42",
     "vue-router": "^5.3.0"
   },
   "devDependencies": {
-    "@babel/plugin-proposal-decorators": "^8.0.2",
-    "@babel/plugin-transform-typescript": "^8.0.1",
-    "@rolldown/plugin-babel": "^0.2.3",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^26.4.0",
-    "@types/three": "^0.180.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "typescript": "~6.0.3",
     "vite": "^8.2.2",

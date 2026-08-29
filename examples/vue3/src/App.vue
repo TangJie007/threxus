@@ -8,10 +8,10 @@
   <main class="page">
     <nav class="nav" aria-label="示例导航">
       <RouterLink class="nav-link" to="/" exact-active-class="on">
-        立方体 Demo
+        生命周期
       </RouterLink>
       <RouterLink class="nav-link" to="/factory-twin" active-class="on">
-        FactoryTwin 重构
+        失败回滚
       </RouterLink>
     </nav>
     <RouterView />

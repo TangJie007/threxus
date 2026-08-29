@@ -1,22 +1,58 @@
 <script setup lang="ts">
-/**
- * 基础示例：旋转立方体，演示 AppModule · Feature · Component。
- */
-import { ref } from 'vue';
-import { useThrexus } from '@threxus/vue';
-import { ThreeAppModule } from '../three';
+import { useThreeApp } from '../composables/use-three-app';
+import { createLifecycleFeatures } from '../demo/lifecycle-features';
 
-const canvasRef = ref<HTMLCanvasElement | null>(null);
-useThrexus(ThreeAppModule, canvasRef);
+const {
+  canvasRef,
+  state,
+  events,
+  error,
+  snapshot,
+  dispose,
+} = useThreeApp(createLifecycleFeatures);
 </script>
 
 <template>
   <section class="view">
     <header class="bar">
-      <p class="eyebrow">@threxus/vue + three</p>
-      <h1>Threxus</h1>
-      <p class="hint">AppModule · Feature · Component · ObjectHost</p>
+      <p class="eyebrow">Threxus M0–M3</p>
+      <h1>Feature 生命周期</h1>
+      <p class="hint">
+        Consumer 被先注册，但运行时根据 Service 依赖让 Provider 先启动；
+        dispose 时按照相反顺序清理。
+      </p>
     </header>
-    <canvas ref="canvasRef" class="viewport" />
+
+    <div class="demo-grid">
+      <article class="panel">
+        <div class="status-row">
+          <span>App 状态</span>
+          <strong :data-state="state">{{ state }}</strong>
+        </div>
+        <div class="status-row">
+          <span>活动服务</span>
+          <strong>{{ snapshot?.services ?? 0 }}</strong>
+        </div>
+        <button
+          type="button"
+          :disabled="state === 'disposed'"
+          @click="dispose"
+        >
+          验证反向销毁
+        </button>
+        <p v-if="error" class="error">{{ error }}</p>
+      </article>
+
+      <article class="panel">
+        <h2>运行记录</h2>
+        <ol class="event-log">
+          <li v-for="(event, index) in events" :key="index">
+            {{ event }}
+          </li>
+        </ol>
+      </article>
+    </div>
+
+    <canvas ref="canvasRef" class="canvas-placeholder" />
   </section>
 </template>

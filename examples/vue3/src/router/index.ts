@@ -1,6 +1,4 @@
-/**
- * Vue 示例路由：基础立方体 Demo + FactoryTwin 重构页。
- */
+/** Vue 示例路由：M0–M3 生命周期和失败回滚。 */
 
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -11,15 +9,15 @@ export const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
-      meta: { title: '立方体 Demo' },
+      meta: { title: '生命周期' },
     },
     {
       path: '/factory-twin',
       name: 'factory-twin',
       component: () => import('../views/FactoryTwinView.vue'),
       meta: {
-        title: 'FactoryTwin',
-        description: '将 examples/test 的工厂孪生迁到 @threxus/*',
+        title: '失败回滚',
+        description: '验证 Feature 初始化失败后的反向清理',
       },
     },
   ],

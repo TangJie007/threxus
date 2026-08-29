@@ -1,59 +1,59 @@
 # Threxus
 
-为 Three.js 打造的依赖注入框架。
+面向功能和生命周期的 Three.js 轻量运行时。
 
-**实现顺序与完成标准**见 [docs/roadmap.md](./docs/roadmap.md)。
+Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服务、异步初始化和结构化销毁。
 
-依赖约定：`@threxus/core` 仅适量使用可 tree-shake 的工具（当前为
-`es-toolkit`），代码里必须 **具名导入**，禁止 `import *`。
+完整设计见 [THREEJS-ENCAPSULATION-DESIGN.md](./THREEJS-ENCAPSULATION-DESIGN.md)，实施顺序见 [THREEJS-IMPLEMENTATION-ROADMAP.md](./THREEJS-IMPLEMENTATION-ROADMAP.md)。
 
 ## 项目结构
 
 ```text
 packages/
-  core/       @threxus/core —— Token / Module / Container / Lifecycle / Scope
-  runtime/    @threxus/runtime —— Application + rAF + 约定 Token
-  three/      @threxus/three —— ThreeCoreModule / ObjectHost / 可选 Module
-  vue/        @threxus/vue —— useThrexus 薄适配
+  core/       threxus —— App / Feature / Service / Lifecycle
 examples/
-  vue3/       Vue 3 + canvas 旋转立方体（开发调试）
+  vue3/       M0–M3 生命周期与失败回滚演示
+  test/       独立 Three.js 实验项目
 ```
 
-## 心智模型（Three）
+## 当前实现范围
 
-四层混合：DI 服务 + 原生对象 + 轻量组件 + 中间件。
+当前完成 M0–M3：
 
-```text
-AppModule      组装：imports ThreeCoreModule + 功能模块 + 可选 THREE_VIEWPORT
-FeatureModule  功能边界：providers 一个或多个 Feature
-Feature        DI 单例：可继承 SceneObjectHost，spawn Mesh + 挂组件
-Component      挂在 Object3D.userData，由 ComponentService 调度
-```
-
-- `SceneService` / `CameraService`：Three **场景图**（SceneGraph）
-- core `createSceneScope`：DI **场景作用域**（SceneScope），二者不同
-- 相机位姿用 `THREE_VIEWPORT`，不要写在业务 Feature 里
-- 可选能力按需 imports：`ThreeAssetModule` / `ThreeInteractionModule` / `ThreeSerializeModule` / `ThreeEditorModule`（编辑器模块为 experimental 骨架）
-- GPU 销毁统一走 `DisposeService`；组件类型键推荐 `createComponentType()`
-
-最小功能脚手架：
+- `Disposable` 与 `CleanupStack`
+- 强类型 `ServiceKey`
+- Feature 服务依赖图和稳定拓扑排序
+- FeatureScope、AbortSignal 和反向清理
+- ThreeApp 启动、失败回滚和幂等销毁
 
 ```ts
-@Injectable()
-class SpinFeature extends SceneObjectHost<Mesh> implements OnModuleInit {
-  onModuleInit() {
-    const mesh = new Mesh(new BoxGeometry(), new MeshNormalMaterial());
-    this.components.add(mesh, new SpinComponent());
-    this.spawn(mesh);
-  }
-}
+import {
+  createServiceKey,
+  createThreeApp,
+  type ThreeFeature,
+} from 'threxus';
 
-@Module({
-  imports: [ThreeCoreModule],
-  providers: [SpinFeature],
-})
-class SpinModule {}
+const Clock = createServiceKey<{ now(): number }>('clock');
+
+const provider: ThreeFeature = {
+  name: 'clock-provider',
+  provides: [Clock],
+  setup(context) {
+    context.provide(Clock, { now: () => Date.now() });
+    context.addCleanup(() => {
+      // 释放当前 Feature 拥有的资源
+    });
+  },
+};
+
+const app = createThreeApp({ canvas });
+app.use(provider);
+
+await app.start();
+await app.dispose();
 ```
+
+Renderer、Camera、Scheduler 和真实 3D 渲染属于后续 M4–M5，因此 Vue3 当前展示生命周期状态而不是 3D 画面。
 
 ## 开始使用
 
@@ -64,20 +64,19 @@ pnpm install
 pnpm dev
 ```
 
-示例 Vite 会 alias 到各包 `src`，改 `packages/*/src` 即可热更新。
-
 正式构建：
 
 ```bash
 pnpm build
-pnpm --filter vue3-example build
 ```
 
 ## 常用命令
 
 ```bash
-pnpm build       # Turbo 构建所有工作区包
-pnpm typecheck   # Turbo 类型检查
-pnpm test        # Turbo 测试
-pnpm dev         # 并行库 watch + 示例开发服务器
+pnpm build
+pnpm typecheck
+pnpm test
+pnpm --dir packages/core test:types
+pnpm --dir packages/core test:browser
+pnpm --dir examples/vue3 test:e2e
 ```

@@ -1,7 +1,7 @@
 {
-  "name": "@threxus/core",
+  "name": "threxus",
   "version": "0.1.0",
-  "description": "Dependency injection primitives for Three.js applications",
+  "description": "A feature-oriented runtime for maintainable Three.js applications",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -21,15 +21,19 @@
     "dev": "rslib build --watch --no-dts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
+    "test:types": "tsc -p tests/types/tsconfig.json"
   },
-  "dependencies": {
-    "es-toolkit": "^1.51.0",
-    "type-fest": "^5.8.0"
+  "peerDependencies": {
+    "three": ">=0.180.0 <1"
   },
   "devDependencies": {
     "@rslib/core": "^0.23.2",
+    "@vitest/browser-playwright": "^4.1.11",
+    "playwright": "^1.62.1",
+    "three": "^0.180.0",
     "typescript": "~5.9.3",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.11"
   }
 }

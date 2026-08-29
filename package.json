@@ -1,8 +1,8 @@
 {
-  "name": "threxus",
+  "name": "threxus-workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "A dependency injection framework for Three.js",
+  "description": "Workspace for the Threxus Three.js runtime",
   "packageManager": "pnpm@11.24.0",
   "engines": {
     "node": ">=22.12.0"
