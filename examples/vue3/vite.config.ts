@@ -19,12 +19,19 @@ const alias = {
  * Vite 8 / Oxc 尚不降级 TC39 Stage 3 decorators。
  * 仅对含 `@` 的文件走 Babel，与官方迁移指南一致。
  *
+ * 必须先跑 transform-typescript：去掉字段上的 `!`，再跑 decorators。
+ * 否则 decorators 会给字段加 initializer，留下 `field!: T = init`，
+ * Oxc 解析时报 Declarations with initializers cannot also have definite assignment assertions。
+ *
  * @see https://vite.dev/guide/migration
  */
 function decoratorPreset(options: Record<string, unknown>): RolldownBabelPreset {
   return {
     preset: () => ({
-      plugins: [['@babel/plugin-proposal-decorators', options]],
+      plugins: [
+        ['@babel/plugin-transform-typescript', { allowDeclareFields: true }],
+        ['@babel/plugin-proposal-decorators', options],
+      ],
     }),
     rolldown: {
       filter: {

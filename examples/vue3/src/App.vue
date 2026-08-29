@@ -1,22 +1,19 @@
 <script setup lang="ts">
 /**
- * Vue 适配：canvas + useThrexus(ThreeAppModule)。
+ * 应用壳：路由导航 + 页面出口。
  */
-import { ref } from 'vue';
-import { useThrexus } from '@threxus/vue';
-import { ThreeAppModule } from './three';
-
-const canvasRef = ref<HTMLCanvasElement | null>(null);
-useThrexus(ThreeAppModule, canvasRef);
 </script>
 
 <template>
   <main class="page">
-    <header class="bar">
-      <p class="eyebrow">@threxus/vue + three</p>
-      <h1>Threxus</h1>
-      <p class="hint">AppModule · Feature · Component · ObjectHost</p>
-    </header>
-    <canvas ref="canvasRef" class="viewport" />
+    <nav class="nav" aria-label="示例导航">
+      <RouterLink class="nav-link" to="/" exact-active-class="on">
+        立方体 Demo
+      </RouterLink>
+      <RouterLink class="nav-link" to="/factory-twin" active-class="on">
+        FactoryTwin 重构
+      </RouterLink>
+    </nav>
+    <RouterView />
   </main>
 </template>

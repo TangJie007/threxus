@@ -17,7 +17,6 @@
       "@threxus/three": ["../../packages/three/src/index.ts"],
       "@threxus/vue": ["../../packages/vue/src/index.ts"]
     },
-    "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "experimentalDecorators": false,
     "useDefineForClassFields": true,

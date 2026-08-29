@@ -21,8 +21,40 @@ body {
   background: #0b0f18;
 }
 
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 24px 0;
+  border-bottom: 1px solid #1c2436;
+}
+
+.nav-link {
+  padding: 8px 12px 10px;
+  color: #8b97b0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-link:hover {
+  color: #d5dceb;
+}
+
+.nav-link.on {
+  color: #9eb4ff;
+  border-bottom-color: #5b7cff;
+}
+
+.view {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+}
+
 .bar {
-  padding: 20px 24px 12px;
+  padding: 16px 24px 12px;
 }
 
 .eyebrow {
@@ -44,6 +76,7 @@ h1 {
   margin: 0;
   color: #aab5cb;
   font-size: 0.92rem;
+  max-width: 52rem;
 }
 
 .viewport {
