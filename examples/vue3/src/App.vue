@@ -15,7 +15,7 @@ useThrexus(ThreeAppModule, canvasRef);
     <header class="bar">
       <p class="eyebrow">@threxus/vue + three</p>
       <h1>Threxus</h1>
-      <p class="hint">AppModule · FeatureModule · System · Entity</p>
+      <p class="hint">AppModule · Feature · Component · ObjectHost</p>
     </header>
     <canvas ref="canvasRef" class="viewport" />
   </main>

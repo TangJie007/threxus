@@ -1,5 +1,5 @@
 /**
- * 旋转组件：挂在 Mesh.userData，由 EntityComponentService 调度。
+ * 旋转组件：挂在 Mesh.userData，由 ComponentService 调度。
  */
 
 import type { Component } from '@threxus/three';

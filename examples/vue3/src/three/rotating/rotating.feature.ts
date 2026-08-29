@@ -1,12 +1,12 @@
 /**
  * 旋转立方体 Feature：创建 Mesh、挂组件、进场景。
- * 帧循环由 EntityComponentService 驱动；Mesh 不进 DI。
+ * 帧循环由 ComponentService 驱动；Mesh 不进 DI。
  */
 
 import { Inject, Injectable, type OnModuleInit } from '@threxus/core';
 import {
+  ComponentService,
   disposeObject3D,
-  EntityComponentService,
   ObjectHost,
   SceneService,
 } from '@threxus/three';
@@ -40,8 +40,8 @@ export class RotatingFeature
   @Inject(SceneService)
   scenes: SceneService;
 
-  @Inject(EntityComponentService)
-  components: EntityComponentService;
+  @Inject(ComponentService)
+  components: ComponentService;
 
   protected attach(mesh: Mesh): void {
     this.scenes.attach(mesh);

@@ -11,8 +11,8 @@ import {
 } from 'three';
 import {
   CameraService,
+  ComponentService,
   DisposeService,
-  EntityComponentService,
   ObjectHost,
   RenderService,
   THREE_VIEWPORT,
@@ -144,9 +144,9 @@ describe('CameraService fov smoke', () => {
   });
 });
 
-describe('EntityComponentService', () => {
+describe('ComponentService', () => {
   it('add / update / remove 组件', () => {
-    const ecs = new EntityComponentService();
+    const ecs = new ComponentService();
     const mesh = new Mesh();
     const updates: number[] = [];
     const comp: Component = {

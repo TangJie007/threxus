@@ -4,7 +4,7 @@
  * DI 边界（易混，读这里）：
  * - 继承本类的 Feature（如 RotatingFeature）→ **进 DI**（@Injectable + providers）
  * - spawn 进去的 T（Mesh / Group 等）→ **不进 DI**，只是普通 Three 对象
- * - 挂在 Mesh 上的 Component → **不进 DI**，由 EntityComponentService 每帧调度
+ * - 挂在 Mesh 上的 Component → **不进 DI**，由 ComponentService 每帧调度
  *
  * 本类只负责 spawn / despawn / onDispose 列表；
  * 子类实现 attach / detach（通常委托 SceneService）；

@@ -1,18 +1,15 @@
 /**
- * 实体组件调度中心（DI 服务）：挂载 / 移除 / 每帧 update。
+ * 组件调度中心（DI 服务）：挂载 / 移除 / 每帧 update。
  *
  * 组件本身不进 DI；仅本服务为单例管理者。
  */
 
 import { Injectable, type OnUpdate } from '@threxus/core';
 import type { Object3D } from 'three';
-import {
-  getComponentMap,
-  type Component,
-} from '../component';
+import { getComponentMap, type Component } from '../component';
 
 @Injectable()
-export class EntityComponentService implements OnUpdate {
+export class ComponentService implements OnUpdate {
   /** 至少挂过一个组件、需要每帧扫描的对象 */
   private readonly tracked = new Set<Object3D>();
 

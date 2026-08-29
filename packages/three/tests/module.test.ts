@@ -7,17 +7,23 @@ import { isModule, readModuleMetadata } from '@threxus/core';
 import { RuntimeModule } from '@threxus/runtime';
 import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import {
+  AssetService,
   CameraService,
+  ComponentService,
   DisposeService,
-  EntityComponentService,
+  GizmoService,
+  InteractionService,
   SceneService,
   THREE_VIEWPORT,
+  ThreeAssetModule,
   ThreeCoreModule,
+  ThreeEditorModule,
+  ThreeInteractionModule,
   ViewportService,
 } from '../src/index';
 
 describe('ThreeCoreModule', () => {
-  it('声明为 Module，并导出核心 Service 与 Token', () => {
+  it('只导出渲染闭环核心服务', () => {
     expect(isModule(ThreeCoreModule)).toBe(true);
     const meta = readModuleMetadata(ThreeCoreModule)!;
     expect(meta.imports).toContain(RuntimeModule);
@@ -29,11 +35,35 @@ describe('ThreeCoreModule', () => {
         THREE_VIEWPORT,
         ViewportService,
         DisposeService,
-        EntityComponentService,
+        ComponentService,
       ]),
     );
     expect(meta.exports).not.toContain(Scene);
     expect(meta.exports).not.toContain(PerspectiveCamera);
+    expect(meta.exports).not.toContain(AssetService);
+    expect(meta.exports).not.toContain(InteractionService);
+    expect(meta.exports).not.toContain(GizmoService);
+  });
+});
+
+describe('可选 Module', () => {
+  it('ThreeAssetModule 导出 AssetService', () => {
+    const meta = readModuleMetadata(ThreeAssetModule)!;
+    expect(meta.exports).toEqual(
+      expect.arrayContaining([AssetService]),
+    );
+  });
+
+  it('ThreeInteractionModule 导出 InteractionService', () => {
+    const meta = readModuleMetadata(ThreeInteractionModule)!;
+    expect(meta.exports).toEqual(
+      expect.arrayContaining([InteractionService]),
+    );
+  });
+
+  it('ThreeEditorModule 导出 GizmoService', () => {
+    const meta = readModuleMetadata(ThreeEditorModule)!;
+    expect(meta.exports).toEqual(expect.arrayContaining([GizmoService]));
   });
 });
 

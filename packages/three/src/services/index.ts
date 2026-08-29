@@ -8,6 +8,7 @@
 export { AssetService, type AssetContext, type AssetLoader } from './asset-service';
 export { CameraService } from './camera-service';
 export { CommandService, type Command } from './command-service';
+export { ComponentService } from './component-service';
 export { ConfigService, type ThrexusConfig } from './config-service';
 export { DisposeService } from './dispose-service';
 export {
@@ -17,7 +18,6 @@ export {
   HotkeyService,
   SnapshotService,
 } from './editor-services';
-export { EntityComponentService } from './entity-component-service';
 export {
   InstancedFoliageService,
   type FoliageInstance,

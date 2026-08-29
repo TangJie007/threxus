@@ -1,7 +1,7 @@
 /**
  * 轻量组件约定（L3）：普通 TS 类，不进 DI。
  *
- * 挂载在 Object3D.userData，由 {@link EntityComponentService} 调度。
+ * 挂载在 Object3D.userData，由 {@link ComponentService} 调度。
  */
 
 import type { Object3D } from 'three';

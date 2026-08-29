@@ -13,7 +13,7 @@
 packages/
   core/       @threxus/core —— Token / Module / Container / Lifecycle / Scope
   runtime/    @threxus/runtime —— Application + rAF + 约定 Token
-  three/      @threxus/three —— ThreeCoreModule / ObjectHost / Viewport
+  three/      @threxus/three —— ThreeCoreModule / ObjectHost / 可选 Module
   vue/        @threxus/vue —— useThrexus 薄适配
 examples/
   vue3/       Vue 3 + canvas 旋转立方体（开发调试）
@@ -21,18 +21,19 @@ examples/
 
 ## 心智模型（Three）
 
-四层混合：DI 服务 + 原生实体 + 轻量组件 + 中间件。
+四层混合：DI 服务 + 原生对象 + 轻量组件 + 中间件。
 
 ```text
-AppModule      组装：imports 功能模块 + 可选 THREE_VIEWPORT
-FeatureModule  功能边界：providers 一个或多个 Feature / Service
+AppModule      组装：imports ThreeCoreModule + 功能模块 + 可选 THREE_VIEWPORT
+FeatureModule  功能边界：providers 一个或多个 Feature
 Feature        DI 单例：可继承 ObjectHost，spawn Mesh + 挂组件
-Component      挂在 Object3D.userData，由 EntityComponentService 调度
+Component      挂在 Object3D.userData，由 ComponentService 调度
 ```
 
 - `SceneService` / `CameraService`：Three **场景图**（SceneGraph）
 - core `createSceneScope`：DI **场景作用域**（SceneScope），二者不同
 - 相机位姿用 `THREE_VIEWPORT`，不要写在业务 Feature 里
+- 可选能力按需 imports：`ThreeAssetModule` / `ThreeInteractionModule` / `ThreeSerializeModule` / `ThreeEditorModule`
 
 最小功能脚手架：
 
@@ -40,7 +41,7 @@ Component      挂在 Object3D.userData，由 EntityComponentService 调度
 @Injectable()
 class SpinFeature extends ObjectHost<Mesh> implements OnModuleInit {
   @Inject(SceneService) scenes: SceneService;
-  @Inject(EntityComponentService) components: EntityComponentService;
+  @Inject(ComponentService) components: ComponentService;
 
   protected attach(mesh: Mesh) {
     this.scenes.attach(mesh);
