@@ -19,3 +19,4 @@ export type {
   SetCameraOptions,
   ThreeAppOptions,
 } from './types/ThreeAppOptions';
+export type { GraphicsState } from '../rendering/GraphicsState';

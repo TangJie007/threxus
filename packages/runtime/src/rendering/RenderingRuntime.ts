@@ -41,6 +41,9 @@ import {
   isOrthographicCameraOptions,
   isPerspectiveCamera,
 } from './types';
+import { ContextRestoreRegistry } from './ContextRestoreRegistry';
+import type { GraphicsState } from './GraphicsState';
+import { WebGLContextController } from './WebGLContextController';
 
 export interface RenderingSnapshot {
   readonly width: number;
@@ -53,6 +56,7 @@ export interface RenderingSnapshot {
   readonly pipeline: string;
   readonly pipelineOwner: string | null;
   readonly stages: number;
+  readonly graphicsState: GraphicsState;
 }
 
 export class RenderingRuntime implements Disposable {
@@ -64,11 +68,16 @@ export class RenderingRuntime implements Disposable {
   readonly #defaultPipeline = new DirectRenderPipeline();
   readonly #registry: RenderingRegistry;
   readonly #operationQueue = new RenderOperationQueue();
+  readonly #contextRegistry = new ContextRestoreRegistry();
   readonly #resizeController: ResizeController | undefined;
   readonly #pixelRatioOption: RenderingInitOptions['pixelRatio'];
   readonly #cameraChangedListeners = new Set<
     (event: CameraChangedEvent) => void
   >();
+  readonly #onGraphicsStateChange:
+    | ((state: GraphicsState) => void)
+    | undefined;
+  #contextController: WebGLContextController | undefined;
 
   #camera: Camera;
   #disposed = false;
@@ -125,6 +134,28 @@ export class RenderingRuntime implements Disposable {
       this.#resizeController = undefined;
       this.#applyStaticSize(options.canvas);
     }
+
+    this.#onGraphicsStateChange = options.onGraphicsStateChange;
+    this.#contextController = new WebGLContextController({
+      canvas: options.canvas,
+      getPipeline: () => this.#registry.pipeline,
+      registry: this.#contextRegistry,
+      onGraphicsStateChange: (state) => {
+        this.#onGraphicsStateChange?.(state);
+      },
+      syncSize: () => {
+        if (this.#resizeController) {
+          this.#resizeController.apply();
+        } else {
+          this.#applyStaticSize(this.#canvas);
+        }
+      },
+      requestFullRender: () => {
+        if (this.canRender && this.graphicsState === 'available') {
+          this.render();
+        }
+      },
+    });
   }
 
   get camera(): Camera {
@@ -135,7 +166,14 @@ export class RenderingRuntime implements Disposable {
     return this.#registry.pipeline;
   }
 
+  get graphicsState(): GraphicsState {
+    return this.#contextController?.state ?? 'available';
+  }
+
   get canRender(): boolean {
+    if (this.graphicsState !== 'available') {
+      return false;
+    }
     if (this.#resizeController) {
       return this.#resizeController.canRender;
     }
@@ -144,6 +182,30 @@ export class RenderingRuntime implements Disposable {
 
   createScope(scope: FeatureScope): ScopedRendering {
     return createScopedRendering(this, scope);
+  }
+
+  onContextLost(
+    scopeId: string,
+    callback: () => void,
+  ): Disposable {
+    return this.#contextRegistry.onLost(scopeId, callback);
+  }
+
+  onContextRestored(
+    scopeId: string,
+    callback: () => void | Promise<void>,
+  ): Disposable {
+    return this.#contextRegistry.onRestored(scopeId, callback);
+  }
+
+  /** 测试用：模拟 webglcontextlost。 */
+  simulateContextLost(): void {
+    this.#contextController?.simulateLost();
+  }
+
+  /** 测试用：模拟 webglcontextrestored。 */
+  simulateContextRestored(): Promise<void> {
+    return this.#contextController?.simulateRestored() ?? Promise.resolve();
   }
 
   setCamera(camera: Camera, ownership: Ownership = 'external'): void {
@@ -235,6 +297,7 @@ export class RenderingRuntime implements Disposable {
       pipeline: registry.pipelineName,
       pipelineOwner: registry.pipelineOwner,
       stages: registry.stages,
+      graphicsState: this.graphicsState,
     };
   }
 
@@ -244,6 +307,9 @@ export class RenderingRuntime implements Disposable {
     }
     this.#disposed = true;
 
+    this.#contextController?.dispose();
+    this.#contextController = undefined;
+    this.#contextRegistry.clear();
     this.#resizeController?.dispose();
 
     const custom = this.#registry.isCustomPipeline

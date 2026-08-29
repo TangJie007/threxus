@@ -912,6 +912,8 @@ rendering/
 
 ## 14. M10：WebGL Context 丢失与恢复
 
+> **状态：已完成**（`GraphicsState` / `WebGLContextController` / `ContextRestoreRegistry`，见 README）
+
 ### 14.1 目标
 
 确保 GPU Context 丢失时应用不会继续错误运行，并具备明确恢复行为。

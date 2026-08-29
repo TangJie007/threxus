@@ -148,6 +148,18 @@ export function createThreeContext(
       scope.addCleanup(disposable);
       return disposable;
     },
+
+    onContextLost: (callback) => {
+      const disposable = rendering().onContextLost(feature.name, callback);
+      scope.addCleanup(disposable);
+      return disposable;
+    },
+
+    onContextRestored: (callback) => {
+      const disposable = rendering().onContextRestored(feature.name, callback);
+      scope.addCleanup(disposable);
+      return disposable;
+    },
   };
 }
 

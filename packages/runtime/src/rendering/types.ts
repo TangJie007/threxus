@@ -10,6 +10,7 @@ import type {
   ToneMapping,
   WebGLRenderer,
 } from 'three';
+import type { GraphicsState } from './GraphicsState';
 
 /** 核心 Three.js 对象所有权。 */
 export type Ownership = 'app' | 'external';
@@ -102,6 +103,8 @@ export interface RenderingInitOptions {
   readonly renderer?: RendererSource;
   readonly pixelRatio?: PixelRatioOption;
   readonly resize?: boolean | ResizeOptions;
+  /** GraphicsState 变化时通知 App（用于暂停帧循环）。 */
+  readonly onGraphicsStateChange?: (state: GraphicsState) => void;
 }
 
 export function isPerspectiveCamera(

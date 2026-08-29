@@ -1,8 +1,9 @@
 /**
- * 创建 RenderingRuntime（Scene / Camera / Renderer / Resize / Pipeline）。
+ * 创建 RenderingRuntime（Scene / Camera / Renderer / Resize / Pipeline / Context）。
  */
 
 import type { Camera } from 'three';
+import type { GraphicsState } from '../../rendering/GraphicsState';
 import { RenderingRuntime } from '../../rendering/RenderingRuntime';
 import type { Ownership } from '../../rendering/types';
 import type { ThreeAppOptions } from '../types/ThreeAppOptions';
@@ -15,6 +16,7 @@ export interface PendingCamera {
 export function createRenderingSubsystem(
   options: ThreeAppOptions,
   pendingCamera?: PendingCamera,
+  onGraphicsStateChange?: (state: GraphicsState) => void,
 ): RenderingRuntime {
   const rendering = new RenderingRuntime({
     canvas: options.canvas,
@@ -25,6 +27,9 @@ export function createRenderingSubsystem(
       ? { pixelRatio: options.pixelRatio }
       : {}),
     ...(options.resize !== undefined ? { resize: options.resize } : {}),
+    ...(onGraphicsStateChange !== undefined
+      ? { onGraphicsStateChange }
+      : {}),
   });
 
   if (pendingCamera) {

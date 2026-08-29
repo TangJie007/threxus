@@ -83,6 +83,10 @@ export interface ThreeContext {
   own(object: Object3D): void;
   /** 监听 active camera 被 setCamera 替换。 */
   onCameraChanged(callback: (event: CameraChangedEvent) => void): Disposable;
+  /** WebGL context 丢失；随 Feature 自动解绑。 */
+  onContextLost(callback: () => void): Disposable;
+  /** WebGL context 恢复；按 Feature 安装序执行，可 async。 */
+  onContextRestored(callback: () => void | Promise<void>): Disposable;
 }
 
 /**

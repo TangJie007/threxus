@@ -12,13 +12,13 @@ Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服�
 packages/
   runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle / Assets / Input / Rendering
 examples/
-  vue3/       M0–M9 演示
+  vue3/       M0–M10 演示
   test/       独立 Three.js 实验项目
 ```
 
 ## 当前实现范围
 
-当前完成 M0–M9：
+当前完成 M0–M10：
 
 - `Disposable` 与 `CleanupStack`
 - 强类型 `ServiceKey`
@@ -31,24 +31,19 @@ examples/
 - **GLTF**：`acquireGLTF`、`instantiate`（clone / skeleton-clone / shared）、共享 GPU 与实例私有 Material 所有权
 - **Input**：`ctx.input.on`、交互对象注册表、Raycast、冒泡 / `stopPropagation`、enter/leave、click / dblclick、Pointer Capture
 - **RenderPipeline**：唯一主 Pipeline、`RenderStage`、`RendererStateGuard`、临时渲染队列、`ctx.rendering`
+- **WebGL Context**：`GraphicsState`、lost/restored、`ctx.onContextLost` / `onContextRestored`、Pipeline/Feature restore
 
 ```ts
-ctx.rendering.addStage({
-  name: 'labels-overlay',
-  stage: 'overlay',
-  priority: 0,
-  render(context) {
-    // overlay draw
-  },
+ctx.onContextLost(() => {
+  // 释放临时 GPU 扩展资源
 });
 
-ctx.rendering.setPipeline(composerPipeline);
-await ctx.rendering.withRendererState(async (renderer) => {
-  // 临时改 RT / viewport，结束后自动恢复
+ctx.onContextRestored(async () => {
+  // 重建自定义 framebuffer / Pass
 });
 ```
 
-WebGL Context 丢失与恢复属于 **M10**。
+通用内置 Feature 属于 **M11**。
 
 ## 开始使用
 

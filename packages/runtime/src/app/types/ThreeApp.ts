@@ -6,6 +6,7 @@ import type { Camera, Scene, WebGLRenderer } from 'three';
 import type { AssetManager } from '../../assets';
 import type { ThreeFeature } from '../../feature/ThreeFeature';
 import type { Disposable } from '../../lifecycle/Disposable';
+import type { GraphicsState } from '../../rendering/GraphicsState';
 import type { AppState } from './AppState';
 import type {
   RuntimeSnapshot,
@@ -14,6 +15,8 @@ import type {
 
 export interface ThreeApp extends Disposable {
   readonly state: AppState;
+  /** WebGL 上下文状态，与 AppState 正交。 */
+  readonly graphicsState: GraphicsState;
   readonly canvas: HTMLCanvasElement;
   readonly scene: Scene;
   readonly camera: Camera;
@@ -27,4 +30,9 @@ export interface ThreeApp extends Disposable {
   render(): void;
   setCamera(camera: Camera, options?: SetCameraOptions): void;
   inspect(): RuntimeSnapshot;
+
+  /** 测试钩子：模拟 webglcontextlost。 */
+  simulateContextLost(): void;
+  /** 测试钩子：模拟 webglcontextrestored。 */
+  simulateContextRestored(): Promise<void>;
 }

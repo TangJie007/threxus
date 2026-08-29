@@ -1,7 +1,7 @@
 /**
  * @threxus/runtime 公共 API 入口。
  *
- * 当前阶段（M0–M9）导出：
+ * 当前阶段（M0–M10）导出：
  * - ThreeApp 工厂与类型
  * - Feature 契约（ThreeFeature / ThreeContext）
  * - Scheduler 与帧回调类型
@@ -9,6 +9,7 @@
  * - AssetManager / AssetHandle / Loader / GLTF 实例
  * - InputManager / ScopedInputManager / ThreePointerEvent
  * - RenderPipeline / RenderStage / ScopedRendering
+ * - WebGL Context lost/restored（GraphicsState）
  * - 生命周期原语（CleanupStack / Disposable）
  * - 服务标识（createServiceKey）
  * - 运行时错误（ThrexusError）
@@ -18,6 +19,7 @@ export {
   createThreeApp,
   type AppState,
   type FeatureSnapshot,
+  type GraphicsState,
   type RuntimeSnapshot,
   type SetCameraOptions,
   type ThreeApp,

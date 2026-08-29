@@ -13,6 +13,7 @@ import type {
   InputManagerSnapshot,
 } from '../../input';
 import type { RenderingSnapshot } from '../../rendering/RenderingRuntime';
+import type { GraphicsState } from '../../rendering/GraphicsState';
 import type {
   CameraSource,
   Ownership,
@@ -67,6 +68,7 @@ export interface FeatureSnapshot {
 /** inspect() 返回的运行时快照，供调试与 E2E 断言。 */
 export interface RuntimeSnapshot {
   readonly state: AppState;
+  readonly graphicsState: GraphicsState;
   readonly services: number;
   readonly scheduler: SchedulerSnapshot;
   readonly rendering: RenderingSnapshot | null;

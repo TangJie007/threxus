@@ -17,6 +17,7 @@ import { FeatureRegistry } from '../../feature/FeatureRegistry';
 import { FeatureScope } from '../../feature/FeatureScope';
 import type { ThreeFeature } from '../../feature/ThreeFeature';
 import type { InputManager } from '../../input';
+import type { GraphicsState } from '../../rendering/GraphicsState';
 import type { RenderingRuntime } from '../../rendering/RenderingRuntime';
 import type { Scheduler } from '../../scheduler/Scheduler';
 import { ServiceContainer } from '../../services/ServiceContainer';
@@ -54,6 +55,7 @@ export class ThreeAppRuntime implements ThreeApp {
   #rendering: RenderingRuntime | undefined;
   #pendingCamera: PendingCamera | undefined;
   #state: AppState = 'created';
+  #graphicsState: GraphicsState = 'available';
   /** 并发 start() 共享同一 Promise。 */
   #startPromise: Promise<void> | undefined;
   /** 并发 dispose() 共享同一 Promise。 */
@@ -62,13 +64,17 @@ export class ThreeAppRuntime implements ThreeApp {
   constructor(readonly options: ThreeAppOptions) {
     this.#scheduler = createAppScheduler(
       options,
-      () => this.#state === 'running',
+      () => this.#state === 'running' && this.#graphicsState === 'available',
     );
     this.#assets = createAppAssets(options);
   }
 
   get state(): AppState {
     return this.#state;
+  }
+
+  get graphicsState(): GraphicsState {
+    return this.#graphicsState;
   }
 
   get canvas(): HTMLCanvasElement {
@@ -209,6 +215,7 @@ export class ThreeAppRuntime implements ThreeApp {
 
     return {
       state: this.#state,
+      graphicsState: this.#graphicsState,
       services: this.#services.size,
       scheduler: this.#scheduler.inspect(),
       rendering: this.#rendering?.inspect() ?? null,
@@ -223,6 +230,14 @@ export class ThreeAppRuntime implements ThreeApp {
         };
       }),
     };
+  }
+
+  simulateContextLost(): void {
+    this.#requireRendering().simulateContextLost();
+  }
+
+  simulateContextRestored(): Promise<void> {
+    return this.#requireRendering().simulateContextRestored();
   }
 
   /**
@@ -344,8 +359,15 @@ export class ThreeAppRuntime implements ThreeApp {
     this.#rendering = createRenderingSubsystem(
       this.options,
       this.#pendingCamera,
+      (state) => {
+        this.#graphicsState = state;
+        if (state === 'available' && this.#state === 'running') {
+          this.#scheduler.invalidate();
+        }
+      },
     );
     this.#pendingCamera = undefined;
+    this.#graphicsState = this.#rendering.graphicsState;
 
     this.#scheduler.setRenderHook(() => {
       this.#rendering?.render();
