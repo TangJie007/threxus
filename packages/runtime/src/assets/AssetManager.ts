@@ -10,6 +10,7 @@
  * ```
  */
 
+import { isPlainObject } from 'es-toolkit';
 import { ThrexusError, toError } from '../errors';
 import type { Disposable } from '../lifecycle/Disposable';
 import { isBindableAsset } from './AssetLifetime';
@@ -592,8 +593,4 @@ function abortReason(signal: AbortSignal): unknown {
     signal.reason ??
     new ThrexusError('ASSET_LOAD', 'Asset acquire was aborted.')
   );
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
