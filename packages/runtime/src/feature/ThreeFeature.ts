@@ -10,6 +10,12 @@
  */
 
 import type { Cleanup, Disposable } from '../lifecycle/Disposable';
+import type {
+  FixedUpdateCallback,
+  RenderCallback,
+  TaskOptions,
+  UpdateCallback,
+} from '../scheduler/SchedulerTask';
 import type { ServiceKey } from '../services/ServiceKey';
 
 /** 服务注册选项。 */
@@ -43,6 +49,18 @@ export interface ThreeContext {
   inject<T>(key: ServiceKey<T>): T;
   injectOptional<T>(key: ServiceKey<T>): T | undefined;
   addCleanup(cleanup: Cleanup): Disposable;
+
+  /** 每帧 update 阶段回调；注册自动加入当前 FeatureScope。 */
+  onUpdate(callback: UpdateCallback, options?: TaskOptions): Disposable;
+  /** 固定时间步回调；需在 createThreeApp 中配置 fixedStep。 */
+  onFixedUpdate(
+    callback: FixedUpdateCallback,
+    options?: TaskOptions,
+  ): Disposable;
+  onBeforeRender(callback: RenderCallback, options?: TaskOptions): Disposable;
+  onAfterRender(callback: RenderCallback, options?: TaskOptions): Disposable;
+  /** 按需渲染模式下请求下一帧；同 tick 多次调用合并。 */
+  invalidate(): void;
 }
 
 /**

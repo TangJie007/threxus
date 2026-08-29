@@ -17,7 +17,7 @@
  * - 成功安装的 Feature 按**安装顺序的逆序** dispose（后装先拆）。
  * - 每个 Scope dispose 时 LIFO 执行其 cleanup，并 removeOwner 对应服务。
  *
- * M0–M3 尚未包含 Renderer / RAF / 资源加载，仅生命周期与服务契约。
+ * M4 增加 Scheduler / RAF；WebGL Renderer 属于 M5。
  */
 
 import { keyBy } from 'es-toolkit';
@@ -30,6 +30,19 @@ import type {
   ThreeFeature,
 } from '../feature/ThreeFeature';
 import { isDisposable, type Cleanup, type Disposable } from '../lifecycle/Disposable';
+import {
+  Scheduler,
+  type RenderMode,
+  type SchedulerErrorPolicy,
+  type SchedulerSnapshot,
+} from '../scheduler/Scheduler';
+import type { RafDriver } from '../scheduler/RafDriver';
+import type {
+  FixedUpdateCallback,
+  RenderCallback,
+  TaskOptions,
+  UpdateCallback,
+} from '../scheduler/SchedulerTask';
 import { ServiceContainer } from '../services/ServiceContainer';
 import type { ServiceKey } from '../services/ServiceKey';
 
@@ -41,7 +54,7 @@ export type AppState =
   | 'starting'
   /** 启动成功，所有 Feature 已 activate。 */
   | 'running'
-  /** 已暂停（M0–M3 仅状态标记，RAF/渲染暂停待 M4+）。 */
+  /** 已暂停；取消 RAF，resume 后恢复调度。 */
   | 'paused'
   /** 正在销毁：abort → 逆序 dispose Scope → 清空服务。 */
   | 'disposing'
@@ -52,6 +65,18 @@ export type AppState =
 
 export interface ThreeAppOptions {
   readonly canvas: HTMLCanvasElement;
+  /** 连续渲染（默认）或按需 invalidate。 */
+  readonly renderMode?: RenderMode;
+  /** 固定时间步（秒）；设置后启用 onFixedUpdate。 */
+  readonly fixedStep?: number;
+  /** 单帧 delta 上限（秒），默认 0.1。 */
+  readonly maxDelta?: number;
+  /** 单帧 fixedUpdate 最大迭代次数，默认 5。 */
+  readonly maxFixedStepsPerFrame?: number;
+  /** 帧回调异常策略，默认 continue。 */
+  readonly errorPolicy?: SchedulerErrorPolicy;
+  /** 自定义 RAF 驱动（测试用）。 */
+  readonly rafDriver?: RafDriver;
 }
 
 /** inspect() 返回的单个 Feature 快照。 */
@@ -65,6 +90,7 @@ export interface FeatureSnapshot {
 export interface RuntimeSnapshot {
   readonly state: AppState;
   readonly services: number;
+  readonly scheduler: SchedulerSnapshot;
   readonly features: readonly FeatureSnapshot[];
 }
 
@@ -79,7 +105,7 @@ export interface ThreeApp extends Disposable {
   inspect(): RuntimeSnapshot;
 }
 
-/** 创建 ThreeApp 实例。canvas 为后续 M4+ 渲染所需的挂载点。 */
+/** 创建 ThreeApp 实例。canvas 为渲染挂载点（M5 起用于 WebGL）。 */
 export function createThreeApp(options: ThreeAppOptions): ThreeApp {
   if (!options.canvas) {
     throw new TypeError('createThreeApp requires a canvas.');
@@ -97,13 +123,34 @@ class ThreeAppRuntime implements ThreeApp {
   readonly #scopes: FeatureScope[] = [];
   /** App 级 AbortController；dispose 在 starting 期间也会触发 abort。 */
   readonly #controller = new AbortController();
+  readonly #scheduler: Scheduler;
   #state: AppState = 'created';
   /** 并发 start() 共享同一 Promise。 */
   #startPromise: Promise<void> | undefined;
   /** 并发 dispose() 共享同一 Promise。 */
   #disposePromise: Promise<void> | undefined;
 
-  constructor(readonly options: ThreeAppOptions) {}
+  constructor(readonly options: ThreeAppOptions) {
+    this.#scheduler = new Scheduler({
+      shouldRun: () => this.#state === 'running',
+      ...(options.renderMode !== undefined
+        ? { renderMode: options.renderMode }
+        : {}),
+      ...(options.fixedStep !== undefined
+        ? { fixedStep: options.fixedStep }
+        : {}),
+      ...(options.maxDelta !== undefined ? { maxDelta: options.maxDelta } : {}),
+      ...(options.maxFixedStepsPerFrame !== undefined
+        ? { maxFixedStepsPerFrame: options.maxFixedStepsPerFrame }
+        : {}),
+      ...(options.errorPolicy !== undefined
+        ? { errorPolicy: options.errorPolicy }
+        : {}),
+      ...(options.rafDriver !== undefined
+        ? { rafDriver: options.rafDriver }
+        : {}),
+    });
+  }
 
   get state(): AppState {
     return this.#state;
@@ -156,6 +203,7 @@ class ThreeAppRuntime implements ThreeApp {
       );
     }
     this.#state = 'paused';
+    this.#scheduler.pause();
   }
 
   resume(): void {
@@ -169,6 +217,7 @@ class ThreeAppRuntime implements ThreeApp {
       );
     }
     this.#state = 'running';
+    this.#scheduler.resume();
   }
 
   dispose(): Promise<void> {
@@ -181,6 +230,7 @@ class ThreeAppRuntime implements ThreeApp {
     }
 
     this.#state = 'disposing';
+    this.#scheduler.stop();
     this.#controller.abort(new Error('Application is being disposed.'));
     for (const scope of this.#scopes) {
       scope.abort(this.#controller.signal.reason);
@@ -196,6 +246,7 @@ class ThreeAppRuntime implements ThreeApp {
     return {
       state: this.#state,
       services: this.#services.size,
+      scheduler: this.#scheduler.inspect(),
       features: this.#registered.map((feature) => {
         const scope = scopesByName[feature.name];
         return {
@@ -238,6 +289,7 @@ class ThreeAppRuntime implements ThreeApp {
       }
 
       this.#state = 'running';
+      this.#scheduler.start();
     } catch (error) {
       const rollbackErrors = await this.#disposeScopes();
 
@@ -270,6 +322,7 @@ class ThreeAppRuntime implements ThreeApp {
     }
 
     const errors = await this.#disposeScopes();
+    this.#scheduler.dispose();
     this.#services.clear();
     this.#state = 'disposed';
 
@@ -366,7 +419,50 @@ class ThreeAppRuntime implements ThreeApp {
         );
         return this.#services.getOptional(key);
       },
+
+      onUpdate: (callback: UpdateCallback, options?: TaskOptions): Disposable =>
+        this.#registerSchedulerTask(scope, () =>
+          this.#scheduler.onUpdate(feature.name, callback, options),
+        ),
+
+      onFixedUpdate: (
+        callback: FixedUpdateCallback,
+        options?: TaskOptions,
+      ): Disposable =>
+        this.#registerSchedulerTask(scope, () =>
+          this.#scheduler.onFixedUpdate(feature.name, callback, options),
+        ),
+
+      onBeforeRender: (
+        callback: RenderCallback,
+        options?: TaskOptions,
+      ): Disposable =>
+        this.#registerSchedulerTask(scope, () =>
+          this.#scheduler.onBeforeRender(feature.name, callback, options),
+        ),
+
+      onAfterRender: (
+        callback: RenderCallback,
+        options?: TaskOptions,
+      ): Disposable =>
+        this.#registerSchedulerTask(scope, () =>
+          this.#scheduler.onAfterRender(feature.name, callback, options),
+        ),
+
+      invalidate: (): void => {
+        this.#scheduler.invalidate();
+      },
     };
+  }
+
+  /** 注册调度任务并绑定 FeatureScope 生命周期。 */
+  #registerSchedulerTask(
+    scope: FeatureScope,
+    register: () => Disposable,
+  ): Disposable {
+    const disposable = register();
+    scope.addCleanup(disposable);
+    return disposable;
   }
 
   /** 确保 declares provides 的每个 Key 都在 setup 中实际 provide 了。 */

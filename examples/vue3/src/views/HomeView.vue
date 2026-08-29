@@ -15,11 +15,11 @@ const {
 <template>
   <section class="view">
     <header class="bar">
-      <p class="eyebrow">Threxus M0–M3</p>
-      <h1>Feature 生命周期</h1>
+      <p class="eyebrow">Threxus M0–M4</p>
+      <h1>Feature 生命周期与 Scheduler</h1>
       <p class="hint">
         Consumer 被先注册，但运行时根据 Service 依赖让 Provider 先启动；
-        dispose 时按照相反顺序清理。
+        dispose 时按照相反顺序清理。Canvas 上蓝色圆点由 onUpdate 驱动（2D 演示，非 WebGL）。
       </p>
     </header>
 
@@ -32,6 +32,14 @@ const {
         <div class="status-row">
           <span>活动服务</span>
           <strong>{{ snapshot?.services ?? 0 }}</strong>
+        </div>
+        <div class="status-row">
+          <span>Scheduler 帧</span>
+          <strong>{{ snapshot?.scheduler.frame ?? 0 }}</strong>
+        </div>
+        <div class="status-row">
+          <span>渲染模式</span>
+          <strong>{{ snapshot?.scheduler.renderMode ?? '-' }}</strong>
         </div>
         <button
           type="button"

@@ -1,9 +1,10 @@
 /**
  * @threxus/runtime 公共 API 入口。
  *
- * 当前阶段（M0–M3）导出：
+ * 当前阶段（M0–M4）导出：
  * - ThreeApp 工厂与类型
  * - Feature 契约（ThreeFeature / ThreeContext）
+ * - Scheduler 与帧回调类型
  * - 生命周期原语（CleanupStack / Disposable）
  * - 服务标识（createServiceKey）
  * - 运行时错误（ThrexusError）
@@ -36,6 +37,26 @@ export {
   type Disposable,
   isDisposable,
 } from './lifecycle/Disposable';
+export {
+  Scheduler,
+  type RenderMode,
+  type SchedulerErrorPolicy,
+  type SchedulerOptions,
+  type SchedulerSnapshot,
+} from './scheduler/Scheduler';
+export type { FrameInfo } from './scheduler/FrameInfo';
+export {
+  createBrowserRafDriver,
+  ManualRafDriver,
+  type RafDriver,
+} from './scheduler/RafDriver';
+export type {
+  FixedUpdateCallback,
+  RenderCallback,
+  SchedulerPhase,
+  TaskOptions,
+  UpdateCallback,
+} from './scheduler/SchedulerTask';
 export {
   createServiceKey,
   type ServiceKey,

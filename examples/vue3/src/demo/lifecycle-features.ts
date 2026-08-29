@@ -13,6 +13,7 @@ const ClockService = createServiceKey<ClockService>('demo-clock');
 
 export function createLifecycleFeatures(log: DemoLogger): ThreeFeature[] {
   return [
+    createSchedulerDemoFeature(log),
     {
       name: 'clock-consumer',
       dependencies: [ClockService],
@@ -38,6 +39,54 @@ export function createLifecycleFeatures(log: DemoLogger): ThreeFeature[] {
       },
     },
   ];
+}
+
+/** 用 Canvas 2D 验证 RAF 调度（M4 尚无 WebGL）。 */
+function createSchedulerDemoFeature(log: DemoLogger): ThreeFeature {
+  return {
+    name: 'scheduler-demo',
+    setup(context) {
+      const canvas = context.canvas;
+      const ctx2d = canvas.getContext('2d');
+
+      const resize = (): void => {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      };
+
+      resize();
+      window.addEventListener('resize', resize);
+      context.addCleanup(() => {
+        window.removeEventListener('resize', resize);
+      });
+
+      log('scheduler-demo 已注册 onUpdate');
+
+      context.onUpdate(({ frame, elapsed }) => {
+        if (!ctx2d) {
+          return;
+        }
+
+        const { width, height } = canvas;
+        ctx2d.setTransform(1, 0, 0, 1, 0, 0);
+        ctx2d.fillStyle = '#0b1220';
+        ctx2d.fillRect(0, 0, width, height);
+
+        const x = (Math.sin(elapsed * 2) * 0.35 + 0.5) * width;
+        const y = height * 0.5;
+        ctx2d.fillStyle = '#409eff';
+        ctx2d.beginPath();
+        ctx2d.arc(x, y, Math.min(width, height) * 0.06, 0, Math.PI * 2);
+        ctx2d.fill();
+
+        ctx2d.fillStyle = '#94a3b8';
+        ctx2d.font = '14px sans-serif';
+        ctx2d.fillText(`frame ${frame}`, 16, 24);
+      });
+    },
+  };
 }
 
 export function createRollbackFeatures(log: DemoLogger): ThreeFeature[] {

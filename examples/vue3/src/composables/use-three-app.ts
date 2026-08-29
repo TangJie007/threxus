@@ -83,6 +83,7 @@ export function useThreeApp(
     try {
       await start;
       log('App 启动完成');
+      startSnapshotPolling(refresh, () => app.value?.state === 'running');
     } catch (reason) {
       error.value = getErrorMessage(reason);
       log(`启动失败：${error.value}`);
@@ -107,4 +108,17 @@ export function useThreeApp(
 
 function getErrorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+function startSnapshotPolling(
+  refresh: () => void,
+  isRunning: () => boolean,
+): void {
+  const tick = (): void => {
+    refresh();
+    if (isRunning()) {
+      requestAnimationFrame(tick);
+    }
+  };
+  requestAnimationFrame(tick);
 }

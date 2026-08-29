@@ -17,6 +17,9 @@ const provider: ThreeFeature = {
     context.provide(Clock, {
       now: () => 0,
     });
+    context.onUpdate(({ frame }) => {
+      void frame;
+    });
   },
 };
 
@@ -26,11 +29,12 @@ const consumer: ThreeFeature = {
   setup(context) {
     const value: number = context.inject(Clock).now();
     void value;
+    context.invalidate();
   },
 };
 
 declare const canvas: HTMLCanvasElement;
 
-const app = createThreeApp({ canvas });
+const app = createThreeApp({ canvas, renderMode: 'on-demand' });
 app.use(provider).use(consumer);
 void app.start();
