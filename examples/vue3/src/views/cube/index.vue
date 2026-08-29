@@ -18,6 +18,10 @@ const events = ref<string[]>([]);
 const state = ref<AppState>('created');
 const snapshot = ref<RuntimeSnapshot | null>(null);
 const error = ref<string | null>(null);
+const fps = ref(0);
+
+let lastFrame = 0;
+let lastFpsAt = 0;
 
 function log(message: string): void {
   events.value.push(message);
@@ -29,6 +33,19 @@ function refresh(): void {
   }
   state.value = app.value.state;
   snapshot.value = app.value.inspect();
+
+  const frame = snapshot.value.scheduler.frame;
+  const now = performance.now();
+  if (lastFpsAt === 0) {
+    lastFrame = frame;
+    lastFpsAt = now;
+  } else if (now - lastFpsAt >= 500) {
+    fps.value = Math.round(
+      ((frame - lastFrame) * 1000) / (now - lastFpsAt),
+    );
+    lastFrame = frame;
+    lastFpsAt = now;
+  }
 }
 
 onMounted(async () => {
@@ -54,12 +71,18 @@ onMounted(async () => {
   try {
     await runtime.start();
     log('App 启动完成');
+    const tick = (): void => {
+      refresh();
+      if (app.value?.state === 'running') {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : String(reason);
     log(`启动失败：${error.value}`);
+    refresh();
   }
-
-  refresh();
 });
 
 onBeforeUnmount(() => {
@@ -86,8 +109,8 @@ onBeforeUnmount(() => {
           <strong :data-state="state">{{ state }}</strong>
         </div>
         <div class="status-row">
-          <span>Scheduler 帧</span>
-          <strong>{{ snapshot?.scheduler.frame ?? 0 }}</strong>
+          <span>约 FPS</span>
+          <strong>{{ fps }}</strong>
         </div>
         <div class="status-row">
           <span>资产条目</span>
