@@ -157,3 +157,16 @@ button:disabled {
   pointer-events: none;
   opacity: 0;
 }
+
+.scene-panel {
+  grid-column: 1 / -1;
+}
+
+.scene-canvas {
+  display: block;
+  width: 100%;
+  min-height: 320px;
+  aspect-ratio: 16 / 10;
+  border-radius: 8px;
+  background: #0b1220;
+}

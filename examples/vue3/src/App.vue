@@ -10,6 +10,9 @@
       <RouterLink class="nav-link" to="/" exact-active-class="on">
         生命周期
       </RouterLink>
+      <RouterLink class="nav-link" to="/cube" active-class="on">
+        旋转立方体
+      </RouterLink>
       <RouterLink class="nav-link" to="/factory-twin" active-class="on">
         失败回滚
       </RouterLink>

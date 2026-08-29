@@ -12,49 +12,50 @@ Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服�
 packages/
   runtime/    @threxus/runtime —— App / Feature / Service / Lifecycle
 examples/
-  vue3/       M0–M4 生命周期与 Scheduler 演示
+  vue3/       M0–M5 生命周期与 WebGL 演示
   test/       独立 Three.js 实验项目
 ```
 
 ## 当前实现范围
 
-当前完成 M0–M4：
+当前完成 M0–M5：
 
 - `Disposable` 与 `CleanupStack`
 - 强类型 `ServiceKey`
 - Feature 服务依赖图和稳定拓扑排序
 - FeatureScope、AbortSignal 和反向清理
 - ThreeApp 启动、失败回滚和幂等销毁
-- **Scheduler**：RAF 循环、`onUpdate` / `onFixedUpdate` / `onBeforeRender` / `onAfterRender`
-- 连续渲染与按需 `invalidate`、pause/resume、delta 截断与固定时间步
+- Scheduler：RAF 循环、`onUpdate` / `onFixedUpdate` / 渲染阶段钩子
+- **WebGL**：Scene / Camera / Renderer、ResizeObserver、DirectRenderPipeline、`ctx.own()`
 
 ```ts
-import {
-  createServiceKey,
-  createThreeApp,
-  type ThreeFeature,
-} from '@threxus/runtime';
+import { createThreeApp } from '@threxus/runtime';
+import * as THREE from 'three';
 
 const app = createThreeApp({
   canvas,
-  renderMode: 'continuous', // 或 'on-demand'
-  fixedStep: 1 / 60,
+  camera: { type: 'perspective', position: [3, 2, 5] },
 });
 
 app.use({
-  name: 'animate',
+  name: 'rotating-box',
   setup(ctx) {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(),
+      new THREE.MeshStandardMaterial(),
+    );
+    ctx.scene.add(mesh);
+    ctx.own(mesh);
     ctx.onUpdate(({ delta }) => {
-      // 每帧逻辑
+      mesh.rotation.y += delta;
     });
   },
 });
 
 await app.start();
-await app.dispose();
 ```
 
-WebGL Renderer、Scene、Camera 属于 **M5**，届时 `onBeforeRender` / `onAfterRender` 将挂接真实渲染管线。
+资产加载（AssetManager）属于 **M6**。
 
 ## 开始使用
 

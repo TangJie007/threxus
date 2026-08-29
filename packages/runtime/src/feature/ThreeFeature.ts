@@ -9,7 +9,9 @@
  * provide/inject 与声明一致。
  */
 
+import type { Camera, Object3D, Scene, WebGLRenderer } from 'three';
 import type { Cleanup, Disposable } from '../lifecycle/Disposable';
+import type { CameraChangedEvent } from '../rendering/types';
 import type {
   FixedUpdateCallback,
   RenderCallback,
@@ -38,6 +40,9 @@ export interface ProvideServiceOptions {
  */
 export interface ThreeContext {
   readonly canvas: HTMLCanvasElement;
+  readonly scene: Scene;
+  readonly camera: Camera;
+  readonly renderer: WebGLRenderer;
   /** Feature 级取消信号；App dispose 或 Feature 回滚时触发。 */
   readonly signal: AbortSignal;
 
@@ -61,6 +66,10 @@ export interface ThreeContext {
   onAfterRender(callback: RenderCallback, options?: TaskOptions): Disposable;
   /** 按需渲染模式下请求下一帧；同 tick 多次调用合并。 */
   invalidate(): void;
+  /** 声明场景节点归当前 Feature 所有；销毁时从父节点移除。 */
+  own(object: Object3D): void;
+  /** 监听 active camera 被 setCamera 替换。 */
+  onCameraChanged(callback: (event: CameraChangedEvent) => void): Disposable;
 }
 
 /**

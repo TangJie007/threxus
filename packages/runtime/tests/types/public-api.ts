@@ -1,6 +1,6 @@
 import {
-  createServiceKey,
   createThreeApp,
+  createServiceKey,
   type ThreeFeature,
 } from '../../src';
 
@@ -34,7 +34,8 @@ const consumer: ThreeFeature = {
 };
 
 declare const canvas: HTMLCanvasElement;
+declare const renderer: import('three').WebGLRenderer;
 
-const app = createThreeApp({ canvas, renderMode: 'on-demand' });
+const app = createThreeApp({ canvas, renderer, renderMode: 'on-demand', resize: false });
 app.use(provider).use(consumer);
 void app.start();

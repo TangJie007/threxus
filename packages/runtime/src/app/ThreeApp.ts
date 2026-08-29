@@ -17,9 +17,10 @@
  * - 成功安装的 Feature 按**安装顺序的逆序** dispose（后装先拆）。
  * - 每个 Scope dispose 时 LIFO 执行其 cleanup，并 removeOwner 对应服务。
  *
- * M4 增加 Scheduler / RAF；WebGL Renderer 属于 M5。
+ * M5 增加 WebGL Renderer、Scene、Camera 与 Resize。
  */
 
+import type { Camera, Scene, WebGLRenderer } from 'three';
 import { keyBy } from 'es-toolkit';
 import { ThrexusError, toError } from '../errors';
 import { FeatureRegistry } from '../feature/FeatureRegistry';
@@ -30,6 +31,18 @@ import type {
   ThreeFeature,
 } from '../feature/ThreeFeature';
 import { isDisposable, type Cleanup, type Disposable } from '../lifecycle/Disposable';
+import {
+  RenderingRuntime,
+  type RenderingSnapshot,
+} from '../rendering/RenderingRuntime';
+import type {
+  CameraSource,
+  Ownership,
+  PixelRatioOption,
+  RendererSource,
+  ResizeOptions,
+  SceneSource,
+} from '../rendering/types';
 import {
   Scheduler,
   type RenderMode,
@@ -65,6 +78,11 @@ export type AppState =
 
 export interface ThreeAppOptions {
   readonly canvas: HTMLCanvasElement;
+  readonly scene?: SceneSource;
+  readonly camera?: CameraSource;
+  readonly renderer?: RendererSource;
+  readonly pixelRatio?: PixelRatioOption;
+  readonly resize?: boolean | ResizeOptions;
   /** 连续渲染（默认）或按需 invalidate。 */
   readonly renderMode?: RenderMode;
   /** 固定时间步（秒）；设置后启用 onFixedUpdate。 */
@@ -91,17 +109,27 @@ export interface RuntimeSnapshot {
   readonly state: AppState;
   readonly services: number;
   readonly scheduler: SchedulerSnapshot;
+  readonly rendering: RenderingSnapshot | null;
   readonly features: readonly FeatureSnapshot[];
+}
+
+export interface SetCameraOptions {
+  readonly ownership?: Ownership;
 }
 
 export interface ThreeApp extends Disposable {
   readonly state: AppState;
   readonly canvas: HTMLCanvasElement;
+  readonly scene: Scene;
+  readonly camera: Camera;
+  readonly renderer: WebGLRenderer;
 
   use(feature: ThreeFeature): this;
   start(): Promise<void>;
   pause(): void;
   resume(): void;
+  render(): void;
+  setCamera(camera: Camera, options?: SetCameraOptions): void;
   inspect(): RuntimeSnapshot;
 }
 
@@ -124,6 +152,13 @@ class ThreeAppRuntime implements ThreeApp {
   /** App 级 AbortController；dispose 在 starting 期间也会触发 abort。 */
   readonly #controller = new AbortController();
   readonly #scheduler: Scheduler;
+  #rendering: RenderingRuntime | undefined;
+  #pendingCamera:
+    | {
+        readonly camera: Camera;
+        readonly ownership: Ownership;
+      }
+    | undefined;
   #state: AppState = 'created';
   /** 并发 start() 共享同一 Promise。 */
   #startPromise: Promise<void> | undefined;
@@ -158,6 +193,18 @@ class ThreeAppRuntime implements ThreeApp {
 
   get canvas(): HTMLCanvasElement {
     return this.options.canvas;
+  }
+
+  get scene(): Scene {
+    return this.#requireRendering().scene;
+  }
+
+  get camera(): Camera {
+    return this.#requireRendering().camera;
+  }
+
+  get renderer(): WebGLRenderer {
+    return this.#requireRendering().renderer;
   }
 
   use(feature: ThreeFeature): this {
@@ -220,6 +267,39 @@ class ThreeAppRuntime implements ThreeApp {
     this.#scheduler.resume();
   }
 
+  render(): void {
+    if (this.#state !== 'running' && this.#state !== 'paused') {
+      throw new ThrexusError(
+        'APP_STATE',
+        `Cannot render while app is ${this.#state}.`,
+      );
+    }
+    this.#requireRendering().render();
+  }
+
+  setCamera(camera: Camera, options?: SetCameraOptions): void {
+    const ownership = options?.ownership ?? 'external';
+    if (
+      this.#state !== 'created' &&
+      this.#state !== 'starting' &&
+      this.#state !== 'running' &&
+      this.#state !== 'paused'
+    ) {
+      throw new ThrexusError(
+        'APP_STATE',
+        `Cannot set camera while app is ${this.#state}.`,
+      );
+    }
+
+    if (this.#rendering) {
+      this.#rendering.setCamera(camera, ownership);
+      this.#scheduler.invalidate();
+      return;
+    }
+
+    this.#pendingCamera = { camera, ownership };
+  }
+
   dispose(): Promise<void> {
     if (this.#disposePromise) {
       return this.#disposePromise;
@@ -247,6 +327,7 @@ class ThreeAppRuntime implements ThreeApp {
       state: this.#state,
       services: this.#services.size,
       scheduler: this.#scheduler.inspect(),
+      rendering: this.#rendering?.inspect() ?? null,
       features: this.#registered.map((feature) => {
         const scope = scopesByName[feature.name];
         return {
@@ -265,6 +346,7 @@ class ThreeAppRuntime implements ThreeApp {
   async #runStart(): Promise<void> {
     try {
       const graph = this.#registry.lockAndResolve();
+      this.#initializeRendering();
 
       for (const feature of graph.ordered) {
         this.#throwIfAborted();
@@ -291,6 +373,7 @@ class ThreeAppRuntime implements ThreeApp {
       this.#state = 'running';
       this.#scheduler.start();
     } catch (error) {
+      await this.#disposeRendering();
       const rollbackErrors = await this.#disposeScopes();
 
       if (this.#state !== 'disposing') {
@@ -322,6 +405,7 @@ class ThreeAppRuntime implements ThreeApp {
     }
 
     const errors = await this.#disposeScopes();
+    await this.#disposeRendering();
     this.#scheduler.dispose();
     this.#services.clear();
     this.#state = 'disposed';
@@ -375,6 +459,9 @@ class ThreeAppRuntime implements ThreeApp {
 
     return {
       canvas: this.canvas,
+      scene: this.#requireRendering().scene,
+      camera: this.#requireRendering().camera,
+      renderer: this.#requireRendering().renderer,
       signal: scope.signal,
 
       addCleanup: (cleanup: Cleanup): Disposable =>
@@ -452,7 +539,62 @@ class ThreeAppRuntime implements ThreeApp {
       invalidate: (): void => {
         this.#scheduler.invalidate();
       },
+
+      own: (object): void => {
+        this.#requireRendering().own(scope, object);
+      },
+
+      onCameraChanged: (callback) => {
+        const disposable = this.#requireRendering().onCameraChanged(callback);
+        scope.addCleanup(disposable);
+        return disposable;
+      },
     };
+  }
+
+  #initializeRendering(): void {
+    this.#rendering = new RenderingRuntime({
+      canvas: this.options.canvas,
+      ...(this.options.scene !== undefined ? { scene: this.options.scene } : {}),
+      ...(this.options.camera !== undefined ? { camera: this.options.camera } : {}),
+      ...(this.options.renderer !== undefined
+        ? { renderer: this.options.renderer }
+        : {}),
+      ...(this.options.pixelRatio !== undefined
+        ? { pixelRatio: this.options.pixelRatio }
+        : {}),
+      ...(this.options.resize !== undefined ? { resize: this.options.resize } : {}),
+    });
+
+    if (this.#pendingCamera) {
+      this.#rendering.setCamera(
+        this.#pendingCamera.camera,
+        this.#pendingCamera.ownership,
+      );
+      this.#pendingCamera = undefined;
+    }
+
+    this.#scheduler.setRenderHook(() => {
+      this.#rendering?.render();
+    });
+  }
+
+  async #disposeRendering(): Promise<void> {
+    if (!this.#rendering) {
+      return;
+    }
+    this.#rendering.dispose();
+    this.#rendering = undefined;
+  }
+
+  #requireRendering(): RenderingRuntime {
+    if (!this.#rendering) {
+      throw new ThrexusError(
+        'APP_STATE',
+        'Rendering is not initialized. Call start() first.',
+      );
+    }
+    return this.#rendering;
   }
 
   /** 注册调度任务并绑定 FeatureScope 生命周期。 */

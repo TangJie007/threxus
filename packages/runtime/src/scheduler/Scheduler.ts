@@ -3,7 +3,7 @@
  *
  * 帧流水线：
  * ```text
- * fixed-update → update → before-render → after-render
+ * fixed-update → update → before-render → render → after-render
  * ```
  * M4 不含 WebGL render；before/after 钩子供 M5 管线挂接。
  *
@@ -46,6 +46,8 @@ export interface SchedulerOptions {
   readonly rafDriver?: RafDriver;
   /** 返回 false 时不调度下一帧（App 非 running / paused）。 */
   readonly shouldRun?: () => boolean;
+  /** M5：在 beforeRender 与 afterRender 之间执行主渲染。 */
+  readonly renderHook?: () => void;
 }
 
 export interface SchedulerSnapshot {
@@ -69,6 +71,7 @@ export class Scheduler implements Disposable {
   readonly #errorPolicy: SchedulerErrorPolicy;
   readonly #raf: RafDriver;
   readonly #shouldRun: () => boolean;
+  #renderHook: (() => void) | undefined;
   readonly #fixedAccumulator: FixedStepAccumulator | undefined;
   readonly #phases: Record<SchedulerPhase, PhaseRegistry> = {
     fixedUpdate: { active: [], pending: [] },
@@ -95,6 +98,7 @@ export class Scheduler implements Disposable {
     this.#errorPolicy = options.errorPolicy ?? 'continue';
     this.#raf = options.rafDriver ?? createBrowserRafDriver();
     this.#shouldRun = options.shouldRun ?? (() => true);
+    this.#renderHook = options.renderHook;
 
     if (options.fixedStep !== undefined && options.fixedStep > 0) {
       this.#fixedAccumulator = new FixedStepAccumulator(
@@ -106,6 +110,11 @@ export class Scheduler implements Disposable {
 
   get renderMode(): RenderMode {
     return this.#renderMode;
+  }
+
+  /** 启动后设置主渲染钩子（RenderingRuntime 初始化之后调用）。 */
+  setRenderHook(hook: () => void): void {
+    this.#renderHook = hook;
   }
 
   start(): void {
@@ -317,6 +326,9 @@ export class Scheduler implements Disposable {
       }
       if (!this.#stopFrame) {
         this.#runPhase('beforeRender', frame);
+      }
+      if (!this.#stopFrame) {
+        this.#renderHook?.();
       }
       if (!this.#stopFrame) {
         this.#runPhase('afterRender', frame);

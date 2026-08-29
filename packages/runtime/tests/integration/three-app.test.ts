@@ -4,16 +4,21 @@ import {
   createThreeApp,
   type Disposable,
 } from '../../src';
+import { createHeadlessThreeAppOptions } from '../helpers/headless-three';
 
 function createCanvas(): HTMLCanvasElement {
-  return {} as HTMLCanvasElement;
+  return createHeadlessThreeAppOptions().canvas;
+}
+
+function createAppOptions(canvas: HTMLCanvasElement) {
+  return createHeadlessThreeAppOptions(canvas);
 }
 
 describe('ThreeApp', () => {
   it('starts dependencies first and disposes consumers first', async () => {
     const records: string[] = [];
     const Service = createServiceKey<{ value: number }>('service');
-    const app = createThreeApp({ canvas: createCanvas() });
+    const app = createThreeApp(createAppOptions(createCanvas()));
 
     app.use({
       name: 'consumer',
@@ -54,7 +59,7 @@ describe('ThreeApp', () => {
 
   it('rolls back active and partially initialized scopes', async () => {
     const records: string[] = [];
-    const app = createThreeApp({ canvas: createCanvas() });
+    const app = createThreeApp(createAppOptions(createCanvas()));
 
     app.use({
       name: 'first',
@@ -83,7 +88,7 @@ describe('ThreeApp', () => {
 
   it('requires declared services to be provided', async () => {
     const Service = createServiceKey<object>('service');
-    const app = createThreeApp({ canvas: createCanvas() });
+    const app = createThreeApp(createAppOptions(createCanvas()));
     app.use({
       name: 'provider',
       provides: [Service],
@@ -95,7 +100,7 @@ describe('ThreeApp', () => {
 
   it('rejects undeclared service injection', async () => {
     const Service = createServiceKey<object>('service');
-    const app = createThreeApp({ canvas: createCanvas() });
+    const app = createThreeApp(createAppOptions(createCanvas()));
     app.use({
       name: 'provider',
       provides: [Service],
@@ -118,7 +123,7 @@ describe('ThreeApp', () => {
     const setupGate = new Promise<void>((resolve) => {
       releaseSetup = resolve;
     });
-    const app = createThreeApp({ canvas: createCanvas() });
+    const app = createThreeApp(createAppOptions(createCanvas()));
     app.use({
       name: 'async',
       async setup() {
@@ -136,7 +141,7 @@ describe('ThreeApp', () => {
 
   it('aborts startup when disposed during setup', async () => {
     const cleanup = vi.fn();
-    const app = createThreeApp({ canvas: createCanvas() });
+    const app = createThreeApp(createAppOptions(createCanvas()));
     app.use({
       name: 'waiting',
       async setup(context) {
@@ -162,7 +167,7 @@ describe('ThreeApp', () => {
   it('auto-disposes provided services', async () => {
     const dispose = vi.fn();
     const Service = createServiceKey<Disposable>('disposable');
-    const app = createThreeApp({ canvas: createCanvas() });
+    const app = createThreeApp(createAppOptions(createCanvas()));
     app.use({
       name: 'provider',
       provides: [Service],
@@ -181,7 +186,7 @@ describe('ThreeApp', () => {
   });
 
   it('locks feature registration after start', async () => {
-    const app = createThreeApp({ canvas: createCanvas() });
+    const app = createThreeApp(createAppOptions(createCanvas()));
     await app.start();
 
     expect(() =>

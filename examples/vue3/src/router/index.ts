@@ -1,4 +1,4 @@
-/** Vue 示例路由：M0–M3 生命周期和失败回滚。 */
+/** Vue 示例路由：生命周期 / WebGL / 失败回滚。 */
 
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -9,7 +9,13 @@ export const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
-      meta: { title: '生命周期' },
+      meta: { title: 'Feature 生命周期' },
+    },
+    {
+      path: '/cube',
+      name: 'cube',
+      component: () => import('../views/cube/index.vue'),
+      meta: { title: '旋转立方体' },
     },
     {
       path: '/factory-twin',

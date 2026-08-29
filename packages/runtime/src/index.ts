@@ -1,18 +1,14 @@
 /**
  * @threxus/runtime 公共 API 入口。
  *
- * 当前阶段（M0–M4）导出：
+ * 当前阶段（M0–M5）导出：
  * - ThreeApp 工厂与类型
  * - Feature 契约（ThreeFeature / ThreeContext）
  * - Scheduler 与帧回调类型
+ * - 渲染类型（Camera / Renderer Options）
  * - 生命周期原语（CleanupStack / Disposable）
  * - 服务标识（createServiceKey）
  * - 运行时错误（ThrexusError）
- *
- * 内部模块（FeatureGraph、FeatureRegistry、FeatureScope、ServiceContainer）
- * 不对外暴露，由 ThreeApp 编排使用。
- *
- * 运行时依赖 es-toolkit（按需 import，tree-shake 友好）。
  */
 
 export {
@@ -20,6 +16,7 @@ export {
   type AppState,
   type FeatureSnapshot,
   type RuntimeSnapshot,
+  type SetCameraOptions,
   type ThreeApp,
   type ThreeAppOptions,
 } from './app/ThreeApp';
@@ -37,6 +34,21 @@ export {
   type Disposable,
   isDisposable,
 } from './lifecycle/Disposable';
+export type {
+  CameraChangedEvent,
+  CameraOptions,
+  OrthographicCameraOptions,
+  Ownership,
+  PerspectiveCameraOptions,
+  PixelRatioOption,
+  PixelRatioPolicy,
+  RendererOptions,
+  ResizeOptions,
+  SceneOptions,
+  Vector3Like,
+} from './rendering/types';
+export type { RenderPipeline } from './rendering/RenderPipeline';
+export type { RenderingSnapshot } from './rendering/RenderingRuntime';
 export {
   Scheduler,
   type RenderMode,

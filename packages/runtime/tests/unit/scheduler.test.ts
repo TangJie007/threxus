@@ -4,6 +4,7 @@ import {
   ManualRafDriver,
   Scheduler,
 } from '../../src';
+import { createHeadlessThreeAppOptions } from '../helpers/headless-three';
 import { resetSchedulerTaskIdsForTests } from '../../src/scheduler/SchedulerTask';
 
 function createCanvas(): HTMLCanvasElement {
@@ -247,7 +248,7 @@ describe('ThreeApp scheduler integration', () => {
   it('starts the scheduler after app.start()', async () => {
     const driver = new ManualRafDriver();
     const app = createThreeApp({
-      canvas: createCanvas(),
+      ...createHeadlessThreeAppOptions(),
       rafDriver: driver,
     });
     let frames = 0;
@@ -275,7 +276,7 @@ describe('ThreeApp scheduler integration', () => {
   it('pauses and resumes scheduler with app state', async () => {
     const driver = new ManualRafDriver();
     const app = createThreeApp({
-      canvas: createCanvas(),
+      ...createHeadlessThreeAppOptions(),
       rafDriver: driver,
     });
     let frames = 0;
@@ -303,7 +304,7 @@ describe('ThreeApp scheduler integration', () => {
   it('disposes app from inside an update callback', async () => {
     const driver = new ManualRafDriver();
     const app = createThreeApp({
-      canvas: createCanvas(),
+      ...createHeadlessThreeAppOptions(),
       rafDriver: driver,
     });
     const cleanup = vi.fn();
