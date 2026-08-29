@@ -25,9 +25,9 @@ test('shows rotating box on dedicated route', async ({ page }) => {
   await expect(page.locator('.cube-canvas')).toBeVisible();
 
   const events = page.locator('.event-log li');
-  await expect(events).toHaveCount(5);
-  await expect(events.nth(1)).toContainText('M6 acquireTexture');
-  await expect(events.nth(3)).toContainText('rotating-box');
+  await expect(events.filter({ hasText: 'M6 acquireTexture' })).toHaveCount(1);
+  await expect(events.filter({ hasText: 'M7 acquireGLTF' })).toHaveCount(1);
+  await expect(events.filter({ hasText: 'M7 instantiate' })).toHaveCount(2);
 });
 
 test('shows partial-scope and active-feature rollback', async ({ page }) => {

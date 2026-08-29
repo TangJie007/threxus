@@ -6,6 +6,7 @@ import {
 } from '@threxus/runtime';
 import { markRaw, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import { cubeCamera } from './config';
+import { createGltfBoxesFeature } from './features/gltf-boxes';
 import { createRotatingBoxFeature } from './features/rotating-box';
 import { createSceneFeature } from './features/scene';
 
@@ -63,6 +64,7 @@ onMounted(async () => {
   });
   runtime.use(createSceneFeature());
   runtime.use(createRotatingBoxFeature(log));
+  runtime.use(createGltfBoxesFeature(log));
 
   app.value = markRaw(runtime);
   log('调用 app.start()');
@@ -93,12 +95,12 @@ onBeforeUnmount(() => {
 <template>
   <section class="view cube-view">
     <header class="bar">
-      <p class="eyebrow">Threxus M5–M6 · WebGL + Assets</p>
+      <p class="eyebrow">Threxus M5–M7 · WebGL + Assets + GLTF</p>
       <h1>旋转立方体</h1>
       <p class="hint">
-        M6：<code>acquireTexture</code> 加载
-        <code>/textures/checker.png</code>，
-        <code>retain</code> 绑定 Feature 生命周期；同 URL 并发 acquire 会合并为一次加载。
+        M6：<code>acquireTexture</code> 贴图立方体（上方）；
+        M7：<code>acquireGLTF</code> + <code>instantiate</code> 多实例
+        （下方，Geometry 共享）。
       </p>
     </header>
 

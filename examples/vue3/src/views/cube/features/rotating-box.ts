@@ -10,9 +10,8 @@ import { cubeBoxes, cubeSceneConfig, cubeTextureUrl } from '../config';
 import type { CubeLogger } from '../types';
 
 /**
- * 立方体 Feature（M5 场景 + M6 共享贴图）。
+ * 立方体 Feature（M6 共享贴图）。
  *
- * M6 用法：
  * 1. `acquireTexture` 加载（同 URL 并发会合并成一次请求）
  * 2. `retain(handle)` 把引用绑到 Feature；销毁时自动 release
  * 3. 不要对 handle.value 手动 texture.dispose()——由 AssetManager 负责
@@ -21,7 +20,6 @@ export function createRotatingBoxFeature(log: CubeLogger): ThreeFeature {
   return {
     name: 'rotating-box',
     async setup(context) {
-      // 故意并发两次 acquire：演示 M6 请求合并（底层只加载一次）
       const [first, second] = await Promise.all([
         context.assets.acquireTexture(cubeTextureUrl, {
           signal: context.signal,
@@ -41,9 +39,8 @@ export function createRotatingBoxFeature(log: CubeLogger): ThreeFeature {
         `M6 acquireTexture ×2：${shared ? '共享同一 Texture' : '未共享'}，refs=${context.assets.inspect().totalRefs}`,
       );
 
-      // second 仅用于演示合并；业务上保留一个引用即可
       second.dispose();
-      log(`释放多余 Handle 后 refs=${context.assets.inspect().totalRefs}`);
+      log(`M6 释放多余 Handle 后 refs=${context.assets.inspect().totalRefs}`);
 
       const texture = first.value;
       const geometry = new BoxGeometry();
@@ -68,20 +65,24 @@ export function createRotatingBoxFeature(log: CubeLogger): ThreeFeature {
         meshes.push(mesh);
       }
 
-      const light = new DirectionalLight(
-        cubeSceneConfig.lightColor,
-        cubeSceneConfig.lightIntensity,
-      );
-      light.position.set(...cubeSceneConfig.lightPosition);
-      context.scene.add(light);
-      context.own(light);
+      const existingLight = context.scene.getObjectByName('cube-key-light');
+      if (!existingLight) {
+        const light = new DirectionalLight(
+          cubeSceneConfig.lightColor,
+          cubeSceneConfig.lightIntensity,
+        );
+        light.name = 'cube-key-light';
+        light.position.set(...cubeSceneConfig.lightPosition);
+        context.scene.add(light);
+        context.own(light);
+      }
 
       context.addCleanup(() => geometry.dispose());
       for (const material of materials) {
         context.addCleanup(() => material.dispose());
       }
 
-      log(`rotating-box 已创建 ${meshes.length} 个贴图立方体`);
+      log(`M6 rotating-box：${meshes.length} 个贴图立方体`);
 
       context.onUpdate(({ delta }) => {
         meshes.forEach((mesh, index) => {
