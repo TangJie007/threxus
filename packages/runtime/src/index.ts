@@ -22,7 +22,7 @@ export {
   type SetCameraOptions,
   type ThreeApp,
   type ThreeAppOptions,
-} from './app/ThreeApp';
+} from './app';
 export {
   type ProvideServiceOptions,
   type ThreeContext,

@@ -1,0 +1,80 @@
+/**
+ * ThreeApp 配置、快照与相机切换选项。
+ */
+
+import type {
+  AssetLoader,
+  AssetManagerOptions,
+  AssetManagerSnapshot,
+} from '../../assets';
+import type { FeatureScopeState } from '../../feature/FeatureScope';
+import type {
+  InputManagerOptions,
+  InputManagerSnapshot,
+} from '../../input';
+import type { RenderingSnapshot } from '../../rendering/RenderingRuntime';
+import type {
+  CameraSource,
+  Ownership,
+  PixelRatioOption,
+  RendererSource,
+  ResizeOptions,
+  SceneSource,
+} from '../../rendering/types';
+import type { RafDriver } from '../../scheduler/RafDriver';
+import type {
+  RenderMode,
+  SchedulerErrorPolicy,
+  SchedulerSnapshot,
+} from '../../scheduler/Scheduler';
+import type { AppState } from './AppState';
+
+export interface ThreeAppOptions {
+  readonly canvas: HTMLCanvasElement;
+  readonly scene?: SceneSource;
+  readonly camera?: CameraSource;
+  readonly renderer?: RendererSource;
+  readonly pixelRatio?: PixelRatioOption;
+  readonly resize?: boolean | ResizeOptions;
+  /** 连续渲染（默认）或按需 invalidate。 */
+  readonly renderMode?: RenderMode;
+  /** 固定时间步（秒）；设置后启用 onFixedUpdate。 */
+  readonly fixedStep?: number;
+  /** 单帧 delta 上限（秒），默认 0.1。 */
+  readonly maxDelta?: number;
+  /** 单帧 fixedUpdate 最大迭代次数，默认 5。 */
+  readonly maxFixedStepsPerFrame?: number;
+  /** 帧回调异常策略，默认 continue。 */
+  readonly errorPolicy?: SchedulerErrorPolicy;
+  /** 自定义 RAF 驱动（测试用）。 */
+  readonly rafDriver?: RafDriver;
+  /** AssetManager 选项；默认注册 texture / cube-texture / file / gltf Loader。 */
+  readonly assets?: AssetManagerOptions & {
+    readonly registerDefaultLoaders?: boolean;
+    readonly loaders?: readonly AssetLoader[];
+  };
+  /** InputManager 选项（click 容差、touch-action、穿透分发等）。 */
+  readonly input?: Omit<InputManagerOptions, 'canvas' | 'getCamera'>;
+}
+
+/** inspect() 返回的单个 Feature 快照。 */
+export interface FeatureSnapshot {
+  readonly name: string;
+  readonly state: FeatureScopeState | 'registered';
+  readonly cleanupCount: number;
+}
+
+/** inspect() 返回的运行时快照，供调试与 E2E 断言。 */
+export interface RuntimeSnapshot {
+  readonly state: AppState;
+  readonly services: number;
+  readonly scheduler: SchedulerSnapshot;
+  readonly rendering: RenderingSnapshot | null;
+  readonly assets: AssetManagerSnapshot;
+  readonly input: InputManagerSnapshot | null;
+  readonly features: readonly FeatureSnapshot[];
+}
+
+export interface SetCameraOptions {
+  readonly ownership?: Ownership;
+}
