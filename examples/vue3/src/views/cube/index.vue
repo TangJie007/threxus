@@ -9,6 +9,7 @@ import {
   inspectRuntime,
   labelsFeature,
   orbitControlsFeature,
+  qualityFeature,
   selectionFeature,
   selectionOutlineFeature,
   statsFeature,
@@ -176,6 +177,7 @@ onMounted(async () => {
   runtime.use(
     effectComposerFeature({
       pipelineName: 'cube-post',
+      gtao: true,
       bloom: { strength: 0.25, threshold: 0.9 },
       outline: true,
       fxaa: true,
@@ -184,6 +186,12 @@ onMounted(async () => {
   runtime.use(selectionFeature());
   runtime.use(selectionOutlineFeature());
   runtime.use(highlightFeature());
+  runtime.use(
+    qualityFeature({
+      initialTierId: 'medium',
+      auto: { enabled: true, targetFps: 50 },
+    }),
+  );
   runtime.use(statsFeature({ sampleEverySeconds: 0.25 }));
   runtime.use(labelsFeature({ className: 'cube-labels', maxDistance: 40 }));
   runtime.use(createSceneFeature());

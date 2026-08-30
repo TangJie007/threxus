@@ -45,7 +45,10 @@ Validate against the lowest supported (`0.180.0`) and a recent release before cu
 | M11 built-ins | `/cube` environment / orbit / camera-rig / selection / outline / highlight / stats / effect-composer / labels |
 | Selection outline | `selectionOutlineFeature` browser test + `/cube` |
 | CameraRig | `cameraRigFeature` unit test + `/cube` flyTo on select |
-| Labels distance/batch | `labelsFeature` `maxDistance` / `setAll` |
+| Dynamic Feature | `installFeature` / `uninstallFeature` unit tests |
+| Quality tiers | `qualityFeature` + pixelRatio override |
+| Input drag | `dragstart` / `drag` / `dragend` unit tests |
+| GTAO | `effectComposerFeature({ gtao: true })` + pass toggles |
 | M12 diagnostics | `/cube` `createLogger` + `inspectRuntime` panel |
 | Assets DRACO/KTX2/HDR | `createGltfAssetLoader` / `acquireEnvironmentMap` unit tests |
 | Input pickId / layers | `markPickable` + InputManager unit tests |

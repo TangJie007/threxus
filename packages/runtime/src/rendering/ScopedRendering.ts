@@ -30,6 +30,9 @@ export interface ScopedRendering {
   withRendererState<T>(
     task: (renderer: WebGLRenderer) => T | Promise<T>,
   ): Promise<T>;
+
+  /** 覆盖像素比；`undefined` 恢复 App 构造选项。 */
+  setPixelRatioOverride(value: number | undefined): void;
 }
 
 export function createScopedRendering(
@@ -58,6 +61,10 @@ export function createScopedRendering(
 
     withRendererState(task) {
       return runtime.withRendererState(task);
+    },
+
+    setPixelRatioOverride(value) {
+      runtime.setPixelRatioOverride(value);
     },
   };
 }

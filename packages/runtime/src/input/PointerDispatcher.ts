@@ -29,6 +29,8 @@ export interface PointerDispatcherOptions {
   readonly clickMoveTolerance: number;
   readonly clickDuration: number;
   readonly allIntersections: boolean;
+  /** 开始 drag 的移动阈值（CSS px）；默认与 clickMoveTolerance 相同。 */
+  readonly dragMoveTolerance?: number;
   /** Raycaster.layers mask；默认不过滤。 */
   readonly layersMask?: number;
   /**
@@ -55,6 +57,7 @@ export class PointerDispatcher {
   readonly #clickMoveTolerance: number;
   readonly #clickDuration: number;
   readonly #allIntersections: boolean;
+  readonly #dragMoveTolerance: number;
   readonly #pickIdKey: string | false;
   readonly #pointerMoveThrottleMs: number;
   readonly #setDomPointerCapture: (pointerId: number) => void;
@@ -76,7 +79,10 @@ export class PointerDispatcher {
     this.#clickMoveTolerance = options.clickMoveTolerance;
     this.#clickDuration = options.clickDuration;
     this.#allIntersections = options.allIntersections;
-    this.#pickIdKey = options.pickIdKey === false ? false : (options.pickIdKey ?? 'pickId');
+    this.#dragMoveTolerance =
+      options.dragMoveTolerance ?? options.clickMoveTolerance;
+    this.#pickIdKey =
+      options.pickIdKey === false ? false : (options.pickIdKey ?? 'pickId');
     this.#pointerMoveThrottleMs = options.pointerMoveThrottleMs ?? 0;
     this.#setDomPointerCapture = options.setDomPointerCapture;
     this.#releaseDomPointerCapture = options.releaseDomPointerCapture;
@@ -112,6 +118,7 @@ export class PointerDispatcher {
       hitObject: hit.hitObject,
       path: hit.path,
     };
+    state.dragging = false;
 
     this.#updateHover(nativeEvent, hit, pointerId);
     this.#dispatchAlongPath(nativeEvent, 'pointerdown', hit, pointerId);
@@ -165,6 +172,7 @@ export class PointerDispatcher {
     const hit = this.#resolveHit(ndcX, ndcY, state.captureTarget);
 
     this.#updateHover(nativeEvent, hit, pointerId);
+    this.#maybeDispatchDrag(nativeEvent, hit, state);
 
     if (state.captureTarget) {
       this.#dispatchToTarget(
@@ -201,7 +209,13 @@ export class PointerDispatcher {
       this.#dispatchAlongPath(nativeEvent, 'pointerup', hit, pointerId);
     }
 
-    this.#maybeDispatchClick(nativeEvent, hit, state);
+    if (state.dragging) {
+      this.#dispatchAlongPath(nativeEvent, 'dragend', hit, pointerId);
+      state.dragging = false;
+    } else {
+      this.#maybeDispatchClick(nativeEvent, hit, state);
+    }
+
     this.#releaseCapture(pointerId, state);
     state.down = null;
   }
@@ -229,6 +243,7 @@ export class PointerDispatcher {
 
     this.#releaseCapture(pointerId, state);
     state.down = null;
+    state.dragging = false;
     this.#clearHover(nativeEvent, pointerId);
   }
 
@@ -509,6 +524,36 @@ export class PointerDispatcher {
     }
 
     return stopped;
+  }
+
+  #maybeDispatchDrag(
+    nativeEvent: PointerEvent,
+    hit: HitResolution,
+    state: PointerRuntimeState,
+  ): void {
+    const down = state.down;
+    if (!down || !hit.primary) {
+      return;
+    }
+
+    const dx = nativeEvent.clientX - down.clientX;
+    const dy = nativeEvent.clientY - down.clientY;
+    const distance = Math.hypot(dx, dy);
+
+    if (!state.dragging) {
+      if (distance < this.#dragMoveTolerance) {
+        return;
+      }
+      state.dragging = true;
+      this.#dispatchAlongPath(
+        nativeEvent,
+        'dragstart',
+        hit,
+        nativeEvent.pointerId,
+      );
+    }
+
+    this.#dispatchAlongPath(nativeEvent, 'drag', hit, nativeEvent.pointerId);
   }
 
   #maybeDispatchClick(

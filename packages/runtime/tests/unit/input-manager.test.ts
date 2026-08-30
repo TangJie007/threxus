@@ -126,6 +126,51 @@ describe('InputManager', () => {
     expect(order).toEqual(['mesh', 'group:parent']);
   });
 
+  it('emits dragstart/drag/dragend and suppresses click', () => {
+    const canvas = createTestCanvas();
+    const { camera, mesh } = createSceneWithMesh();
+    const events: string[] = [];
+    const input = createInputManager({
+      canvas,
+      getCamera: () => camera,
+      clickMoveTolerance: 4,
+      dragMoveTolerance: 4,
+    });
+    disposables.push(input);
+
+    input.on(mesh, 'dragstart', () => events.push('dragstart'), 'f1');
+    input.on(mesh, 'drag', () => events.push('drag'), 'f1');
+    input.on(mesh, 'dragend', () => events.push('dragend'), 'f1');
+    input.on(mesh, 'click', () => events.push('click'), 'f1');
+
+    const { clientX, clientY } = centerClient(canvas);
+    canvas.dispatchTestEvent(
+      'pointerdown',
+      createPointerEventLike('pointerdown', { clientX, clientY, timeStamp: 0 }),
+    );
+    canvas.dispatchTestEvent(
+      'pointermove',
+      createPointerEventLike('pointermove', {
+        clientX: clientX + 20,
+        clientY,
+        timeStamp: 20,
+      }),
+    );
+    canvas.dispatchTestEvent(
+      'pointerup',
+      createPointerEventLike('pointerup', {
+        clientX: clientX + 20,
+        clientY,
+        timeStamp: 40,
+      }),
+    );
+
+    expect(events[0]).toBe('dragstart');
+    expect(events).toContain('drag');
+    expect(events.at(-1)).toBe('dragend');
+    expect(events).not.toContain('click');
+  });
+
   it('respects stopPropagation during bubble', () => {
     const canvas = createTestCanvas();
     const { camera, mesh } = createSceneWithMesh();

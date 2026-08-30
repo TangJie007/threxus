@@ -19,6 +19,7 @@ export interface PointerRuntimeState {
   hoverPath: Object3D[];
   captureTarget: Object3D | null;
   down: PointerDownAnchor | null;
+  dragging: boolean;
 }
 
 /** 创建空的 per-pointer 状态。 */
@@ -27,5 +28,6 @@ export function createPointerRuntimeState(): PointerRuntimeState {
     hoverPath: [],
     captureTarget: null,
     down: null,
+    dragging: false,
   };
 }

@@ -24,6 +24,13 @@ export interface ThreeApp extends Disposable {
   readonly assets: AssetManager;
 
   use(feature: ThreeFeature): this;
+  /**
+   * 运行中动态安装 Feature（事务式：setup 失败则回滚该 Feature）。
+   * 仅当 App 为 running / paused；依赖的服务必须已存在。
+   */
+  installFeature(feature: ThreeFeature): Promise<void>;
+  /** 运行中卸载已安装 Feature；若仍有其它 Feature 依赖其 provides 则拒绝。 */
+  uninstallFeature(name: string): Promise<void>;
   start(): Promise<void>;
   pause(): void;
   resume(): void;

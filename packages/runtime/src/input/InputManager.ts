@@ -33,6 +33,8 @@ export interface InputManagerOptions {
    * 为 true 时按距离对所有交点做穿透分发；默认只向最近命中冒泡。
    */
   readonly allIntersections?: boolean;
+  /** 开始 drag 的移动阈值（CSS px）；默认等于 clickMoveTolerance。 */
+  readonly dragMoveTolerance?: number;
   /**
    * Raycaster.layers.mask；用于排除地面/辅助体等。
    * 例如仅拾取 layer 1：`1 << 1`。
@@ -108,6 +110,9 @@ class InputManagerImpl implements InputManager {
       clickMoveTolerance: options.clickMoveTolerance ?? 4,
       clickDuration: options.clickDuration ?? 500,
       allIntersections: options.allIntersections ?? false,
+      ...(options.dragMoveTolerance !== undefined
+        ? { dragMoveTolerance: options.dragMoveTolerance }
+        : {}),
       ...(options.layersMask !== undefined
         ? { layersMask: options.layersMask }
         : {}),

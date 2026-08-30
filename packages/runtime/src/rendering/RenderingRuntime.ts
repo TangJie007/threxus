@@ -71,6 +71,7 @@ export class RenderingRuntime implements Disposable {
   readonly #contextRegistry = new ContextRestoreRegistry();
   readonly #resizeController: ResizeController | undefined;
   readonly #pixelRatioOption: RenderingInitOptions['pixelRatio'];
+  #pixelRatioOverride: number | undefined;
   readonly #cameraChangedListeners = new Set<
     (event: CameraChangedEvent) => void
   >();
@@ -114,6 +115,10 @@ export class RenderingRuntime implements Disposable {
     }
 
     this.#pixelRatioOption = options.pixelRatio;
+    this.#pixelRatioOverride = undefined;
+
+    const resolveActivePixelRatio = (): number =>
+      this.#pixelRatioOverride ?? resolvePixelRatio(this.#pixelRatioOption);
 
     const resizeEnabled = this.#isResizeEnabled(options.resize);
     if (resizeEnabled) {
@@ -121,7 +126,7 @@ export class RenderingRuntime implements Disposable {
         canvas: options.canvas,
         renderer: this.renderer,
         getCamera: () => this.#camera,
-        getPixelRatio: () => resolvePixelRatio(this.#pixelRatioOption),
+        getPixelRatio: resolveActivePixelRatio,
         onResize: (size) => {
           this.#registry.pipeline.setSize(size);
         },
@@ -178,6 +183,18 @@ export class RenderingRuntime implements Disposable {
       return this.#resizeController.canRender;
     }
     return this.#hasNonZeroCanvasSize();
+  }
+
+  /** 覆盖 pixelRatio；传 undefined 恢复为构造选项。 */
+  setPixelRatioOverride(value: number | undefined): void {
+    this.#assertNotDisposed();
+    this.#pixelRatioOverride =
+      value === undefined ? undefined : Math.min(8, Math.max(0.1, value));
+    if (this.#resizeController) {
+      this.#resizeController.apply();
+    } else {
+      this.#applyStaticSize(this.#canvas);
+    }
   }
 
   createScope(scope: FeatureScope): ScopedRendering {
@@ -361,14 +378,16 @@ export class RenderingRuntime implements Disposable {
     return {
       width: this.#resizeController?.width ?? this.#canvas.clientWidth,
       height: this.#resizeController?.height ?? this.#canvas.clientHeight,
-      pixelRatio: resolvePixelRatio(this.#pixelRatioOption),
+      pixelRatio:
+        this.#pixelRatioOverride ?? resolvePixelRatio(this.#pixelRatioOption),
     };
   }
 
   #applyStaticSize(canvas: HTMLCanvasElement): void {
     const width = Math.max(0, Math.floor(canvas.clientWidth));
     const height = Math.max(0, Math.floor(canvas.clientHeight));
-    const pixelRatio = resolvePixelRatio(this.#pixelRatioOption);
+    const pixelRatio =
+      this.#pixelRatioOverride ?? resolvePixelRatio(this.#pixelRatioOption);
 
     if (width > 0 && height > 0) {
       this.renderer.setPixelRatio(pixelRatio);

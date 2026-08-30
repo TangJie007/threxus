@@ -66,8 +66,17 @@ export {
   EffectComposerService,
   effectComposerFeature,
   type EffectComposerFeatureOptions,
+  type EffectComposerPassId,
   type EffectComposerService as EffectComposerServiceType,
 } from './postprocessing/effectComposerFeature';
+
+export {
+  QualityService,
+  qualityFeature,
+  type QualityFeatureOptions,
+  type QualityService as QualityServiceType,
+  type QualityTier,
+} from './quality/qualityFeature';
 
 export {
   LabelsService,

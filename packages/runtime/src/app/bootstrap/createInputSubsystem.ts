@@ -24,6 +24,9 @@ export function createInputSubsystem(
     ...(inputOptions?.allIntersections !== undefined
       ? { allIntersections: inputOptions.allIntersections }
       : {}),
+    ...(inputOptions?.dragMoveTolerance !== undefined
+      ? { dragMoveTolerance: inputOptions.dragMoveTolerance }
+      : {}),
     ...(inputOptions?.layersMask !== undefined
       ? { layersMask: inputOptions.layersMask }
       : {}),

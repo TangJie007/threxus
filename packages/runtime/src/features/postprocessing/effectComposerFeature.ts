@@ -1,5 +1,5 @@
 /**
- * EffectComposer 后处理 Feature：Bloom / Outline / FXAA / OutputPass。
+ * EffectComposer 后处理 Feature：GTAO / Bloom / Outline / FXAA / OutputPass。
  *
  * Context restore 时重建 Composer（WebGLRenderTarget 在 context lost 后失效）。
  */
@@ -16,6 +16,7 @@ import {
 } from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -32,8 +33,13 @@ import {
   type PostPass,
 } from './PostprocessingService';
 
+export type EffectComposerPassId = 'gtao' | 'bloom' | 'outline' | 'fxaa';
+
 export interface EffectComposerFeatureOptions {
   readonly pipelineName?: string;
+  readonly gtao?: boolean | {
+    readonly blendIntensity?: number;
+  };
   readonly bloom?: boolean | {
     readonly strength?: number;
     readonly radius?: number;
@@ -55,7 +61,10 @@ export interface EffectComposerService {
   readonly composer: EffectComposer;
   readonly outlinePass: OutlinePass | null;
   readonly bloomPass: UnrealBloomPass | null;
+  readonly gtaoPass: GTAOPass | null;
   setOutlineSelected(objects: readonly Object3D[]): void;
+  setPassEnabled(id: EffectComposerPassId, enabled: boolean): void;
+  isPassEnabled(id: EffectComposerPassId): boolean;
   addPass(pass: PostPass): Disposable;
   readonly passes: readonly PostPass[];
 }
@@ -81,13 +90,39 @@ export function effectComposerFeature(
         pixelRatio: context.renderer.getPixelRatio(),
       };
 
+      const enabled: Record<EffectComposerPassId, boolean> = {
+        gtao: options.gtao === true || typeof options.gtao === 'object',
+        bloom: options.bloom !== false,
+        outline: options.outline !== false,
+        fxaa: options.fxaa !== false,
+      };
+
+      let selectedOutline: Object3D[] = [];
       let session = createComposerSession(
         context.renderer,
         context.scene,
         context.camera,
         lastSize,
         options,
+        enabled,
       );
+      session.outlinePass && (session.outlinePass.selectedObjects = selectedOutline);
+
+      const applyEnabled = (): void => {
+        if (session.gtaoPass) {
+          session.gtaoPass.enabled = enabled.gtao;
+        }
+        if (session.bloomPass) {
+          session.bloomPass.enabled = enabled.bloom;
+        }
+        if (session.outlinePass) {
+          session.outlinePass.enabled = enabled.outline;
+        }
+        if (session.fxaaPass) {
+          session.fxaaPass.enabled = enabled.fxaa;
+        }
+      };
+      applyEnabled();
 
       const service: EffectComposerService = {
         get composer() {
@@ -99,10 +134,22 @@ export function effectComposerFeature(
         get bloomPass() {
           return session.bloomPass;
         },
+        get gtaoPass() {
+          return session.gtaoPass;
+        },
         setOutlineSelected(objects) {
+          selectedOutline = [...objects];
           if (session.outlinePass) {
-            session.outlinePass.selectedObjects = [...objects];
+            session.outlinePass.selectedObjects = selectedOutline;
           }
+        },
+        setPassEnabled(id, value) {
+          enabled[id] = value;
+          applyEnabled();
+          context.invalidate();
+        },
+        isPassEnabled(id) {
+          return enabled[id];
         },
         addPass(pass) {
           return registry.addPass(pass);
@@ -145,7 +192,12 @@ export function effectComposerFeature(
             context.camera,
             lastSize,
             options,
+            enabled,
           );
+          if (session.outlinePass) {
+            session.outlinePass.selectedObjects = selectedOutline;
+          }
+          applyEnabled();
           for (const pass of registry.passes) {
             await pass.restore?.();
             pass.setSize?.(lastSize);
@@ -173,6 +225,8 @@ interface ComposerSession {
   readonly composer: EffectComposer;
   readonly outlinePass: OutlinePass | null;
   readonly bloomPass: UnrealBloomPass | null;
+  readonly gtaoPass: GTAOPass | null;
+  readonly fxaaPass: FXAAPass | null;
   setSize(size: RenderSize): void;
   setCamera(camera: Camera): void;
   dispose(): void;
@@ -184,6 +238,7 @@ function createComposerSession(
   camera: Camera,
   size: RenderSize,
   options: EffectComposerFeatureOptions,
+  enabled: Record<EffectComposerPassId, boolean>,
 ): ComposerSession {
   const width = Math.max(1, Math.floor(size.width));
   const height = Math.max(1, Math.floor(size.height));
@@ -199,6 +254,17 @@ function createComposerSession(
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
+  let gtaoPass: GTAOPass | null = null;
+  if (options.gtao !== false && options.gtao !== undefined) {
+    const gtaoOpts = typeof options.gtao === 'object' ? options.gtao : {};
+    gtaoPass = new GTAOPass(scene, camera, width, height);
+    if (gtaoOpts.blendIntensity !== undefined) {
+      gtaoPass.blendIntensity = gtaoOpts.blendIntensity;
+    }
+    gtaoPass.enabled = enabled.gtao;
+    composer.addPass(gtaoPass);
+  }
+
   let bloomPass: UnrealBloomPass | null = null;
   if (options.bloom !== false) {
     const bloomOpts = typeof options.bloom === 'object' ? options.bloom : {};
@@ -208,6 +274,7 @@ function createComposerSession(
       bloomOpts.radius ?? 0.4,
       bloomOpts.threshold ?? 0.85,
     );
+    bloomPass.enabled = enabled.bloom;
     composer.addPass(bloomPass);
   }
 
@@ -229,11 +296,15 @@ function createComposerSession(
     outlinePass.hiddenEdgeColor.setHex(
       outlineOpts.hiddenEdgeColor ?? 0x1b3a4b,
     );
+    outlinePass.enabled = enabled.outline;
     composer.addPass(outlinePass);
   }
 
+  let fxaaPass: FXAAPass | null = null;
   if (options.fxaa !== false) {
-    composer.addPass(new FXAAPass());
+    fxaaPass = new FXAAPass();
+    fxaaPass.enabled = enabled.fxaa;
+    composer.addPass(fxaaPass);
   }
 
   if (options.output !== false) {
@@ -244,6 +315,8 @@ function createComposerSession(
     composer,
     outlinePass,
     bloomPass,
+    gtaoPass,
+    fxaaPass,
     setSize(next) {
       const w = Math.max(1, Math.floor(next.width));
       const h = Math.max(1, Math.floor(next.height));
@@ -253,11 +326,15 @@ function createComposerSession(
       if (outlinePass) {
         outlinePass.resolution.set(w, h);
       }
+      gtaoPass?.setSize(w, h);
     },
     setCamera(next) {
       renderPass.camera = next;
       if (outlinePass) {
         outlinePass.renderCamera = next;
+      }
+      if (gtaoPass) {
+        gtaoPass.camera = next;
       }
     },
     dispose() {

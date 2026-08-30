@@ -19,7 +19,10 @@ export type ThreePointerEventType =
   | 'pointerenter'
   | 'pointerleave'
   | 'click'
-  | 'dblclick';
+  | 'dblclick'
+  | 'dragstart'
+  | 'drag'
+  | 'dragend';
 
 export type ThreePointerHandler = (event: ThreePointerEvent) => void;
 
