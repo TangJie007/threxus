@@ -26,6 +26,15 @@ export const router = createRouter({
         description: '验证 Feature 初始化失败后的反向清理',
       },
     },
+    {
+      path: '/twin',
+      name: 'twin',
+      component: () => import('../views/twin/index.vue'),
+      meta: {
+        title: '工厂孪生',
+        description: 'Threxus 复刻 examples/test FactoryTwin，便于对照差异',
+      },
+    },
   ],
 });
 

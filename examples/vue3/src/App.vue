@@ -16,6 +16,9 @@
       <RouterLink class="nav-link" to="/factory-twin" active-class="on">
         失败回滚
       </RouterLink>
+      <RouterLink class="nav-link" to="/twin" active-class="on">
+        工厂孪生
+      </RouterLink>
     </nav>
     <RouterView />
   </main>
