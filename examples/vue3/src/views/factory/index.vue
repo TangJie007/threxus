@@ -1,7 +1,6 @@
 <script setup lang="ts">
 /**
- * FactoryTwin（Threxus 版）—— 对照 examples/test 原生 Three.js 实现。
- * 引擎层用 createThreeApp + 内置 Feature；场景/特效/遥测复用 test 业务逻辑。
+ * FactoryTwin（define* 范式）—— defineService / defineFeature / defineEntity。
  */
 import {
   createLogger,
@@ -20,13 +19,12 @@ import {
 } from '@threxus/runtime';
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 import { markRaw, onBeforeUnmount, onMounted, ref, shallowReactive, shallowRef } from 'vue';
-import { twinCamera, twinRoamPath, twinSceneConfig } from './config';
-// import { createFactorySceneFeature } from './features/factory-scene/index';
-import { createFactorySceneFeature } from './factory/factory.feature';
-import { createAgvFeature } from './features/agv/index';
-// import { createTwinBridgeFeature } from './features/twin-bridge/index';
-// import { statusText, type DeviceRecord } from './features/factory-scene/devices';
-import type { DeviceRecord, TwinBridge, TwinToggles } from './types';
+import { factoryCamera, factoryRoamPath, factorySceneConfig } from './config';
+import { FactorySceneService } from './factory/factory.service';
+import { agvFeature } from './agv/agv.feature';
+import { createBridgeFeature } from './bridge/bridge.feature';
+import { statusText, type DeviceRecord } from './data/devices';
+import type { FactoryBridge, FactoryToggles } from './types';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const labelHostRef = ref<HTMLDivElement | null>(null);
@@ -36,7 +34,7 @@ const state = ref<AppState>('created');
 const error = ref<string | null>(null);
 const loading = ref(true);
 
-const bridge = shallowReactive<TwinBridge>({
+const bridge = shallowReactive<FactoryBridge>({
   factory: null,
   clip: null,
   selection: null,
@@ -66,13 +64,13 @@ const bridge = shallowReactive<TwinBridge>({
   hoverPreview: () => undefined,
 });
 
-const logger = createLogger({ level: 'warn', scope: 'twin' });
+const logger = createLogger({ level: 'warn', scope: 'factory' });
 
 function selectedDevice(): DeviceRecord | undefined {
   return bridge.devices.find((d) => d.id === bridge.selectedId);
 }
 
-function toggle(key: keyof TwinToggles): void {
+function toggle(key: keyof FactoryToggles): void {
   bridge.setToggle(key, !bridge.toggles[key]);
 }
 
@@ -92,7 +90,7 @@ onMounted(async () => {
 
   const runtime = createThreeApp({
     canvas,
-    camera: twinCamera,
+    camera: factoryCamera,
     renderer: {
       antialias: true,
       shadows: true,
@@ -102,7 +100,6 @@ onMounted(async () => {
     },
     pixelRatio: { mode: 'device', max: 2 },
     input: {
-      // 与 test Picker 一致：仅拾取 layer 1（设备），忽略地面/特效
       layersMask: 1 << 1,
       clickMoveTolerance: 5,
       pointerMoveThrottleMs: 0,
@@ -114,44 +111,40 @@ onMounted(async () => {
     },
   });
 
-  // 环境：背景色、环境光/平行光、RoomEnvironment、阴影范围
   runtime.use(
     environmentFeature({
-      background: twinSceneConfig.background,
-      ambientLight: { intensity: twinSceneConfig.ambientIntensity },
+      background: factorySceneConfig.background,
+      ambientLight: { intensity: factorySceneConfig.ambientIntensity },
       directionalLight: {
         color: 0xfff2e0,
-        intensity: twinSceneConfig.sunIntensity,
-        position: twinSceneConfig.sunPosition,
+        intensity: factorySceneConfig.sunIntensity,
+        position: factorySceneConfig.sunPosition,
         castShadow: true,
       },
       roomEnvironment: { sigma: 0.04 },
       shadows: {
         enabled: true,
         mapSize: 2048,
-        fitBounds: twinSceneConfig.bounds,
+        fitBounds: factorySceneConfig.bounds,
       },
     }),
   );
-  // 轨道控制器：拖拽旋转 / 缩放 / 平移（带阻尼）
   runtime.use(
     orbitControlsFeature({
       damping: true,
       target: [0, 2, 0],
     }),
   );
-  // 相机运镜：flyTo 聚焦设备、巡检路径 roam
   runtime.use(
     cameraRigFeature({
-      roamPath: twinRoamPath,
+      roamPath: factoryRoamPath,
       roamLookRadius: 10,
       roamSpeed: 0.012,
     }),
   );
-  // 后处理管线：GTAO / Bloom / 选中描边 / FXAA
   runtime.use(
     effectComposerFeature({
-      pipelineName: 'twin-post',
+      pipelineName: 'factory-post',
       gtao: { blendIntensity: 0.85 },
       bloom: { strength: 0.28, threshold: 0.82, radius: 0.4 },
       outline: {
@@ -164,32 +157,26 @@ onMounted(async () => {
       fxaa: true,
     }),
   );
-  // 点选：点击场景物体写入 SelectionService
   runtime.use(selectionFeature());
-  // 选中 → OutlinePass：把当前选中对象交给描边 Pass
   runtime.use(selectionOutlineFeature());
-  // 画质档位（此处固定 high，未开自动降质）
   runtime.use(
     qualityFeature({
       initialTierId: 'high',
       auto: { enabled: false },
     }),
   );
-  // 性能统计：FPS / drawCalls 等，供状态条读取
   runtime.use(statsFeature({ sampleEverySeconds: 0.25 }));
-  // CSS2D 标签：设备名牌，带距离与遮挡淡出
   runtime.use(
     labelsFeature({
       container: labelHost,
-      className: 'twin-labels',
+      className: 'factory-labels',
       maxDistance: 55,
       occludedOpacity: 0.2,
     }),
   );
-  runtime.use(createFactorySceneFeature());
-  // runtime.use(createPipeRackFeature());
-  // runtime.use(createAgvFeature());
-  // runtime.use(createTwinBridgeFeature(bridge));
+  runtime.use(FactorySceneService.feature());
+  runtime.use(agvFeature);
+  runtime.use(createBridgeFeature(bridge));
 
   app.value = markRaw(runtime);
   state.value = runtime.state;
@@ -211,9 +198,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="twin-view">
+  <section class="factory-view">
     <div class="canvas-host">
-      <canvas ref="canvasRef" class="twin-canvas" />
+      <canvas ref="canvasRef" class="factory-canvas" />
       <div ref="labelHostRef" class="label-host" />
     </div>
 
@@ -221,7 +208,7 @@ onBeforeUnmount(() => {
       <div class="brand">
         <i class="dot" />
         FactoryTwin
-        <small>THREXUS · vs test/</small>
+        <small>DEFINE* · Threxus</small>
       </div>
       <div class="spacer" />
       <div class="kpi">
@@ -291,7 +278,7 @@ onBeforeUnmount(() => {
         <div class="kv">
           <span>运行状态</span>
           <b :class="`s-${selectedDevice()!.status}`">
-            <!-- {{ statusText(selectedDevice()!.status) }} -->
+            {{ statusText(selectedDevice()!.status) }}
           </b>
         </div>
         <div class="kv">
@@ -395,14 +382,14 @@ onBeforeUnmount(() => {
 
     <div v-if="loading" class="loading">
       <div class="ring" />
-      <p>正在构建孪生场景（Threxus）…</p>
+      <p>正在构建孪生场景（define*）…</p>
     </div>
     <p v-if="error" class="boot-error">{{ error }}</p>
   </section>
 </template>
 
 <style scoped>
-.twin-view {
+.factory-view {
   --bg: #0a0f16;
   --panel: rgba(12, 20, 30, 0.82);
   --line: rgba(64, 224, 255, 0.18);
@@ -426,7 +413,9 @@ onBeforeUnmount(() => {
   inset: 0;
 }
 
-.twin-canvas {
+.factory-canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -805,8 +794,7 @@ onBeforeUnmount(() => {
 </style>
 
 <style>
-/* CSS2D 标签（挂在 label-host，不受 scoped 限制） */
-.twin-labels .tag,
+.factory-labels .tag,
 .label-host .tag {
   transform: translate(-50%, -50%);
   white-space: nowrap;
@@ -825,14 +813,14 @@ onBeforeUnmount(() => {
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
 }
 
-.twin-labels .tag .led,
+.factory-labels .tag .led,
 .label-host .tag .led {
   width: 6px;
   height: 6px;
   border-radius: 50%;
 }
 
-.twin-labels .tag::after,
+.factory-labels .tag::after,
 .label-host .tag::after {
   content: '';
   position: absolute;
@@ -844,38 +832,38 @@ onBeforeUnmount(() => {
   transform: translateX(-50%);
 }
 
-.twin-labels .s-ok,
+.factory-labels .s-ok,
 .label-host .s-ok {
   color: #2ee6a8;
 }
-.twin-labels .s-ok .led,
+.factory-labels .s-ok .led,
 .label-host .s-ok .led {
   background: #2ee6a8;
   box-shadow: 0 0 8px #2ee6a8;
 }
-.twin-labels .s-warn,
+.factory-labels .s-warn,
 .label-host .s-warn {
   color: #ffb020;
 }
-.twin-labels .s-warn .led,
+.factory-labels .s-warn .led,
 .label-host .s-warn .led {
   background: #ffb020;
   box-shadow: 0 0 8px #ffb020;
 }
-.twin-labels .s-err,
+.factory-labels .s-err,
 .label-host .s-err {
   color: #ff4d5e;
 }
-.twin-labels .s-err .led,
+.factory-labels .s-err .led,
 .label-host .s-err .led {
   background: #ff4d5e;
   box-shadow: 0 0 8px #ff4d5e;
 }
-.twin-labels .s-idle,
+.factory-labels .s-idle,
 .label-host .s-idle {
   color: #7d8ea3;
 }
-.twin-labels .s-idle .led,
+.factory-labels .s-idle .led,
 .label-host .s-idle .led {
   background: #7d8ea3;
 }

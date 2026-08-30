@@ -19,6 +19,9 @@
       <RouterLink class="nav-link" to="/twin" active-class="on">
         工厂孪生
       </RouterLink>
+      <RouterLink class="nav-link" to="/factory" active-class="on">
+        工厂 define*
+      </RouterLink>
     </nav>
     <RouterView />
   </main>

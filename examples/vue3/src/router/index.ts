@@ -35,6 +35,15 @@ export const router = createRouter({
         description: 'Threxus 复刻 examples/test FactoryTwin，便于对照差异',
       },
     },
+    {
+      path: '/factory',
+      name: 'factory',
+      component: () => import('../views/factory/index.vue'),
+      meta: {
+        title: '工厂孪生 · define*',
+        description: 'defineService / defineFeature / defineEntity',
+      },
+    },
   ],
 });
 
