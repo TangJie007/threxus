@@ -20,6 +20,11 @@ interface ServiceEntry {
   readonly value: unknown;
 }
 
+export interface ServiceSnapshot {
+  readonly name: string;
+  readonly ownerFeature: string;
+}
+
 export class ServiceContainer {
   readonly #entries = new Map<symbol, ServiceEntry>();
 
@@ -64,6 +69,19 @@ export class ServiceContainer {
   /** 获取可选服务；不存在时返回 undefined，不抛错。 */
   getOptional<T>(key: ServiceKey<T>): T | undefined {
     return this.#entries.get(key.id)?.value as T | undefined;
+  }
+
+  inspect(): readonly ServiceSnapshot[] {
+    return [...this.#entries.values()]
+      .map((entry) => ({
+        name: entry.key.description,
+        ownerFeature: entry.owner,
+      }))
+      .sort(
+        (left, right) =>
+          left.ownerFeature.localeCompare(right.ownerFeature) ||
+          left.name.localeCompare(right.name),
+      );
   }
 
   /** 移除指定 Feature 拥有的单个服务（通常由 cleanup 回调调用）。 */

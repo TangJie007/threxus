@@ -1,6 +1,10 @@
 import {
   createThreeApp,
   createServiceKey,
+  defineEntity,
+  defineFeature,
+  defineService,
+  type EntityHandle,
   type ThreeFeature,
 } from '../../src';
 
@@ -37,13 +41,38 @@ declare const canvas: HTMLCanvasElement;
 declare const renderer: import('three').WebGLRenderer;
 declare const mesh: import('three').Object3D;
 
+const DefinedClock = defineService<ClockService>({
+  name: 'defined-clock',
+  create() {
+    return { now: () => 1 };
+  },
+});
+
+const ModelEntity = defineEntity<
+  { readonly id: string },
+  { readonly select: () => void }
+>({
+  type: 'model',
+  create(_context, props) {
+    void props.id;
+    return {
+      root: mesh,
+      api: { select: () => undefined },
+    };
+  },
+});
+
 const app = createThreeApp({ canvas, renderer, renderMode: 'on-demand', resize: false });
-app.use(provider).use(consumer);
+app.use(provider).use(consumer).use(DefinedClock.feature());
 void app.start();
 
-const interactive: ThreeFeature = {
+const interactive: ThreeFeature = defineFeature({
   name: 'interactive',
-  setup(context) {
+  async setup(context) {
+    const entity: EntityHandle<{ readonly select: () => void }> =
+      await context.spawn(ModelEntity, { id: 'model-1' });
+    entity.api.select();
+
     const disposable = context.input.on(mesh, 'click', (event) => {
       void event.object;
       void event.point;
@@ -60,5 +89,5 @@ const interactive: ThreeFeature = {
       },
     });
   },
-};
+});
 void interactive;

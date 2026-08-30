@@ -12,6 +12,11 @@
 import type { Camera, Object3D, Scene, WebGLRenderer } from 'three';
 import type { AssetHandle } from '../assets/AssetHandle';
 import type { AssetManager } from '../assets/AssetManager';
+import type {
+  EntityDefinition,
+  EntityHandle,
+  SpawnEntityOptions,
+} from '../entities/EntityDefinition';
 import type { ScopedInputManager } from '../input/ScopedInputManager';
 import type { Cleanup, Disposable } from '../lifecycle/Disposable';
 import type { ScopedRendering } from '../rendering/ScopedRendering';
@@ -67,6 +72,13 @@ export interface ThreeContext {
 
   /** 将 Handle 绑定到当前 Feature；Feature 销毁时自动 release。 */
   retain<T>(handle: AssetHandle<T>): void;
+
+  /** 创建一个由当前 Feature 托管的实体实例。 */
+  spawn<TProps, TApi>(
+    definition: EntityDefinition<TProps, TApi>,
+    props: TProps,
+    options?: SpawnEntityOptions,
+  ): Promise<EntityHandle<TApi>>;
 
   /** 每帧 update 阶段回调；注册自动加入当前 FeatureScope。 */
   onUpdate(callback: UpdateCallback, options?: TaskOptions): Disposable;

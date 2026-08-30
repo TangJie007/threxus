@@ -3,6 +3,7 @@
  */
 
 import type { Logger } from '../../diagnostics/Logger';
+import type { EntitySnapshot } from '../../entities/EntityRegistry';
 import type {
   AssetLoader,
   AssetManagerOptions,
@@ -29,6 +30,7 @@ import type {
   SchedulerErrorPolicy,
   SchedulerSnapshot,
 } from '../../scheduler/Scheduler';
+import type { ServiceSnapshot } from '../../services/ServiceContainer';
 import type { AppState } from './AppState';
 
 export interface ThreeAppOptions {
@@ -79,11 +81,22 @@ export interface FeatureSnapshot {
   readonly cleanupCount: number;
 }
 
+export interface RuntimeCounts {
+  readonly features: number;
+  readonly activeFeatures: number;
+  readonly services: number;
+  readonly entities: number;
+}
+
 /** inspect() 返回的运行时快照，供调试与 E2E 断言。 */
 export interface RuntimeSnapshot {
   readonly state: AppState;
   readonly graphicsState: GraphicsState;
+  /** @deprecated 使用 counts.services；保留用于兼容现有调用方。 */
   readonly services: number;
+  readonly counts: RuntimeCounts;
+  readonly serviceEntries: readonly ServiceSnapshot[];
+  readonly entities: readonly EntitySnapshot[];
   readonly scheduler: SchedulerSnapshot;
   readonly rendering: RenderingSnapshot | null;
   readonly assets: AssetManagerSnapshot;

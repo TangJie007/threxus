@@ -8,6 +8,7 @@
  */
 
 import type { AssetHandle, AssetManager } from '../../assets';
+import type { EntityRegistry } from '../../entities/EntityRegistry';
 import { ThrexusError } from '../../errors';
 import type { FeatureScope } from '../../feature/FeatureScope';
 import type {
@@ -34,6 +35,7 @@ import type { ServiceKey } from '../../services/ServiceKey';
 export interface CreateThreeContextDeps {
   readonly canvas: HTMLCanvasElement;
   readonly assets: AssetManager;
+  readonly entities: EntityRegistry;
   readonly services: ServiceContainer;
   readonly scheduler: Scheduler;
   readonly getRendering: () => RenderingRuntime;
@@ -73,6 +75,9 @@ export function createThreeContext(
         handle.dispose();
       });
     },
+
+    spawn: (definition, props, options) =>
+      deps.entities.spawn(scope, definition, props, options),
 
     provide: <T>(
       key: ServiceKey<T>,

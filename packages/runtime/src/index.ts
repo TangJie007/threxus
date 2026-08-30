@@ -24,6 +24,7 @@ export {
   type AppState,
   type FeatureSnapshot,
   type GraphicsState,
+  type RuntimeCounts,
   type RuntimeSnapshot,
   type SetCameraOptions,
   type ThreeApp,
@@ -34,6 +35,7 @@ export {
   type ThreeContext,
   type ThreeFeature,
 } from './feature/ThreeFeature';
+export { defineFeature } from './feature/defineFeature';
 export {
   CleanupStack,
   type CleanupStackState,
@@ -103,6 +105,24 @@ export {
   createServiceKey,
   type ServiceKey,
 } from './services/ServiceKey';
+export {
+  defineService,
+  type DefineServiceOptions,
+  type ServiceDefinition,
+} from './services/defineService';
+export type { ServiceSnapshot } from './services/ServiceContainer';
+export {
+  defineEntity,
+  type DefineEntityOptions,
+  type EntityContext,
+  type EntityCreateResult,
+  type EntityCreateResultBase,
+  type EntityDefinition,
+  type EntityHandle,
+  type EntityState,
+  type SpawnEntityOptions,
+} from './entities/EntityDefinition';
+export type { EntitySnapshot } from './entities/EntityRegistry';
 export { ThrexusError, type ThrexusErrorCode } from './errors';
 export {
   ReleasedAssetHandleError,

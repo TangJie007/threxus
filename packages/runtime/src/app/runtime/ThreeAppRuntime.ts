@@ -12,6 +12,7 @@
 import type { Camera, Scene, WebGLRenderer } from 'three';
 import { keyBy } from 'es-toolkit';
 import type { AssetManager } from '../../assets';
+import { EntityRegistry } from '../../entities/EntityRegistry';
 import { ThrexusError, toError } from '../../errors';
 import { FeatureRegistry } from '../../feature/FeatureRegistry';
 import { FeatureScope } from '../../feature/FeatureScope';
@@ -56,6 +57,7 @@ export class ThreeAppRuntime implements ThreeApp {
   readonly #controller = new AbortController();
   readonly #scheduler: Scheduler;
   readonly #assets: AssetManager;
+  readonly #entities: EntityRegistry;
   readonly #rendererBinding: import('../../assets').RendererBinding;
   readonly #disposeAssetLoaders: () => void;
   readonly #logger: Logger | undefined;
@@ -83,6 +85,12 @@ export class ThreeAppRuntime implements ThreeApp {
     this.#assets = assetBundle.assets;
     this.#rendererBinding = assetBundle.rendererBinding;
     this.#disposeAssetLoaders = () => assetBundle.disposeLoaders();
+    this.#entities = new EntityRegistry({
+      canvas: options.canvas,
+      assets: this.#assets,
+      scheduler: this.#scheduler,
+      getRendering: () => this.#requireRendering(),
+    });
   }
 
   get state(): AppState {
@@ -172,6 +180,7 @@ export class ThreeAppRuntime implements ThreeApp {
     const context = createThreeContext(scope, {
       canvas: this.canvas,
       assets: this.#assets,
+      entities: this.#entities,
       services: this.#services,
       scheduler: this.#scheduler,
       getRendering: () => this.#requireRendering(),
@@ -357,11 +366,24 @@ export class ThreeAppRuntime implements ThreeApp {
 
   inspect(): RuntimeSnapshot {
     const scopesByName = keyBy(this.#scopes, (scope) => scope.feature.name);
+    const serviceEntries = this.#services.inspect();
+    const entities = this.#entities.inspect();
+    const activeFeatures = this.#scopes.filter(
+      (scope) => scope.state === 'active',
+    ).length;
 
     return {
       state: this.#state,
       graphicsState: this.#graphicsState,
-      services: this.#services.size,
+      services: serviceEntries.length,
+      counts: {
+        features: this.#registered.length,
+        activeFeatures,
+        services: serviceEntries.length,
+        entities: entities.length,
+      },
+      serviceEntries,
+      entities,
       scheduler: this.#scheduler.inspect(),
       rendering: this.#rendering?.inspect() ?? null,
       assets: this.#assets.inspect(),
@@ -402,6 +424,7 @@ export class ThreeAppRuntime implements ThreeApp {
         const context = createThreeContext(scope, {
           canvas: this.canvas,
           assets: this.#assets,
+          entities: this.#entities,
           services: this.#services,
           scheduler: this.#scheduler,
           getRendering: () => this.#requireRendering(),
@@ -459,6 +482,11 @@ export class ThreeAppRuntime implements ThreeApp {
     }
 
     const errors = await this.#disposeScopes();
+    try {
+      await this.#entities.dispose();
+    } catch (error) {
+      errors.push(toError(error));
+    }
     this.#disposeInput();
     await this.#disposeRendering();
     this.#rendererBinding.current = undefined;
