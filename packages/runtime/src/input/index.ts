@@ -31,6 +31,9 @@ export {
 } from './PointerState';
 export {
   DEFAULT_PICK_ID_KEY,
+  DEFAULT_PICK_LAYER,
+  enablePickLayer,
   markPickable,
   resolvePickTarget,
+  type MarkPickableOptions,
 } from './pickTarget';

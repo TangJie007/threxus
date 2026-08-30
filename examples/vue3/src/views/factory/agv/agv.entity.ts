@@ -3,9 +3,8 @@
  */
 
 import * as THREE from 'three';
-import { defineEntity } from '@threxus/runtime';
+import { DEFAULT_PICK_LAYER, defineEntity, markPickable } from '@threxus/runtime';
 import { mat } from '../materials/Presets';
-import { markPickable } from '../lib/pickable';
 import type { ModelAssets } from '../factory/models';
 
 export interface AgvEntityProps {
@@ -85,8 +84,7 @@ export const AgvEntity = defineEntity<AgvEntityProps, AgvEntityApi>({
       agv.add(agvLight);
     }
 
-    agv.userData.pickId = 'AGV-01';
-    markPickable(agv);
+    markPickable(agv, 'AGV-01', { layer: DEFAULT_PICK_LAYER });
 
     const tmp = new THREE.Vector3();
     const ahead = new THREE.Vector3();

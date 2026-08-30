@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { mat, statusMaterial } from '../../materials/Presets';
 import { AlertBeacon } from './scan-ring'
 import { makeDeviceSeed, makeRng, type DeviceRecord } from '../../data/devices';
-import { markPickable } from '../../lib/pickable';
+import { DEFAULT_PICK_LAYER, markPickable } from '@threxus/runtime';
 import type { FactoryWorld } from '../types';
 
 function createProceduralRobotArm(phase = Math.random() * Math.PI * 2): {
@@ -196,7 +196,6 @@ function buildStation(
   const zOff = stationIndex % 2 === 0 ? -3.2 : 3.2;
   const group = new THREE.Group();
   group.position.set(x, 0, z + zOff);
-  group.userData.pickId = seed.id;
   group.userData.deviceId = seed.id;
 
   const useCabinetModel = !!world.models?.has('cabinet');
@@ -302,7 +301,7 @@ function buildStation(
     }
   }
 
-  markPickable(group);
+  markPickable(group, seed.id, { layer: DEFAULT_PICK_LAYER });
   world.root.add(group);
 
   const record: DeviceRecord = {

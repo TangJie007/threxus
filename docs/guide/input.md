@@ -54,3 +54,22 @@ ctx.input.on(root, 'click', (e) => {
   // e.object 为带 pickId 的 root
 });
 ```
+
+## 拾取层（layersMask）
+
+场景里若需排除地面/装饰，可让射线只测指定 layer，并在可点物体上打开同一层：
+
+```ts
+createThreeApp({
+  canvas,
+  input: { layersMask: 1 << 1 }, // 只测第 1 层
+});
+
+// 子树一并 enable(1)，pickId 仍只写在根上
+markPickable(deviceRoot, 'LINE-1-S3', { layer: 1 });
+
+// 只需开层、不写 id 时：
+// enablePickLayer(mesh, 1);
+```
+
+务必用 `enable`（库已封装），不要 `layers.set(1)`，否则会关掉默认第 0 层，出现「能点但看不见」。

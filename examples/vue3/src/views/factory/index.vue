@@ -6,6 +6,7 @@ import {
   createLogger,
   createThreeApp,
   cameraRigFeature,
+  DEFAULT_PICK_LAYER,
   effectComposerFeature,
   environmentFeature,
   labelsFeature,
@@ -100,7 +101,7 @@ onMounted(async () => {
     },
     pixelRatio: { mode: 'device', max: 2 },
     input: {
-      layersMask: 1 << 1,
+      layersMask: 1 << DEFAULT_PICK_LAYER,
       clickMoveTolerance: 5,
       pointerMoveThrottleMs: 0,
     },

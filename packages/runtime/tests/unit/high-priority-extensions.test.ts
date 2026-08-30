@@ -2,6 +2,8 @@ import { Group, Mesh, MeshBasicMaterial, BoxGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_PICK_ID_KEY,
+  DEFAULT_PICK_LAYER,
+  enablePickLayer,
   markPickable,
   resolvePickTarget,
   createGltfAssetLoader,
@@ -21,6 +23,29 @@ describe('pickTarget helpers', () => {
     root.add(mesh);
     expect(resolvePickTarget(mesh)).toBe(root);
     expect(root.userData[DEFAULT_PICK_ID_KEY]).toBe('device-1');
+  });
+
+  it('accepts legacy pickIdKey string as third argument', () => {
+    const root = markPickable(new Group(), 'x', 'customId');
+    expect(root.userData.customId).toBe('x');
+  });
+
+  it('enablePickLayer uses enable (keeps layer 0)', () => {
+    const root = new Group();
+    expect(root.layers.mask & 1).toBeTruthy();
+    enablePickLayer(root, DEFAULT_PICK_LAYER, false);
+    expect(root.layers.mask & (1 << 0)).toBeTruthy();
+    expect(root.layers.mask & (1 << DEFAULT_PICK_LAYER)).toBeTruthy();
+  });
+
+  it('markPickable options.layer deep-enables children', () => {
+    const root = new Group();
+    const child = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    root.add(child);
+    markPickable(root, 'cab', { layer: DEFAULT_PICK_LAYER });
+    expect(root.userData.pickId).toBe('cab');
+    expect(root.layers.mask & (1 << DEFAULT_PICK_LAYER)).toBeTruthy();
+    expect(child.layers.mask & (1 << DEFAULT_PICK_LAYER)).toBeTruthy();
   });
 });
 

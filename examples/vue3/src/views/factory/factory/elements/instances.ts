@@ -2,6 +2,7 @@
  * 冲刷 pendingInstances → InstancedMesh（须在产线构建之后）。
  */
 
+import { DEFAULT_PICK_LAYER, enablePickLayer } from '@threxus/runtime';
 import type { FactoryWorld } from '../types';
 
 export function buildInstancedModels(world: FactoryWorld): void {
@@ -13,7 +14,7 @@ export function buildInstancedModels(world: FactoryWorld): void {
 
     for (const im of meshes) {
       if (owners) im.userData.instancePickIds = owners;
-      im.layers.enable(1);
+      enablePickLayer(im, DEFAULT_PICK_LAYER, false);
       world.root.add(im);
     }
 

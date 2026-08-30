@@ -11,7 +11,6 @@ import {
   SelectionService,
   StatsService,
   defineFeature,
-  markPickable,
 } from '@threxus/runtime'
 import { FactorySceneService } from '../factory/factory.feature'
 import { ClipService } from '../clip/clip.feature'
@@ -75,16 +74,10 @@ export function createBridgeFeature(bridge: FactoryBridge) {
       const cameraRig = context.inject(CameraRigService)
       const stats = context.inject(StatsService)
 
-      for (const d of scene.devices) {
-        markPickable(d.node, d.id)
-      }
       let agvNode: import('three').Object3D | null = null
       scene.root.traverse((o) => {
         if (o.userData.pickId === 'AGV-01') agvNode = o
       })
-      if (agvNode) {
-        markPickable(agvNode, 'AGV-01')
-      }
 
       const toggles: FactoryToggles = {
         outline: true,
