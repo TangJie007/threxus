@@ -58,6 +58,8 @@ window.addEventListener('beforeunload', () => {
 });
 ```
 
+`setup(ctx)` 里的 `ctx` 是 [ThreeContext](./context)：用它访问 `scene`、注册 `onUpdate`、管理 `own` / `addCleanup` 等。
+
 ## Vue 中使用
 
 在组件里创建 App，卸载时 `dispose`：

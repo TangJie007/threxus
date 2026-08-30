@@ -21,10 +21,12 @@ import {
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 import { markRaw, onBeforeUnmount, onMounted, ref, shallowReactive, shallowRef } from 'vue';
 import { twinCamera, twinRoamPath, twinSceneConfig } from './config';
-import { createFactorySceneFeature } from './features/factory-scene/index';
+// import { createFactorySceneFeature } from './features/factory-scene/index';
+import { createFactorySceneFeature } from './factory/factory.feature';
 import { createAgvFeature } from './features/agv/index';
+import { createPipeRackFeature } from './pipes/pipes.feature';
 import { createTwinBridgeFeature } from './features/twin-bridge/index';
-import { statusText, type DeviceRecord } from './features/factory-scene/devices';
+// import { statusText, type DeviceRecord } from './features/factory-scene/devices';
 import type { TwinBridge, TwinToggles } from './types';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -113,6 +115,7 @@ onMounted(async () => {
     },
   });
 
+  // 环境：背景色、环境光/平行光、RoomEnvironment、阴影范围
   runtime.use(
     environmentFeature({
       background: twinSceneConfig.background,
@@ -131,12 +134,14 @@ onMounted(async () => {
       },
     }),
   );
+  // 轨道控制器：拖拽旋转 / 缩放 / 平移（带阻尼）
   runtime.use(
     orbitControlsFeature({
       damping: true,
       target: [0, 2, 0],
     }),
   );
+  // 相机运镜：flyTo 聚焦设备、巡检路径 roam
   runtime.use(
     cameraRigFeature({
       roamPath: twinRoamPath,
@@ -144,6 +149,7 @@ onMounted(async () => {
       roamSpeed: 0.012,
     }),
   );
+  // 后处理管线：GTAO / Bloom / 选中描边 / FXAA
   runtime.use(
     effectComposerFeature({
       pipelineName: 'twin-post',
@@ -159,15 +165,20 @@ onMounted(async () => {
       fxaa: true,
     }),
   );
+  // 点选：点击场景物体写入 SelectionService
   runtime.use(selectionFeature());
+  // 选中 → OutlinePass：把当前选中对象交给描边 Pass
   runtime.use(selectionOutlineFeature());
+  // 画质档位（此处固定 high，未开自动降质）
   runtime.use(
     qualityFeature({
       initialTierId: 'high',
       auto: { enabled: false },
     }),
   );
+  // 性能统计：FPS / drawCalls 等，供状态条读取
   runtime.use(statsFeature({ sampleEverySeconds: 0.25 }));
+  // CSS2D 标签：设备名牌，带距离与遮挡淡出
   runtime.use(
     labelsFeature({
       container: labelHost,
@@ -177,8 +188,9 @@ onMounted(async () => {
     }),
   );
   runtime.use(createFactorySceneFeature());
-  runtime.use(createAgvFeature());
-  runtime.use(createTwinBridgeFeature(bridge));
+  runtime.use(createPipeRackFeature());
+  // runtime.use(createAgvFeature());
+  // runtime.use(createTwinBridgeFeature(bridge));
 
   app.value = markRaw(runtime);
   state.value = runtime.state;
@@ -280,7 +292,7 @@ onBeforeUnmount(() => {
         <div class="kv">
           <span>运行状态</span>
           <b :class="`s-${selectedDevice()!.status}`">
-            {{ statusText(selectedDevice()!.status) }}
+            <!-- {{ statusText(selectedDevice()!.status) }} -->
           </b>
         </div>
         <div class="kv">

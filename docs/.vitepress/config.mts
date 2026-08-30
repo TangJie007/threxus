@@ -39,6 +39,7 @@ export default defineConfig({
           text: '能力',
           items: [
             { text: 'Feature 与服务', link: '/guide/features' },
+            { text: 'ThreeContext', link: '/guide/context' },
             { text: '资产系统', link: '/guide/assets' },
             { text: '输入与拾取', link: '/guide/input' },
             { text: '渲染与后处理', link: '/guide/rendering' },

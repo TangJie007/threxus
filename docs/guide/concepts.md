@@ -43,11 +43,11 @@ const feature: ThreeFeature = {
 
 - `provides` / `dependencies` / `optionalDependencies` 在 `start()` 前解析
 - `setup` 可 async；失败会回滚已安装 Feature
-- 清理走 `ctx.addCleanup` / `ctx.own` / `ctx.retain`，按 LIFO 执行
+- 清理走 `own` / `retain` / `addCleanup`（同一栈、LIFO）；详见 [所有权与 LIFO](./context#所有权与-lifo-清理)
 
 ## ThreeContext
 
-`setup(ctx)` 拿到的上下文（节选）：
+`setup(ctx)` 拿到的**有作用域**上下文：场景、帧循环、服务、资产、输入与清理都通过它完成；注册项随 Feature 卸载自动释放。
 
 | API | 用途 |
 |-----|------|
@@ -57,8 +57,10 @@ const feature: ThreeFeature = {
 | `rendering` | Pipeline / Stage / pixelRatio |
 | `provide` / `inject` | 服务 |
 | `onUpdate` / `onFixedUpdate` / `invalidate` | 帧循环 |
-| `own` / `retain` / `addCleanup` | 所有权 |
+| `own` / `retain` / `addCleanup` | 所有权（同一栈、LIFO） |
 | `onContextLost` / `onContextRestored` | WebGL 恢复 |
+
+完整说明与用法：[ThreeContext](./context) · [API 参考](/api/three-context)
 
 ## 动态 Feature
 

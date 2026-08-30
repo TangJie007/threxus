@@ -1,12 +1,16 @@
 /**
- * 管廊流动特效 */
+ * 管廊流动 Feature：独立于 factory-scene，挂到 Factory world.root。
+ */
 
 import * as THREE from 'three';
-import { mat } from './materials/Presets';
-import { FlowPipe, makePipeCurve } from './fx/FlowPipe';
-import type { FactoryWorld } from './FactorySceneService';
+import type { ThreeFeature } from '@threxus/runtime';
+import { FactoryService, type FactoryWorld } from '../factory/factory.service';
+import { mat } from '../factory/materials/Presets';
+import { FlowPipe, makePipeCurve } from './FlowPipe';
+import { PipeRackService } from './pipes.service';
 
-export function buildPipeRack(world: FactoryWorld): void {
+function buildPipeRack(world: FactoryWorld): FlowPipe[] {
+  const pipes: FlowPipe[] = [];
   const colors = [0x40e0ff, 0x2ee6a8, 0xffb020];
   const zs = [-8, 8];
 
@@ -27,8 +31,7 @@ export function buildPipeRack(world: FactoryWorld): void {
     });
     pipe.name = `Pipe-${i}`;
     world.root.add(pipe);
-    world.pipes.push(pipe);
-    world.animated.push((d) => pipe.update(d));
+    pipes.push(pipe);
 
     for (const sx of [-24, 0, 24]) {
       const drop = new FlowPipe({
@@ -44,8 +47,7 @@ export function buildPipeRack(world: FactoryWorld): void {
         dashCount: 8,
       });
       world.root.add(drop);
-      world.pipes.push(drop);
-      world.animated.push((d) => drop.update(d));
+      pipes.push(drop);
     }
   });
 
@@ -62,4 +64,41 @@ export function buildPipeRack(world: FactoryWorld): void {
   brackets.instanceMatrix.needsUpdate = true;
   brackets.castShadow = true;
   world.root.add(brackets);
+
+  return pipes;
+}
+
+export function createPipeRackFeature(): ThreeFeature {
+  return {
+    name: 'pipe-rack',
+    dependencies: [FactoryService],
+    provides: [PipeRackService],
+    setup(context) {
+      const world = context.inject(FactoryService);
+      const pipes = buildPipeRack(world);
+
+      context.onUpdate(({ delta }) => {
+        for (let i = 0; i < pipes.length; i++) {
+          pipes[i].update(delta);
+        }
+      });
+
+      context.addCleanup(() => {
+        for (const pipe of pipes) {
+          pipe.removeFromParent();
+          pipe.dispose();
+        }
+        pipes.length = 0;
+      });
+
+      context.provide(PipeRackService, {
+        pipes,
+        setFlowEnabled(enabled) {
+          for (const pipe of pipes) {
+            pipe.flowEnabled = enabled;
+          }
+        },
+      });
+    },
+  };
 }

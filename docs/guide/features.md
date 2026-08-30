@@ -1,5 +1,7 @@
 # Feature 与服务
 
+`setup(ctx)` 中的 `ctx` 即 [ThreeContext](./context)：场景操作、帧循环、服务与清理都经它完成。
+
 ## 注册顺序
 
 ```ts
@@ -39,21 +41,32 @@ const consumer: ThreeFeature = {
 - `provides` 声明了就必须在 `setup` 里 `provide`
 - 不允许把同一 Key 同时放进 `dependencies` 与 `optionalDependencies`
 
-## 清理
+## 清理与所有权
+
+三条 API 进**同一** Feature 清理栈，销毁时 **LIFO**（后注册先执行）。分工：
+
+| API | 结束时 | 注意 |
+|-----|--------|------|
+| `own(object)` | `removeFromParent()` | **不** dispose 几何体 / 材质 |
+| `retain(handle)` | `handle.dispose()` 减引用 | 只用于 `assets.acquire*` 的 Handle |
+| `addCleanup(x)` | 调函数或 `x.dispose()` | 几何体、材质、实例、订阅等 |
 
 ```ts
-setup(ctx) {
+setup(async (ctx) => {
+  const handle = await ctx.assets.acquireTexture(url, { signal: ctx.signal });
+  ctx.retain(handle); // 后于依赖方清理时再 release
+
   const light = new DirectionalLight();
   ctx.scene.add(light);
-  ctx.own(light); // Feature dispose 时从场景移除（按所有权策略）
+  ctx.own(light); // 只从场景树移除
 
-  const sub = selection.onChange(() => {});
-  ctx.addCleanup(sub); // 或 () => sub.dispose()
-
-  const handle = await ctx.assets.acquireTexture(url);
-  ctx.retain(handle); // Feature 结束时 release
-}
+  ctx.addCleanup(() => {
+    /* 材质 / 几何体 / 自定义资源 */
+  });
+});
 ```
+
+完整说明（含 LIFO 顺序示例）：[所有权与 LIFO 清理](./context#所有权与-lifo-清理)。
 
 ## 失败回滚
 
