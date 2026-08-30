@@ -144,6 +144,7 @@ export {
 } from './errors';
 export {
   ReleasedAssetHandleError,
+  acquireWithFallback,
   createAssetManager,
   createCubeTextureAssetLoader,
   createDeferredTestLoader,
@@ -157,7 +158,10 @@ export {
   stableSerialize,
   GltfAsset,
   type AcquireOptions,
+  type AcquireWithFallbackOptions,
   type AssetEntryState,
+  type AssetFallbackResult,
+  type AssetFallbackSource,
   type AssetHandle,
   type AssetHandleState,
   type AssetKey,

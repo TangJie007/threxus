@@ -31,6 +31,11 @@ import {
   type NormalizeAssetKeyOptions,
 } from './AssetKey';
 import type { AssetLoader } from './AssetLoader';
+import {
+  acquireWithFallback,
+  type AcquireWithFallbackOptions,
+  type AssetFallbackResult,
+} from './AssetFallback';
 import type { GltfAsset } from './gltf/GltfAsset';
 
 export interface AssetManagerOptions extends NormalizeAssetKeyOptions {
@@ -85,6 +90,12 @@ export interface AssetManager extends Disposable {
     source: string,
     options?: AcquireOptions,
   ): Promise<AssetHandle<import('three').Texture>>;
+  /**
+   * 编排主资源与业务 fallback。回调返回值的 retain/dispose 仍由调用方负责。
+   */
+  acquireWithFallback<T>(
+    options: AcquireWithFallbackOptions<T>,
+  ): Promise<AssetFallbackResult<T>>;
   preload(
     type: string,
     source: string,
@@ -215,6 +226,20 @@ class AssetManagerRuntime implements AssetManager, AssetHandleHost {
     options: AcquireOptions = {},
   ): Promise<AssetHandle<import('three').Texture>> {
     return this.acquire('environment-map', source, options);
+  }
+
+  acquireWithFallback<T>(
+    options: AcquireWithFallbackOptions<T>,
+  ): Promise<AssetFallbackResult<T>> {
+    if (this.#disposed) {
+      return Promise.reject(
+        new ThrexusError(
+          'ASSET_STATE',
+          'Cannot use AssetManager after it has been disposed.',
+        ),
+      );
+    }
+    return acquireWithFallback(options);
   }
 
   async preload(

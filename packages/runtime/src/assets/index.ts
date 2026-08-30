@@ -17,6 +17,12 @@ export {
 } from './AssetHandle';
 export type { AssetEntryState } from './AssetCacheEntry';
 export type { AssetLoadContext, AssetLoader } from './AssetLoader';
+export {
+  acquireWithFallback,
+  type AcquireWithFallbackOptions,
+  type AssetFallbackResult,
+  type AssetFallbackSource,
+} from './AssetFallback';
 export type {
   AssetLifetimeHooks,
   BindableAsset,

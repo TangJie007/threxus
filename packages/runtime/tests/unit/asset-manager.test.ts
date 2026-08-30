@@ -195,6 +195,57 @@ describe('AssetManager', () => {
     );
     await assets.dispose();
   });
+
+  it('returns primary without invoking fallback', async () => {
+    const assets = createAssetManager();
+    const fallback = vi.fn(() => 'fallback');
+
+    const result = await assets.acquireWithFallback({
+      primary: () => 'primary',
+      fallback,
+    });
+
+    expect(result).toEqual({ value: 'primary', source: 'primary' });
+    expect(fallback).not.toHaveBeenCalled();
+    await assets.dispose();
+  });
+
+  it('invokes fallback and preserves primary error', async () => {
+    const assets = createAssetManager();
+    const primaryError = new Error('cdn unavailable');
+    const onFallback = vi.fn();
+
+    const result = await assets.acquireWithFallback({
+      primary: () => Promise.reject(primaryError),
+      fallback: () => 'procedural',
+      onFallback,
+    });
+
+    expect(result.source).toBe('fallback');
+    expect(result.value).toBe('procedural');
+    if (result.source === 'fallback') {
+      expect(result.primaryError).toBe(primaryError);
+    }
+    expect(onFallback).toHaveBeenCalledWith(primaryError);
+    await assets.dispose();
+  });
+
+  it('does not fallback when the operation is aborted', async () => {
+    const assets = createAssetManager();
+    const controller = new AbortController();
+    const fallback = vi.fn(() => 'fallback');
+    controller.abort(new Error('cancelled'));
+
+    await expect(
+      assets.acquireWithFallback({
+        signal: controller.signal,
+        primary: () => 'primary',
+        fallback,
+      }),
+    ).rejects.toThrow('cancelled');
+    expect(fallback).not.toHaveBeenCalled();
+    await assets.dispose();
+  });
 });
 
 async function flushMicrotasks(): Promise<void> {

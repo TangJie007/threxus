@@ -115,7 +115,10 @@ export function instanceSubtree(
   return result
 }
 
-export type GltfLoader = (url: string) => Promise<{ scene: THREE.Object3D }>
+export type GltfLoader = (
+  key: ModelKey,
+  url: string,
+) => Promise<{ scene: THREE.Object3D } | null>
 
 export interface ModelAssets {
   readonly loadedKeys: ModelKey[]
@@ -127,24 +130,24 @@ export interface ModelAssets {
   dispose(): void
 }
 
-/** 加载全部素材。单个失败不影响其他，且不会抛异常（场景会降级到程序化几何体） */
+/** 加载全部素材；调用方通过 runtime 的 fallback 编排把失败结果降级为 null。 */
 export async function loadModelAssets(loadGLTF: GltfLoader): Promise<ModelAssets> {
   const templates = new Map<ModelKey, THREE.Object3D>()
   const loadedKeys: ModelKey[] = []
 
   const entries = Object.entries(MODEL_FILES) as Array<[ModelKey, string]>
-  const results = await Promise.allSettled(entries.map(([, url]) => loadGLTF(url)))
+  const results = await Promise.all(
+    entries.map(([key, url]) => loadGLTF(key, url)),
+  )
 
-  results.forEach((res, i) => {
+  results.forEach((result, i) => {
     const key = entries[i][0]
-    if (res.status === 'fulfilled') {
-      const scene = res.value.scene
+    if (result) {
+      const scene = result.scene
       prepareMaterials(scene)
       templates.set(key, scene)
       loadedKeys.push(key)
       console.info(`[ModelAssets] ✓ ${key}  (${MODEL_FILES[key]})`)
-    } else {
-      console.warn(`[ModelAssets] ✗ ${key} 加载失败，将回退到程序化几何体`, res.reason)
     }
   })
 

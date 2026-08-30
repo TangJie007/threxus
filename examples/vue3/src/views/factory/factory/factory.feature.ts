@@ -59,12 +59,27 @@ export const factorySceneFeature = defineFeature({
       models: null,
     }
 
-    const models = await loadModelAssets(async (url) => {
-      const handle = await context.assets.acquireGLTF(url, {
+    const models = await loadModelAssets(async (key, url) => {
+      const result = await context.assets.acquireWithFallback<{
+        scene: import('three').Object3D
+      } | null>({
         signal: context.signal,
+        primary: async () => {
+          const handle = await context.assets.acquireGLTF(url, {
+            signal: context.signal,
+          })
+          const asset = context.mount(handle)
+          return { scene: asset.scene }
+        },
+        fallback: () => null,
+        onFallback: (error) => {
+          console.warn(
+            `[ModelAssets] ✗ ${key} 加载失败，将回退到程序化几何体`,
+            error,
+          )
+        },
       })
-      const asset = context.mount(handle)
-      return { scene: asset.scene }
+      return result.value
     })
     world.models = models
     context.addCleanup(() => {

@@ -59,6 +59,34 @@ setup(async (ctx) => {
 - `handle.dispose()` / Feature `retain` 结束时减少引用
 - 引用归零后延迟释放（`releaseDelayMs`，演示可设 `0`）
 
+## 素材降级
+
+库负责主资源失败后的切换、取消传播和结果标记；fallback 的具体内容由业务提供：
+
+```ts
+const result = await ctx.assets.acquireWithFallback({
+  signal: ctx.signal,
+  primary: async () => {
+    const handle = await ctx.assets.acquireGLTF('/models/agv.glb', {
+      signal: ctx.signal,
+    });
+    return ctx.mount(handle).scene;
+  },
+  fallback: () => createProceduralAgv(),
+  onFallback: (error) => logger.warn('AGV 使用程序化几何体', { error }),
+});
+
+console.log(result.source); // 'primary' | 'fallback'
+const agv = result.value;
+```
+
+`acquireWithFallback` 只编排策略，不猜测业务外观，也不接管回调返回值的所有权：
+
+- 主资源仍通过 `AssetManager` 缓存和引用计数
+- 程序贴图/几何体可由业务 Feature 缓存并在 cleanup 时释放
+- `signal` 取消会直接抛出，不会误触发 fallback
+- `source` 可用于诊断、遥测或 UI 降级提示
+
 ## 自定义 Loader
 
 ```ts
