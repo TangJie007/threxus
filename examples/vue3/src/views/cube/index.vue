@@ -2,13 +2,15 @@
 import {
   createLogger,
   createThreeApp,
+  cameraRigFeature,
+  effectComposerFeature,
   environmentFeature,
   highlightFeature,
   inspectRuntime,
   labelsFeature,
   orbitControlsFeature,
-  postprocessingFeature,
   selectionFeature,
+  selectionOutlineFeature,
   statsFeature,
   type AppState,
   type DiagnosticSnapshot,
@@ -48,6 +50,7 @@ const bridge: CubeDemoBridge = {
   stats: null,
   postprocessing: null,
   labels: null,
+  cameraRig: null,
   selectedNames: [],
   latestStats: null,
   passRestores: 0,
@@ -169,11 +172,20 @@ onMounted(async () => {
       target: [0, 0, 0],
     }),
   );
-  runtime.use(postprocessingFeature({ pipelineName: 'cube-post' }));
+  runtime.use(cameraRigFeature());
+  runtime.use(
+    effectComposerFeature({
+      pipelineName: 'cube-post',
+      bloom: { strength: 0.25, threshold: 0.9 },
+      outline: true,
+      fxaa: true,
+    }),
+  );
   runtime.use(selectionFeature());
+  runtime.use(selectionOutlineFeature());
   runtime.use(highlightFeature());
   runtime.use(statsFeature({ sampleEverySeconds: 0.25 }));
-  runtime.use(labelsFeature({ className: 'cube-labels' }));
+  runtime.use(labelsFeature({ className: 'cube-labels', maxDistance: 40 }));
   runtime.use(createSceneFeature());
   runtime.use(createRotatingBoxFeature(log));
   runtime.use(createGltfBoxesFeature(log));

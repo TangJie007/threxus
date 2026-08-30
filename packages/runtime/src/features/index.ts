@@ -17,6 +17,14 @@ export {
 } from './orbit-controls/orbitControlsFeature';
 
 export {
+  CameraRigService,
+  cameraRigFeature,
+  type CameraRigFeatureOptions,
+  type CameraRigMode,
+  type CameraRigService as CameraRigServiceType,
+} from './camera-rig/cameraRigFeature';
+
+export {
   SelectionService,
   type SelectionChangeListener,
   type SelectionService as SelectionServiceType,
@@ -25,6 +33,10 @@ export {
   selectionFeature,
   type SelectionFeatureOptions,
 } from './selection/selectionFeature';
+export {
+  selectionOutlineFeature,
+  type SelectionOutlineFeatureOptions,
+} from './selection/selectionOutlineFeature';
 
 export {
   highlightFeature,

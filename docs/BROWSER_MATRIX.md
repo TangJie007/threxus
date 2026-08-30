@@ -42,7 +42,10 @@ Validate against the lowest supported (`0.180.0`) and a recent release before cu
 | 08-postprocessing | `/cube` postprocessing + `effectComposerFeature` browser tests |
 | 09-context-restore | `/cube` simulate + EffectComposer restore browser test |
 | 10-complete-disposal | soak test (20× create/dispose) |
-| M11 built-ins | `/cube` environment / orbit / selection / highlight / stats / post |
+| M11 built-ins | `/cube` environment / orbit / camera-rig / selection / outline / highlight / stats / effect-composer / labels |
+| Selection outline | `selectionOutlineFeature` browser test + `/cube` |
+| CameraRig | `cameraRigFeature` unit test + `/cube` flyTo on select |
+| Labels distance/batch | `labelsFeature` `maxDistance` / `setAll` |
 | M12 diagnostics | `/cube` `createLogger` + `inspectRuntime` panel |
 | Assets DRACO/KTX2/HDR | `createGltfAssetLoader` / `acquireEnvironmentMap` unit tests |
 | Input pickId / layers | `markPickable` + InputManager unit tests |

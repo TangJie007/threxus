@@ -2,12 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
   EffectComposerService,
   LabelsService,
+  SelectionService,
   createThreeApp,
   effectComposerFeature,
   labelsFeature,
+  selectionFeature,
+  selectionOutlineFeature,
   type EffectComposerServiceType,
   type LabelsServiceType,
+  type SelectionServiceType,
 } from '../../src';
+import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three';
 
 describe('high-priority browser features', () => {
   it('effectComposerFeature installs composer pipeline and restores', async () => {
@@ -82,5 +87,39 @@ describe('high-priority browser features', () => {
     app.render();
     await app.dispose();
     host.remove();
+  });
+
+  it('selectionOutlineFeature mirrors SelectionService', async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    document.body.appendChild(canvas);
+
+    const app = createThreeApp({ canvas, resize: false });
+    const mesh = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+
+    let selection!: SelectionServiceType;
+    let composer!: EffectComposerServiceType;
+
+    app.use(effectComposerFeature({ bloom: false, fxaa: false }));
+    app.use(selectionFeature({ roots: [mesh] }));
+    app.use(selectionOutlineFeature());
+    app.use({
+      name: 'probe',
+      dependencies: [SelectionService, EffectComposerService],
+      setup(context) {
+        selection = context.inject(SelectionService);
+        composer = context.inject(EffectComposerService);
+        context.scene.add(mesh);
+      },
+    });
+
+    await app.start();
+    selection.select(mesh);
+    expect(composer.outlinePass?.selectedObjects).toEqual([mesh]);
+    selection.clear();
+    expect(composer.outlinePass?.selectedObjects).toEqual([]);
+    await app.dispose();
+    canvas.remove();
   });
 });

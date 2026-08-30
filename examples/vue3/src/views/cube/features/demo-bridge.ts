@@ -1,8 +1,9 @@
 /**
- * 演示桥接：把 Selection / Stats / Postprocessing / Labels 暴露给 Vue UI。
+ * 演示桥接：Selection / Stats / Postprocessing / Labels / CameraRig。
  */
 
 import type {
+  CameraRigServiceType,
   LabelsServiceType,
   PostprocessingServiceType,
   RuntimeStats,
@@ -11,17 +12,20 @@ import type {
   ThreeFeature,
 } from '@threxus/runtime';
 import {
+  CameraRigService,
   LabelsService,
   PostprocessingService,
   SelectionService,
   StatsService,
 } from '@threxus/runtime';
+import { Vector3 } from 'three';
 
 export interface CubeDemoBridge {
   selection: SelectionServiceType | null;
   stats: StatsServiceType | null;
   postprocessing: PostprocessingServiceType | null;
   labels: LabelsServiceType | null;
+  cameraRig: CameraRigServiceType | null;
   selectedNames: string[];
   latestStats: RuntimeStats | null;
   passRestores: number;
@@ -38,17 +42,22 @@ export function createDemoBridgeFeature(
       StatsService,
       PostprocessingService,
       LabelsService,
+      CameraRigService,
     ],
     setup(context) {
       const selection = context.inject(SelectionService);
       const stats = context.inject(StatsService);
       const postprocessing = context.inject(PostprocessingService);
       const labels = context.inject(LabelsService);
+      const cameraRig = context.inject(CameraRigService);
 
       bridge.selection = selection;
       bridge.stats = stats;
       bridge.postprocessing = postprocessing;
       bridge.labels = labels;
+      bridge.cameraRig = cameraRig;
+
+      const world = new Vector3();
 
       const syncSelectionLabels = (
         selected: readonly import('three').Object3D[],
@@ -80,6 +89,16 @@ export function createDemoBridgeFeature(
             log('M11 selection：清空');
           } else {
             log(`M11 selection：${bridge.selectedNames.join(', ')}`);
+            const first = selected[0];
+            if (first) {
+              first.getWorldPosition(world);
+              cameraRig.flyTo(world, {
+                distance: 4.5,
+                height: 2.2,
+                duration: 0.7,
+              });
+              log('CameraRig flyTo 选中对象');
+            }
           }
         }),
       );
@@ -89,7 +108,7 @@ export function createDemoBridgeFeature(
           id: 'cube-demo-pass',
           priority: 0,
           render() {
-            // 演示 Pass：不改画面，只参与 Pipeline 路径
+            // 演示 Pass
           },
           restore() {
             bridge.passRestores += 1;
@@ -109,7 +128,9 @@ export function createDemoBridgeFeature(
         log('M10 onContextRestored');
       });
 
-      log('M11 demo-bridge：Selection / Stats / Postprocessing / Labels 已连接');
+      log(
+        'M11 demo-bridge：Selection / Outline / Labels / CameraRig / Stats 已连接',
+      );
     },
   };
 }

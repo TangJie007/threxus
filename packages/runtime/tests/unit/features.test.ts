@@ -250,4 +250,48 @@ describe('M11 built-in features', () => {
     expect(light?.castShadow).toBe(true);
     expect(light?.shadow.camera.left).toBe(-20);
   });
+
+  it('labelsFeature setAll replaces batch', async () => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const app = createThreeApp(createHeadlessThreeAppOptions());
+    apps.push(app);
+
+    let labels!: LabelsServiceType;
+    app.use(labelsFeature({ container: host, maxDistance: 100 }));
+    app.use({
+      name: 'probe',
+      dependencies: [LabelsService],
+      setup(context) {
+        labels = context.inject(LabelsService);
+      },
+    });
+
+    await app.start();
+    labels.setAll([
+      {
+        id: 'a',
+        anchor: { x: 0, y: 0, z: 0 },
+        element: document.createElement('div'),
+      },
+      {
+        id: 'b',
+        anchor: { x: 1, y: 0, z: 0 },
+        element: document.createElement('div'),
+      },
+    ]);
+    expect(labels.size).toBe(2);
+    labels.setAll([
+      {
+        id: 'a',
+        anchor: { x: 0, y: 1, z: 0 },
+        element: document.createElement('div'),
+      },
+    ]);
+    expect(labels.size).toBe(1);
+    host.remove();
+  });
 });

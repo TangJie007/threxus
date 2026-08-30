@@ -1,9 +1,9 @@
 /**
- * CSS2D 标签 Feature：DOM 文字叠加，适合工业孪生设备标注。
+ * CSS2D 标签 Feature：DOM 文字叠加，支持距离剔除与遮挡淡出。
  */
 
 import type { Camera, Object3D, Vector3Like } from 'three';
-import { Vector3 } from 'three';
+import { Raycaster, Vector3 } from 'three';
 import {
   CSS2DObject,
   CSS2DRenderer,
@@ -25,18 +25,35 @@ export interface LabelsService {
   remove(id: string): void;
   clear(): void;
   setVisible(visible: boolean): void;
+  /** 批量新增；同 id 已存在则替换。 */
+  setAll(labels: readonly LabelDescriptor[]): void;
   readonly size: number;
 }
 
 export const LabelsService = createServiceKey<LabelsService>('labels');
 
 export interface LabelsFeatureOptions {
-  /** 标签 DOM 容器；默认在 canvas 父节点上创建全尺寸层。 */
   readonly container?: HTMLElement;
-  /** CSS2DRenderer.domElement 的 className。 */
   readonly className?: string;
-  /** 是否在 overlay stage 渲染，默认 true。 */
   readonly renderInOverlay?: boolean;
+  /** 超过该距离隐藏标签（世界单位），默认不限制。 */
+  readonly maxDistance?: number;
+  /**
+   * 遮挡剔除：对标签锚点做射线检测；命中其它物体则淡出。
+   * 传入遮挡根节点；默认关闭。
+   */
+  readonly occlusionRoots?: readonly Object3D[];
+  /** 被遮挡时的 opacity，默认 0.15；传 0 则完全隐藏。 */
+  readonly occludedOpacity?: number;
+}
+
+interface LabelEntry {
+  object: CSS2DObject;
+  freeAnchor: boolean;
+  offset: Vector3;
+  positionAnchor?: Vector3Like;
+  element: HTMLElement;
+  baseOpacity: string;
 }
 
 export function labelsFeature(
@@ -68,18 +85,14 @@ export function labelsFeature(
         labelRenderer.domElement.remove();
       });
 
-      const entries = new Map<
-        string,
-        {
-          object: CSS2DObject;
-          freeAnchor: boolean;
-          world: Vector3;
-          offset: Vector3;
-          positionAnchor?: Vector3Like;
-        }
-      >();
-
+      const entries = new Map<string, LabelEntry>();
+      const raycaster = new Raycaster();
+      const world = new Vector3();
+      const camDir = new Vector3();
       let visible = true;
+      const maxDistance = options.maxDistance;
+      const occludedOpacity = options.occludedOpacity ?? 0.15;
+      const occlusionRoots = options.occlusionRoots ?? [];
 
       const syncSize = (size: RenderSize): void => {
         labelRenderer.setSize(size.width, size.height);
@@ -90,37 +103,46 @@ export function labelsFeature(
         pixelRatio: 1,
       });
 
+      const mountLabel = (label: LabelDescriptor): void => {
+        const existing = entries.get(label.id);
+        if (existing) {
+          existing.object.removeFromParent();
+          entries.delete(label.id);
+        }
+
+        const object = new CSS2DObject(label.element);
+        object.visible = visible;
+        const offset = new Vector3(
+          ...(label.offset ?? ([0, 0, 0] as const)),
+        );
+        const baseOpacity = label.element.style.opacity || '1';
+
+        if (isObject3D(label.anchor)) {
+          object.position.copy(offset);
+          label.anchor.add(object);
+          entries.set(label.id, {
+            object,
+            freeAnchor: false,
+            offset,
+            element: label.element,
+            baseOpacity,
+          });
+        } else {
+          context.scene.add(object);
+          entries.set(label.id, {
+            object,
+            freeAnchor: true,
+            offset,
+            positionAnchor: label.anchor,
+            element: label.element,
+            baseOpacity,
+          });
+        }
+      };
+
       const service: LabelsService = {
         add(label) {
-          if (entries.has(label.id)) {
-            throw new Error(`Label id "${label.id}" is already registered.`);
-          }
-          const object = new CSS2DObject(label.element);
-          object.visible = visible;
-          const offset = new Vector3(
-            ...(label.offset ?? ([0, 0, 0] as const)),
-          );
-
-          if (isObject3D(label.anchor)) {
-            object.position.copy(offset);
-            label.anchor.add(object);
-            entries.set(label.id, {
-              object,
-              freeAnchor: false,
-              world: new Vector3(),
-              offset,
-            });
-          } else {
-            context.scene.add(object);
-            entries.set(label.id, {
-              object,
-              freeAnchor: true,
-              world: new Vector3(),
-              offset,
-              positionAnchor: label.anchor,
-            });
-          }
-
+          mountLabel(label);
           return {
             dispose: () => {
               service.remove(label.id);
@@ -146,6 +168,17 @@ export function labelsFeature(
             entry.object.visible = next;
           }
         },
+        setAll(labels) {
+          const keep = new Set(labels.map((item) => item.id));
+          for (const id of [...entries.keys()]) {
+            if (!keep.has(id)) {
+              service.remove(id);
+            }
+          }
+          for (const label of labels) {
+            mountLabel(label);
+          }
+        },
         get size() {
           return entries.size;
         },
@@ -153,25 +186,71 @@ export function labelsFeature(
 
       context.provide(LabelsService, service);
 
-      context.onUpdate(() => {
-        for (const entry of entries.values()) {
-          if (!entry.freeAnchor || !entry.positionAnchor) {
-            continue;
-          }
-          entry.object.position
+      const resolveWorld = (entry: LabelEntry): Vector3 => {
+        if (entry.freeAnchor && entry.positionAnchor) {
+          world
             .set(
               entry.positionAnchor.x,
               entry.positionAnchor.y,
               entry.positionAnchor.z,
             )
             .add(entry.offset);
+          entry.object.position.copy(world);
+          return world;
         }
-      });
+        entry.object.getWorldPosition(world);
+        return world;
+      };
+
+      const updateVisibility = (camera: Camera): void => {
+        if (!visible) {
+          return;
+        }
+        camera.getWorldDirection(camDir);
+        for (const entry of entries.values()) {
+          const pos = resolveWorld(entry);
+          let show = true;
+          let opacity = entry.baseOpacity;
+
+          if (maxDistance !== undefined) {
+            if (camera.position.distanceTo(pos) > maxDistance) {
+              show = false;
+            }
+          }
+
+          if (show && occlusionRoots.length > 0) {
+            const distance = camera.position.distanceTo(pos);
+            raycaster.set(
+              camera.position,
+              tmpDirection(camera.position, pos, camDir),
+            );
+            raycaster.far = distance - 0.05;
+            const hits = raycaster.intersectObjects([...occlusionRoots], true);
+            const blocked = hits.some(
+              (hit) =>
+                hit.object !== entry.object &&
+                !isAncestor(entry.object, hit.object) &&
+                !isAncestor(hit.object, entry.object),
+            );
+            if (blocked) {
+              if (occludedOpacity <= 0) {
+                show = false;
+              } else {
+                opacity = String(occludedOpacity);
+              }
+            }
+          }
+
+          entry.object.visible = show;
+          entry.element.style.opacity = show ? opacity : entry.baseOpacity;
+        }
+      };
 
       const renderLabels = (camera: Camera): void => {
         if (!visible) {
           return;
         }
+        updateVisibility(camera);
         labelRenderer.render(context.scene, camera);
       };
 
@@ -207,6 +286,17 @@ export function labelsFeature(
   };
 }
 
+const _dir = new Vector3();
+
+function tmpDirection(
+  from: Vector3,
+  to: Vector3,
+  _unused: Vector3,
+): Vector3 {
+  void _unused;
+  return _dir.subVectors(to, from).normalize();
+}
+
 function createDefaultLabelHost(
   canvas: HTMLCanvasElement,
   className?: string,
@@ -237,4 +327,15 @@ function isObject3D(value: Object3D | Vector3Like): value is Object3D {
     'isObject3D' in value &&
     (value as Object3D).isObject3D === true
   );
+}
+
+function isAncestor(ancestor: Object3D, node: Object3D): boolean {
+  let current: Object3D | null = node.parent;
+  while (current) {
+    if (current === ancestor) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
 }

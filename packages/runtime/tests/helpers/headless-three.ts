@@ -49,6 +49,11 @@ export function createTestCanvas(
     setPointerCapture: vi.fn(),
     releasePointerCapture: vi.fn(),
     hasPointerCapture: vi.fn(() => false),
+    getRootNode: () => canvas,
+    ownerDocument: {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    },
     dispatchTestEvent(type: string, event: Event) {
       for (const listener of listeners.get(type) ?? []) {
         if (typeof listener === 'function') {
