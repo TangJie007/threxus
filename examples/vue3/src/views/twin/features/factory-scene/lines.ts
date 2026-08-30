@@ -1,19 +1,12 @@
 /**
- * 产线 + 工位（LOD / 指示灯 / 机械臂）+ 输送带流动。
- */
+ * 产线 + 工位（LOD / 指示�?/ 机械臂）+ 输送带流动�? */
 
 import * as THREE from 'three';
-import type { ThreeFeature } from '@threxus/runtime';
-import { mat, statusMaterial } from './lib/materials/Presets';
-import { AlertBeacon } from './lib/fx/ScanRing';
-import { makeDeviceSeed, makeRng, type DeviceRecord } from './lib/data/devices';
-import { markPickable } from './lib/scene/pickable';
-import {
-  FactoryWorldService,
-  LinesBuiltService,
-  ModelAssetsService,
-  type FactoryWorld,
-} from './services';
+import { mat, statusMaterial } from './materials/Presets';
+import { AlertBeacon } from './fx/ScanRing';
+import { makeDeviceSeed, makeRng, type DeviceRecord } from './devices';
+import { markPickable } from './pickable';
+import type { FactoryWorld } from './FactorySceneService';
 
 class RobotArm {
   readonly group = new THREE.Group();
@@ -322,7 +315,7 @@ function buildStation(
   world.devices.push(record);
 }
 
-function buildLines(world: FactoryWorld): void {
+export function buildLines(world: FactoryWorld): void {
   const rng = makeRng(20260829);
   const lineZ = [-16, 0, 16];
   const stationX = [-24, -14.4, -4.8, 4.8, 14.4, 24];
@@ -333,16 +326,4 @@ function buildLines(world: FactoryWorld): void {
       buildStation(world, x, z, li, si, rng);
     });
   });
-}
-
-export function createLinesFeature(): ThreeFeature {
-  return {
-    name: 'factory-lines',
-    dependencies: [FactoryWorldService, ModelAssetsService],
-    provides: [LinesBuiltService],
-    setup(context) {
-      buildLines(context.inject(FactoryWorldService));
-      context.provide(LinesBuiltService, { ready: true });
-    },
-  };
 }

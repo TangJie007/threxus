@@ -19,9 +19,9 @@ import {
   statusText,
   type DeviceRecord,
   type DeviceStatus,
-} from './factory-scene/lib/data/devices';
-import { FactorySceneService } from './factory-scene';
-import type { TwinBridge, TwinKpi, TwinToggles } from '../types';
+} from '../factory-scene/devices';
+import { FactorySceneService } from '../factory-scene/index';
+import type { TwinBridge, TwinKpi, TwinToggles } from '../../types';
 
 const STATUS_CLASS: Record<DeviceStatus, string> = {
   ok: 's-ok',

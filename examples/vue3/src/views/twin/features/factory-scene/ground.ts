@@ -1,14 +1,12 @@
 /**
- * 地面 + 网格 + 安全通道。
- */
+ * 地面 + 网格 + 安全通道�? */
 
 import * as THREE from 'three';
-import type { ThreeFeature } from '@threxus/runtime';
-import { mat } from './lib/materials/Presets';
-import { gridLines } from './lib/materials/ProceduralTextures';
-import { FactoryWorldService, type FactoryWorld } from './services';
+import { mat } from './materials/Presets';
+import { gridLines } from './materials/ProceduralTextures';
+import type { FactoryWorld } from './FactorySceneService';
 
-function buildGround(world: FactoryWorld): void {
+export function buildGround(world: FactoryWorld): void {
   const { root, bounds } = world;
 
   const floorGeo = new THREE.PlaneGeometry(bounds.width, bounds.depth);
@@ -42,14 +40,4 @@ function buildGround(world: FactoryWorld): void {
     lane.receiveShadow = true;
     root.add(lane);
   }
-}
-
-export function createGroundFeature(): ThreeFeature {
-  return {
-    name: 'factory-ground',
-    dependencies: [FactoryWorldService],
-    setup(context) {
-      buildGround(context.inject(FactoryWorldService));
-    },
-  };
 }

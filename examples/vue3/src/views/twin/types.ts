@@ -7,9 +7,9 @@ import type {
   SelectionServiceType,
   StatsServiceType,
 } from '@threxus/runtime';
-import type { DeviceRecord, DeviceStatus } from './features/factory-scene/lib/data/devices';
-import type { FactoryRuntime } from './features/factory-scene/services';
-import type { ClipController } from './features/factory-scene/lib/fx/ElectricFence';
+import type { DeviceRecord, DeviceStatus } from './features/factory-scene/devices';
+import type { FactoryRuntime } from './features/factory-scene/FactorySceneService';
+import type { ClipController } from './features/factory-scene/fx/ElectricFence';
 
 export interface TwinToggles {
   outline: boolean;

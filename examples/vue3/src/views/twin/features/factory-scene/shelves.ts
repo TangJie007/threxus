@@ -1,14 +1,12 @@
 /**
- * 货架 InstancedMesh。
- */
+ * 货架 InstancedMesh�? */
 
 import * as THREE from 'three';
-import type { ThreeFeature } from '@threxus/runtime';
-import { mat } from './lib/materials/Presets';
-import { makeRng } from './lib/data/devices';
-import { FactoryWorldService, type FactoryWorld } from './services';
+import { mat } from './materials/Presets';
+import { makeRng } from './devices';
+import type { FactoryWorld } from './FactorySceneService';
 
-function buildShelves(world: FactoryWorld): void {
+export function buildShelves(world: FactoryWorld): void {
   const postGeo = new THREE.BoxGeometry(0.14, 6, 0.14);
   const posts = new THREE.InstancedMesh(postGeo, mat('steel'), 4 * 6);
   const m = new THREE.Matrix4();
@@ -61,14 +59,4 @@ function buildShelves(world: FactoryWorld): void {
   boxes.castShadow = true;
   boxes.receiveShadow = true;
   world.root.add(boxes);
-}
-
-export function createShelvesFeature(): ThreeFeature {
-  return {
-    name: 'factory-shelves',
-    dependencies: [FactoryWorldService],
-    setup(context) {
-      buildShelves(context.inject(FactoryWorldService));
-    },
-  };
 }

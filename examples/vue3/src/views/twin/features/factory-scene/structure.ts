@@ -1,14 +1,12 @@
 /**
- * 厂房钢结构：mergeGeometries → 单 Draw Call。
- */
+ * 厂房钢结构：mergeGeometries �?�?Draw Call�? */
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import type { ThreeFeature } from '@threxus/runtime';
-import { mat } from './lib/materials/Presets';
-import { FactoryWorldService, type FactoryWorld } from './services';
+import { mat } from './materials/Presets';
+import type { FactoryWorld } from './FactorySceneService';
 
-function buildStructure(world: FactoryWorld): void {
+export function buildStructure(world: FactoryWorld): void {
   const { root, bounds } = world;
   const parts: THREE.BufferGeometry[] = [];
   const colW = 0.55;
@@ -59,14 +57,4 @@ function buildStructure(world: FactoryWorld): void {
   steel.matrixAutoUpdate = false;
   steel.updateMatrix();
   root.add(steel);
-}
-
-export function createStructureFeature(): ThreeFeature {
-  return {
-    name: 'factory-structure',
-    dependencies: [FactoryWorldService],
-    setup(context) {
-      buildStructure(context.inject(FactoryWorldService));
-    },
-  };
 }

@@ -1,16 +1,9 @@
 /**
- * 冲刷 pendingInstances → InstancedMesh（须在产线 Feature 之后）。
- */
+ * 冲刷 pendingInstances �?InstancedMesh（须在产线构建之后）�? */
 
-import type { ThreeFeature } from '@threxus/runtime';
-import {
-  FactoryWorldService,
-  LinesBuiltService,
-  ModelAssetsService,
-  type FactoryWorld,
-} from './services';
+import type { FactoryWorld } from './FactorySceneService';
 
-function buildInstancedModels(world: FactoryWorld): void {
+export function buildInstancedModels(world: FactoryWorld): void {
   if (!world.models) return;
 
   for (const [key, matrices] of world.pendingInstances) {
@@ -24,20 +17,10 @@ function buildInstancedModels(world: FactoryWorld): void {
     }
 
     console.info(
-      `[factory-instances] ${key}: ${matrices.length} 个实例 → ${meshes.length} 个 draw call`,
+      `[factory-instances] ${key}: ${matrices.length} 个实�?�?${meshes.length} �?draw call`,
     );
   }
 
   world.pendingInstances.clear();
   world.pendingInstanceOwners.clear();
-}
-
-export function createInstancesFeature(): ThreeFeature {
-  return {
-    name: 'factory-instances',
-    dependencies: [FactoryWorldService, ModelAssetsService, LinesBuiltService],
-    setup(context) {
-      buildInstancedModels(context.inject(FactoryWorldService));
-    },
-  };
 }

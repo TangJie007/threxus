@@ -1,16 +1,16 @@
 /**
- * AGV 路径巡航。
+ * AGV 路径巡航 Feature（依赖 factory-scene 的 World / Models）。
  */
 
 import * as THREE from 'three';
 import type { ThreeFeature } from '@threxus/runtime';
-import { mat } from './lib/materials/Presets';
-import { markPickable } from './lib/scene/pickable';
+import { mat } from '../factory-scene/materials/Presets';
+import { markPickable } from '../factory-scene/pickable';
 import {
   FactoryWorldService,
   ModelAssetsService,
   type FactoryWorld,
-} from './services';
+} from '../factory-scene/FactorySceneService';
 
 function buildAGV(world: FactoryWorld): void {
   const path = new THREE.CatmullRomCurve3(
@@ -97,7 +97,7 @@ function buildAGV(world: FactoryWorld): void {
 
 export function createAgvFeature(): ThreeFeature {
   return {
-    name: 'factory-agv',
+    name: 'agv',
     dependencies: [FactoryWorldService, ModelAssetsService],
     setup(context) {
       buildAGV(context.inject(FactoryWorldService));

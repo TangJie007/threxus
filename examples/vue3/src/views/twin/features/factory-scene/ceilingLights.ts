@@ -1,12 +1,10 @@
 /**
- * 顶部灯带 InstancedMesh。
- */
+ * 顶部灯带 InstancedMesh�? */
 
 import * as THREE from 'three';
-import type { ThreeFeature } from '@threxus/runtime';
-import { FactoryWorldService, type FactoryWorld } from './services';
+import type { FactoryWorld } from './FactorySceneService';
 
-function buildCeilingLights(world: FactoryWorld): void {
+export function buildCeilingLights(world: FactoryWorld): void {
   const { root, bounds } = world;
   const lampMat = new THREE.MeshStandardMaterial({
     color: 0x121820,
@@ -30,14 +28,4 @@ function buildCeilingLights(world: FactoryWorld): void {
   lamps.instanceMatrix.needsUpdate = true;
   lamps.name = 'CeilingLights';
   root.add(lamps);
-}
-
-export function createCeilingLightsFeature(): ThreeFeature {
-  return {
-    name: 'factory-ceiling-lights',
-    dependencies: [FactoryWorldService],
-    setup(context) {
-      buildCeilingLights(context.inject(FactoryWorldService));
-    },
-  };
 }

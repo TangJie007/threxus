@@ -1,15 +1,15 @@
 /**
- * 工厂场景共享状态与服务键。
- * 各 Feature 通过 FactoryWorldService 协作，避免巨型 Factory 上帝类。
+ * Factory scene shared state + service keys.
+ * World is provided by factory-scene Feature; peer Features (e.g. agv) inject it.
  */
 
 import type { Group, Material, Matrix4, Object3D } from 'three';
 import { createServiceKey } from '@threxus/runtime';
-import type { DeviceRecord, DeviceStatus } from './lib/data/devices';
-import type { FlowPipe } from './lib/fx/FlowPipe';
-import type { ElectricFence, ClipController } from './lib/fx/ElectricFence';
-import type { ScanRing } from './lib/fx/ScanRing';
-import type { ModelAssets, ModelKey } from './lib/scene/ModelAssets';
+import type { DeviceRecord, DeviceStatus } from './devices';
+import type { FlowPipe } from './fx/FlowPipe';
+import type { ElectricFence, ClipController } from './fx/ElectricFence';
+import type { ScanRing } from './fx/ScanRing';
+import type { ModelAssets, ModelKey } from './ModelAssets';
 
 export interface FactoryBounds {
   width: number;
@@ -25,7 +25,7 @@ export const FACTORY_BOUNDS: FactoryBounds = {
 
 export type FactoryAnimator = (delta: number, elapsed: number) => void;
 
-/** 场景世界：构建期与运行期共享的可变状态。 */
+/** Shared mutable world for build + runtime. */
 export interface FactoryWorld {
   readonly root: Group;
   readonly bounds: FactoryBounds;
@@ -40,7 +40,7 @@ export interface FactoryWorld {
   models: ModelAssets | null;
 }
 
-/** twin-bridge / UI 使用的运行时门面（保持原 Factory API 形态）。 */
+/** Runtime facade for twin-bridge / UI (Factory-like API). */
 export interface FactoryRuntime {
   readonly root: Object3D;
   readonly devices: DeviceRecord[];
@@ -64,21 +64,6 @@ export const FactoryWorldService =
 
 export const ModelAssetsService =
   createServiceKey<ModelAssets>('factory-models');
-
-/** 材质已构建（几何 Feature 依赖）。 */
-export const MaterialsReadyService = createServiceKey<{ readonly ready: true }>(
-  'factory-materials-ready',
-);
-
-/** 产线已构建（instances 依赖，保证 pending 已收集完）。 */
-export const LinesBuiltService = createServiceKey<{ readonly ready: true }>(
-  'factory-lines-built',
-);
-
-/** 扫描圈已就绪（runtime 门面依赖）。 */
-export const ScanRingReadyService = createServiceKey<{ readonly ready: true }>(
-  'factory-scan-ring-ready',
-);
 
 export const FactorySceneService =
   createServiceKey<FactorySceneApi>('factory-scene');

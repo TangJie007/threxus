@@ -1,14 +1,12 @@
 /**
- * 管廊流动特效。
- */
+ * 管廊流动特效�? */
 
 import * as THREE from 'three';
-import type { ThreeFeature } from '@threxus/runtime';
-import { mat } from './lib/materials/Presets';
-import { FlowPipe, makePipeCurve } from './lib/fx/FlowPipe';
-import { FactoryWorldService, type FactoryWorld } from './services';
+import { mat } from './materials/Presets';
+import { FlowPipe, makePipeCurve } from './fx/FlowPipe';
+import type { FactoryWorld } from './FactorySceneService';
 
-function buildPipeRack(world: FactoryWorld): void {
+export function buildPipeRack(world: FactoryWorld): void {
   const colors = [0x40e0ff, 0x2ee6a8, 0xffb020];
   const zs = [-8, 8];
 
@@ -64,14 +62,4 @@ function buildPipeRack(world: FactoryWorld): void {
   brackets.instanceMatrix.needsUpdate = true;
   brackets.castShadow = true;
   world.root.add(brackets);
-}
-
-export function createPipesFeature(): ThreeFeature {
-  return {
-    name: 'factory-pipes',
-    dependencies: [FactoryWorldService],
-    setup(context) {
-      buildPipeRack(context.inject(FactoryWorldService));
-    },
-  };
 }
