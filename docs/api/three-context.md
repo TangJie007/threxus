@@ -122,17 +122,23 @@ ctx.onContextRestored(async () => {});
 ## ThreeFeature 形状
 
 ```ts
+import type {
+  ServiceDefinition,
+  ServiceKey,
+} from '@threxus/runtime';
+
 interface ThreeFeature {
   name: string;
-  provides?: ServiceKey[];
+  provides?: Array<ServiceKey | ServiceDefinition>;
   dependencies?: ServiceKey[];
   optionalDependencies?: ServiceKey[];
-  setup(ctx: ThreeContext): void | Promise<void>;
+  setup?(ctx: ThreeContext): void | Promise<void>;
 }
 ```
 
 契约要点：
 
-- `provides` 中的每个 Key 必须在 `setup` 内 `provide`
+- `defineService` 返回值放入 `provides` 后，Runtime 会自动执行 handler 并注册服务
+- 直接放入 `provides` 的 `ServiceKey` 必须在 `setup` 内手动 `provide`
 - `inject` / `injectOptional` 只能访问 `dependencies` + `optionalDependencies` + `provides`
 - `setup` 可为 async；应用 `ctx.signal` 协作取消

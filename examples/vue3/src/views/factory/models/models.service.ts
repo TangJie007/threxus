@@ -120,7 +120,10 @@ export const FactoryModelsService = defineService<FactoryModelsApi>(
     }
 
     context.addCleanup(() => {
-      for (const mesh of instancedMeshes) mesh.removeFromParent()
+      for (const mesh of instancedMeshes) {
+        mesh.removeFromParent()
+        mesh.dispose()
+      }
       instancedMeshes.clear()
 
       for (const instance of instances) instance.dispose()

@@ -14,6 +14,38 @@ await app.start(); // 按依赖拓扑安装，不是 use 的书写顺序单独�
 
 ## 服务契约
 
+最常用的方式是使用 `defineService` 定义服务，再由 Feature 声明提供它：
+
+```ts
+import { defineFeature, defineService } from '@threxus/runtime';
+
+const Foo = defineService<FooService>(
+  'foo',
+  async (ctx) => {
+    return createFooService(ctx);
+  },
+);
+
+const fooFeature: ThreeFeature = {
+  name: 'foo',
+  provides: [Foo],
+};
+```
+
+Runtime 会在 Feature 的 `setup` 阶段自动执行 Service handler，并将返回值注册到当前服务容器。其它 Feature 只需要声明依赖并注入：
+
+```ts
+const consumer: ThreeFeature = {
+  name: 'foo-consumer',
+  dependencies: [Foo],
+  setup(ctx) {
+    const foo = ctx.inject(Foo);
+  },
+};
+```
+
+底层场景仍可使用 `createServiceKey` 和手动 `ctx.provide`，适合需要完全自定义注册过程的高级用法：
+
 ```ts
 const Foo = createServiceKey<FooService>('foo');
 
@@ -38,7 +70,8 @@ const consumer: ThreeFeature = {
 规则：
 
 - 同一 `ServiceKey` 只能有一个提供者
-- `provides` 声明了就必须在 `setup` 里 `provide`
+- `defineService` 返回值放入 `provides` 后会自动创建并提供服务
+- 直接放入 `provides` 的 `ServiceKey` 仍必须在 `setup` 里手动 `provide`
 - 不允许把同一 Key 同时放进 `dependencies` 与 `optionalDependencies`
 
 ## 清理与所有权

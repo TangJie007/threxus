@@ -22,25 +22,24 @@ created → starting → running ⇄ paused → disposing → disposed
 Feature 是可组合单元，不是 Three.js 子类：
 
 ```ts
-import type { ThreeFeature } from '@threxus/runtime';
-import { createServiceKey } from '@threxus/runtime';
+import { defineFeature, defineService } from '@threxus/runtime';
 
-const Clock = createServiceKey<{ now(): number }>('clock');
+const Clock = defineService(
+  'clock',
+  () => ({ now: () => performance.now() }),
+);
 
-const feature: ThreeFeature = {
+const feature = defineFeature({
   name: 'clock',
   provides: [Clock],
-  setup(ctx) {
-    ctx.provide(Clock, { now: () => performance.now() });
-    ctx.onUpdate(() => {
-      // ...
-    });
-  },
-};
+});
 ```
 
 要点：
 
+- 简单功能使用普通函数，不需要单独创建 Feature
+- 需要独立生命周期、依赖或资源管理时再使用 Feature
+- 推荐使用 `defineService` + `provides` 自动提供服务
 - `provides` / `dependencies` / `optionalDependencies` 在 `start()` 前解析
 - `setup` 可 async；失败会回滚已安装 Feature
 - 清理走 `own` / `retain` / `addCleanup`（同一栈、LIFO）；详见 [所有权与 LIFO](./context#所有权与-lifo-清理)

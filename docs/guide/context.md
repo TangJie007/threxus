@@ -78,6 +78,29 @@ ctx.invalidate(); // renderMode: 'on-demand' 时请求下一帧
 
 ## 服务：provide / inject
 
+推荐使用 `defineService`。Service handler 的返回值会由 Runtime 自动
+注册，不需要在 Feature 中重复调用 `ctx.provide`：
+
+```ts
+import { defineService, type ThreeFeature } from '@threxus/runtime';
+
+const Counter = defineService(
+  'counter',
+  () => ({
+    tick() {
+      // ...
+    },
+  }),
+);
+
+const provider: ThreeFeature = {
+  name: 'counter-provider',
+  provides: [Counter],
+};
+```
+
+只有需要完全控制注册过程时，才使用下面的底层写法：
+
 ```ts
 import { createServiceKey, type ThreeFeature } from '@threxus/runtime';
 
@@ -108,7 +131,8 @@ const consumer: ThreeFeature = {
 
 规则摘要：
 
-- `provides` 声明的 Key 必须在 `setup` 里 `provide`
+- `defineService` 返回值放入 `provides` 后会自动创建并注册服务
+- 直接放入 `provides` 的 `ServiceKey` 必须在 `setup` 里手动 `provide`
 - `inject` / `injectOptional` 只能访问已声明的 `dependencies` / `optionalDependencies` / `provides`
 - `provide` 默认在 Feature 清理时移除服务；若服务实现了 `dispose`，会自动调用（可用 `{ dispose: 'manual' }` 关闭）
 
