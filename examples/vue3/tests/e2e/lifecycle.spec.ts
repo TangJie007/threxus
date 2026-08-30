@@ -28,8 +28,13 @@ test('shows rotating box on dedicated route', async ({ page }) => {
   await expect(events.filter({ hasText: 'M6 acquireTexture' })).toHaveCount(1);
   await expect(events.filter({ hasText: 'M7 acquireGLTF' })).toHaveCount(1);
   await expect(events.filter({ hasText: 'M7 instantiate' })).toHaveCount(2);
-  await expect(page.getByText('交互监听')).toBeVisible();
-  await expect(page.getByText('Pipeline')).toBeVisible();
+  await expect(events.filter({ hasText: 'M11 demo-bridge' })).toHaveCount(1);
+  await expect(page.getByText('交互监听', { exact: true })).toBeVisible();
+  await expect(page.getByText('Pipeline', { exact: true })).toBeVisible();
+  await expect(page.getByText('Graphics', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Simulate Context Lost' }),
+  ).toBeVisible();
 });
 
 test('shows partial-scope and active-feature rollback', async ({ page }) => {

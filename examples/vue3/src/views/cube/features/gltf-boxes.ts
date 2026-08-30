@@ -1,10 +1,6 @@
-import { DirectionalLight, Group, Mesh, type Object3D } from 'three';
+import { Group, Mesh, type Object3D } from 'three';
 import type { ThreeFeature } from '@threxus/runtime';
-import {
-  cubeGltfInstances,
-  cubeGltfUrl,
-  cubeSceneConfig,
-} from '../config';
+import { cubeGltfInstances, cubeGltfUrl } from '../config';
 import type { CubeLogger } from '../types';
 
 /**
@@ -13,6 +9,7 @@ import type { CubeLogger } from '../types';
  * - 同一 GLTF 资产只加载一次
  * - 多个实例挂到不同父节点，默认共享 Geometry / Material
  * - ctx.retain(handle) + ctx.addCleanup(instance) 分管资产与实例生命周期
+ * - 灯光由 environmentFeature 提供
  */
 export function createGltfBoxesFeature(log: CubeLogger): ThreeFeature {
   return {
@@ -62,17 +59,6 @@ export function createGltfBoxesFeature(log: CubeLogger): ThreeFeature {
       log(
         `M7 acquireGLTF：${instances.length} 个实例，Geometry ${sharedGeometry ? '共享' : '未共享'}，refs=${context.assets.inspect().totalRefs}`,
       );
-
-      if (!context.scene.getObjectByName('cube-key-light')) {
-        const light = new DirectionalLight(
-          cubeSceneConfig.lightColor,
-          cubeSceneConfig.lightIntensity,
-        );
-        light.name = 'cube-key-light';
-        light.position.set(...cubeSceneConfig.lightPosition);
-        context.scene.add(light);
-        context.own(light);
-      }
 
       context.onUpdate(({ delta }) => {
         instances.forEach((instance, index) => {

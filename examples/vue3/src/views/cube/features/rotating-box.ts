@@ -1,21 +1,17 @@
 import {
   BoxGeometry,
-  DirectionalLight,
   Mesh,
   MeshStandardMaterial,
   SRGBColorSpace,
 } from 'three';
 import type { ThreeFeature } from '@threxus/runtime';
-import { cubeBoxes, cubeSceneConfig, cubeTextureUrl } from '../config';
+import { cubeBoxes, cubeTextureUrl } from '../config';
 import type { CubeLogger } from '../types';
 
 /**
  * 立方体 Feature（M6 共享贴图 + M8 Pointer 交互）。
  *
- * 1. `acquireTexture` 加载（同 URL 并发会合并成一次请求）
- * 2. `retain(handle)` 把引用绑到 Feature；销毁时自动 release
- * 3. `ctx.input.on` 注册 click / hover；Feature dispose 时自动解绑
- * 4. 不要对 handle.value 手动 texture.dispose()——由 AssetManager 负责
+ * 灯光由 environmentFeature 提供。
  */
 export function createRotatingBoxFeature(log: CubeLogger): ThreeFeature {
   return {
@@ -64,18 +60,6 @@ export function createRotatingBoxFeature(log: CubeLogger): ThreeFeature {
 
         materials.push(material);
         meshes.push(mesh);
-      }
-
-      const existingLight = context.scene.getObjectByName('cube-key-light');
-      if (!existingLight) {
-        const light = new DirectionalLight(
-          cubeSceneConfig.lightColor,
-          cubeSceneConfig.lightIntensity,
-        );
-        light.name = 'cube-key-light';
-        light.position.set(...cubeSceneConfig.lightPosition);
-        context.scene.add(light);
-        context.own(light);
       }
 
       context.addCleanup(() => geometry.dispose());
