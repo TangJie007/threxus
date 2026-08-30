@@ -21,9 +21,9 @@ import {
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 import { markRaw, onBeforeUnmount, onMounted, ref, shallowReactive, shallowRef } from 'vue';
 import { twinCamera, twinRoamPath, twinSceneConfig } from './config';
-import { createFactorySceneFeature } from './features/factory-scene';
+import { createFactorySceneFeatures } from './features/factory-scene';
 import { createTwinBridgeFeature } from './features/twin-bridge';
-import { statusText, type DeviceRecord } from './lib/data/devices';
+import { statusText, type DeviceRecord } from './features/factory-scene/lib/data/devices';
 import type { TwinBridge, TwinToggles } from './types';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -175,7 +175,9 @@ onMounted(async () => {
       occludedOpacity: 0.2,
     }),
   );
-  runtime.use(createFactorySceneFeature());
+  for (const feature of createFactorySceneFeatures()) {
+    runtime.use(feature);
+  }
   runtime.use(createTwinBridgeFeature(bridge));
 
   app.value = markRaw(runtime);

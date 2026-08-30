@@ -7,9 +7,9 @@ import type {
   SelectionServiceType,
   StatsServiceType,
 } from '@threxus/runtime';
-import type { DeviceRecord, DeviceStatus } from './lib/data/devices';
-import type { Factory } from './lib/scene/Factory';
-import type { ClipController } from './lib/fx/ElectricFence';
+import type { DeviceRecord, DeviceStatus } from './features/factory-scene/lib/data/devices';
+import type { FactoryRuntime } from './features/factory-scene/services';
+import type { ClipController } from './features/factory-scene/lib/fx/ElectricFence';
 
 export interface TwinToggles {
   outline: boolean;
@@ -30,7 +30,7 @@ export interface TwinKpi {
 
 /** Vue 侧可读的桥接状态（由 twin-bridge Feature 写入）。 */
 export interface TwinBridge {
-  factory: Factory | null;
+  factory: FactoryRuntime | null;
   clip: ClipController | null;
   selection: SelectionServiceType | null;
   stats: StatsServiceType | null;

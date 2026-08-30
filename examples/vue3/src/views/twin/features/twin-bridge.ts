@@ -19,7 +19,7 @@ import {
   statusText,
   type DeviceRecord,
   type DeviceStatus,
-} from '../lib/data/devices';
+} from './factory-scene/lib/data/devices';
 import { FactorySceneService } from './factory-scene';
 import type { TwinBridge, TwinKpi, TwinToggles } from '../types';
 
