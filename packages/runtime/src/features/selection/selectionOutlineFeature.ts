@@ -3,6 +3,7 @@
  */
 
 import type { ThreeFeature } from '../../feature/ThreeFeature';
+import { ThrexusError } from '../../errors';
 import { SelectionService } from '../selection/SelectionService';
 import { EffectComposerService } from '../postprocessing/effectComposerFeature';
 
@@ -25,8 +26,15 @@ export function selectionOutlineFeature(
       const composer = context.inject(EffectComposerService);
 
       if (!composer.outlinePass && !options.optionalOutline) {
-        throw new Error(
+        throw new ThrexusError(
+          'FEATURE_SETUP',
           'selectionOutlineFeature requires effectComposerFeature({ outline: true }).',
+          {
+            context: {
+              feature: 'selection-outline',
+              operation: 'setup',
+            },
+          },
         );
       }
 

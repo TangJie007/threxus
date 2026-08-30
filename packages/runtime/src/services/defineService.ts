@@ -27,7 +27,11 @@ export interface DefineServiceOptions<T, TOptions = void> {
  */
 export interface ServiceDefinition<T, TOptions = void> extends ServiceKey<T> {
   /** 为当前服务创建一个 provider Feature。 */
-  feature(options?: TOptions): ThreeFeature;
+  feature(
+    ...args: [TOptions] extends [void]
+      ? [options?: TOptions]
+      : [options: TOptions]
+  ): ThreeFeature;
 }
 
 export function defineService<T, TOptions = void>(
@@ -38,7 +42,7 @@ export function defineService<T, TOptions = void>(
 
   const definition: ServiceDefinition<T, TOptions> = {
     ...key,
-    feature: (featureOptions?: TOptions): ThreeFeature => ({
+    feature: (...args): ThreeFeature => ({
       name: featureName,
       provides: [definition],
       ...(options.dependencies
@@ -50,7 +54,7 @@ export function defineService<T, TOptions = void>(
       async setup(context) {
         const value = await options.create(
           context,
-          featureOptions as TOptions,
+          args[0] as TOptions,
         );
         context.provide(
           definition,

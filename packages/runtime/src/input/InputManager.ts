@@ -8,6 +8,7 @@
 
 import type { Camera, Object3D } from 'three';
 import { clamp } from 'es-toolkit';
+import { ThrexusError } from '../errors';
 import type { Disposable } from '../lifecycle/Disposable';
 import { InteractiveObjectRegistry } from './InteractiveObjectRegistry';
 import type { InputListenerRecord } from './InteractiveObjectRegistry';
@@ -311,7 +312,11 @@ class InputManagerImpl implements InputManager {
 
   #assertAlive(): void {
     if (this.#disposed) {
-      throw new Error('InputManager has been disposed.');
+      throw new ThrexusError(
+        'APP_STATE',
+        'InputManager has been disposed.',
+        { context: { operation: 'input' } },
+      );
     }
   }
 }

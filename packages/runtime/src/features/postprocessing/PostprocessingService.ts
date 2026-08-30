@@ -3,6 +3,7 @@
  */
 
 import { orderBy, remove } from 'es-toolkit';
+import { ThrexusError } from '../../errors';
 import type { Disposable } from '../../lifecycle/Disposable';
 import type { RenderContext, RenderSize } from '../../rendering/types';
 import { createServiceKey } from '../../services/ServiceKey';
@@ -43,7 +44,11 @@ export function createPassRegistry(): PostprocessingService & {
     },
     addPass(pass): Disposable {
       if (passes.some((item) => item.id === pass.id)) {
-        throw new Error(`PostPass id "${pass.id}" is already registered.`);
+        throw new ThrexusError(
+          'PIPELINE_STATE',
+          `PostPass id "${pass.id}" is already registered.`,
+          { context: { operation: 'add-post-pass' } },
+        );
       }
       passes.push(pass);
       return {

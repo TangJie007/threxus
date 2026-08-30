@@ -5,6 +5,7 @@
  */
 
 import { remove } from 'es-toolkit';
+import { ThrexusError } from '../errors';
 import type { Disposable } from '../lifecycle/Disposable';
 
 export type ContextLostCallback = () => void;
@@ -79,9 +80,16 @@ export class ContextRestoreRegistry {
       } catch (error) {
         const cause =
           error instanceof Error ? error : new Error(String(error));
-        throw new Error(
+        throw new ThrexusError(
+          'GRAPHICS_RESTORE',
           `Context restore failed in feature "${record.scopeId}": ${cause.message}`,
-          { cause },
+          {
+            cause,
+            context: {
+              feature: record.scopeId,
+              operation: 'context-restore',
+            },
+          },
         );
       }
     }

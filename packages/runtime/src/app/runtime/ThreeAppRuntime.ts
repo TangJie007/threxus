@@ -12,17 +12,27 @@
 import type { Camera, Scene, WebGLRenderer } from 'three';
 import { keyBy } from 'es-toolkit';
 import type { AssetManager } from '../../assets';
-import { EntityRegistry } from '../../entities/EntityRegistry';
-import { ThrexusError, toError } from '../../errors';
+import {
+  EntityRegistry,
+  type EntityRegistryView,
+} from '../../entities/EntityRegistry';
+import {
+  ThrexusError,
+  toError,
+  toErrorSnapshot,
+  type ThrexusErrorSnapshot,
+} from '../../errors';
 import { FeatureRegistry } from '../../feature/FeatureRegistry';
 import { FeatureScope } from '../../feature/FeatureScope';
 import type { ThreeFeature } from '../../feature/ThreeFeature';
 import type { InputManager } from '../../input';
+import { withLifecycleTimeout } from '../../lifecycle/LifecycleTimeout';
 import type { GraphicsState } from '../../rendering/GraphicsState';
 import type { RenderingRuntime } from '../../rendering/RenderingRuntime';
 import type { Scheduler } from '../../scheduler/Scheduler';
 import { ServiceContainer } from '../../services/ServiceContainer';
 import {
+  createLogger,
   shouldEnableLifecycleWarnings,
   warnLifecycle,
   type Logger,
@@ -62,21 +72,35 @@ export class ThreeAppRuntime implements ThreeApp {
   readonly #disposeAssetLoaders: () => void;
   readonly #logger: Logger | undefined;
   readonly #lifecycleWarnings: boolean;
+  readonly #lifecycleTimeoutMs: number;
   #input: InputManager | undefined;
   #rendering: RenderingRuntime | undefined;
   #pendingCamera: PendingCamera | undefined;
   #state: AppState = 'created';
   #graphicsState: GraphicsState = 'available';
+  #lastLifecycleError: ThrexusErrorSnapshot | null = null;
   /** 并发 start() 共享同一 Promise。 */
   #startPromise: Promise<void> | undefined;
   /** 并发 dispose() 共享同一 Promise。 */
   #disposePromise: Promise<void> | undefined;
 
   constructor(readonly options: ThreeAppOptions) {
-    this.#logger = options.diagnostics?.logger;
+    this.#logger =
+      options.diagnostics?.logger ??
+      createLogger({ level: 'warn', scope: 'threxus' });
     this.#lifecycleWarnings = shouldEnableLifecycleWarnings(
       options.diagnostics?.lifecycleWarnings,
     );
+    this.#lifecycleTimeoutMs =
+      options.diagnostics?.lifecycleTimeoutMs ?? 30_000;
+    if (
+      !Number.isFinite(this.#lifecycleTimeoutMs) ||
+      this.#lifecycleTimeoutMs < 0
+    ) {
+      throw new TypeError(
+        'diagnostics.lifecycleTimeoutMs must be a finite non-negative number.',
+      );
+    }
     this.#scheduler = createAppScheduler(
       options,
       () => this.#state === 'running' && this.#graphicsState === 'available',
@@ -89,6 +113,7 @@ export class ThreeAppRuntime implements ThreeApp {
       canvas: options.canvas,
       assets: this.#assets,
       scheduler: this.#scheduler,
+      lifecycleTimeoutMs: this.#lifecycleTimeoutMs,
       getRendering: () => this.#requireRendering(),
     });
   }
@@ -119,6 +144,10 @@ export class ThreeAppRuntime implements ThreeApp {
 
   get assets(): AssetManager {
     return this.#assets;
+  }
+
+  get entities(): EntityRegistryView {
+    return this.#entities;
   }
 
   use(feature: ThreeFeature): this {
@@ -188,7 +217,7 @@ export class ThreeAppRuntime implements ThreeApp {
     });
 
     try {
-      await feature.setup(context);
+      await this.#setupFeature(feature, context);
       verifyProvidedServices(scope);
       scope.activate();
     } catch (error) {
@@ -196,16 +225,24 @@ export class ThreeAppRuntime implements ThreeApp {
       this.#registered.pop();
       this.#services.removeOwner(feature.name);
       try {
-        await scope.dispose();
+        await this.#disposeFeatureScope(scope);
       } catch {
         // ignore rollback dispose errors
       }
       const cause = toError(error);
-      throw new ThrexusError(
+      const failure = new ThrexusError(
         'FEATURE_SETUP',
         `Failed to install feature "${feature.name}": ${cause.message}`,
-        { cause },
+        {
+          cause,
+          context: {
+            feature: feature.name,
+            operation: 'install-feature',
+          },
+        },
       );
+      this.#recordLifecycleError(failure);
+      throw failure;
     }
   }
 
@@ -255,7 +292,10 @@ export class ThreeAppRuntime implements ThreeApp {
     }
 
     try {
-      await target.dispose();
+      await this.#disposeFeatureScope(target);
+    } catch (error) {
+      this.#recordLifecycleError(error);
+      throw error;
     } finally {
       this.#services.removeOwner(name);
     }
@@ -371,6 +411,67 @@ export class ThreeAppRuntime implements ThreeApp {
     const activeFeatures = this.#scopes.filter(
       (scope) => scope.state === 'active',
     ).length;
+    const scheduler = this.#scheduler.inspect();
+    const assets = this.#assets.inspect();
+    const features = this.#registered.map((feature) => {
+      const scope = scopesByName[feature.name];
+      return {
+        name: feature.name,
+        state: scope?.state ?? 'registered' as const,
+        cleanupCount: scope?.cleanupCount ?? 0,
+        entityCount: entities.filter(
+          (entity) => entity.ownerFeature === feature.name,
+        ).length,
+        providedServices: (feature.provides ?? []).map(
+          (key) => key.description,
+        ),
+        dependencies: (feature.dependencies ?? []).map(
+          (key) => key.description,
+        ),
+        optionalDependencies: (feature.optionalDependencies ?? []).map(
+          (key) => key.description,
+        ),
+      };
+    });
+    const leakIssues: string[] = [];
+    if (this.#state === 'disposed' || this.#state === 'failed') {
+      if (serviceEntries.length > 0) {
+        leakIssues.push(`${serviceEntries.length} service(s) remain registered.`);
+      }
+      if (entities.length > 0) {
+        leakIssues.push(`${entities.length} entity/entities remain registered.`);
+      }
+      const taskCount = Object.values(scheduler.tasks).reduce(
+        (total, count) => total + count,
+        0,
+      );
+      if (taskCount > 0) {
+        leakIssues.push(`${taskCount} scheduler task(s) remain active.`);
+      }
+      if (assets.totalRefs > 0) {
+        leakIssues.push(`${assets.totalRefs} asset reference(s) remain retained.`);
+      }
+      const pendingCleanups = features.reduce(
+        (total, feature) => total + feature.cleanupCount,
+        0,
+      );
+      if (pendingCleanups > 0) {
+        leakIssues.push(`${pendingCleanups} cleanup(s) remain pending.`);
+      }
+      const unfinishedScopes = features.filter(
+        (feature) =>
+          feature.state === 'initializing' ||
+          feature.state === 'active' ||
+          feature.state === 'disposing',
+      );
+      if (unfinishedScopes.length > 0) {
+        leakIssues.push(
+          `Feature scope(s) did not finish: ${unfinishedScopes
+            .map((feature) => `${feature.name}:${feature.state}`)
+            .join(', ')}.`,
+        );
+      }
+    }
 
     return {
       state: this.#state,
@@ -384,18 +485,16 @@ export class ThreeAppRuntime implements ThreeApp {
       },
       serviceEntries,
       entities,
-      scheduler: this.#scheduler.inspect(),
+      scheduler,
       rendering: this.#rendering?.inspect() ?? null,
-      assets: this.#assets.inspect(),
+      assets,
       input: this.#input?.inspect() ?? null,
-      features: this.#registered.map((feature) => {
-        const scope = scopesByName[feature.name];
-        return {
-          name: feature.name,
-          state: scope?.state ?? 'registered',
-          cleanupCount: scope?.cleanupCount ?? 0,
-        };
-      }),
+      features,
+      leaks: {
+        detected: leakIssues.length > 0,
+        issues: leakIssues,
+      },
+      lastLifecycleError: this.#lastLifecycleError,
     };
   }
 
@@ -432,7 +531,7 @@ export class ThreeAppRuntime implements ThreeApp {
         });
 
         try {
-          await feature.setup(context);
+          await this.#setupFeature(feature, context);
           this.#throwIfAborted();
           verifyProvidedServices(scope);
           scope.activate();
@@ -441,7 +540,13 @@ export class ThreeAppRuntime implements ThreeApp {
           throw new ThrexusError(
             'FEATURE_SETUP',
             `Failed to initialize feature "${feature.name}": ${cause.message}`,
-            { cause },
+            {
+              cause,
+              context: {
+                feature: feature.name,
+                operation: 'start-feature',
+              },
+            },
           );
         }
       }
@@ -449,6 +554,7 @@ export class ThreeAppRuntime implements ThreeApp {
       this.#state = 'running';
       this.#scheduler.start();
     } catch (error) {
+      this.#recordLifecycleError(error);
       this.#disposeInput();
       await this.#disposeRendering();
       const rollbackErrors = await this.#disposeScopes();
@@ -485,7 +591,9 @@ export class ThreeAppRuntime implements ThreeApp {
     try {
       await this.#entities.dispose();
     } catch (error) {
-      errors.push(toError(error));
+      const normalized = toError(error);
+      errors.push(normalized);
+      this.#recordLifecycleError(normalized);
     }
     this.#disposeInput();
     await this.#disposeRendering();
@@ -495,10 +603,18 @@ export class ThreeAppRuntime implements ThreeApp {
     try {
       await this.#assets.dispose();
     } catch (error) {
-      errors.push(toError(error));
+      const normalized = toError(error);
+      errors.push(normalized);
+      this.#recordLifecycleError(normalized);
     }
     this.#services.clear();
     this.#state = 'disposed';
+
+    if (this.#lifecycleWarnings) {
+      for (const issue of this.inspect().leaks.issues) {
+        this.#logger?.warn(`Resource leak detected: ${issue}`);
+      }
+    }
 
     if (errors.length > 0) {
       throw new AggregateError(errors, 'Application disposal failed.');
@@ -519,9 +635,11 @@ export class ThreeAppRuntime implements ThreeApp {
       }
 
       try {
-        await scope.dispose();
+        await this.#disposeFeatureScope(scope);
       } catch (error) {
-        errors.push(toError(error));
+        const normalized = toError(error);
+        errors.push(normalized);
+        this.#recordLifecycleError(normalized);
       } finally {
         this.#services.removeOwner(scope.feature.name);
       }
@@ -588,6 +706,44 @@ export class ThreeAppRuntime implements ThreeApp {
       );
     }
     return this.#input;
+  }
+
+  #setupFeature(
+    feature: ThreeFeature,
+    context: import('../../feature/ThreeFeature').ThreeContext,
+  ): Promise<void> {
+    let setupResult: void | Promise<void>;
+    try {
+      // 保持 setup 同步进入，使其能在 start() 返回前注册 abort 监听。
+      setupResult = feature.setup(context);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+    return withLifecycleTimeout(
+      Promise.resolve(setupResult),
+      this.#lifecycleTimeoutMs,
+      `Feature "${feature.name}" setup`,
+      {
+        feature: feature.name,
+        operation: 'feature-setup',
+      },
+    );
+  }
+
+  #disposeFeatureScope(scope: FeatureScope): Promise<void> {
+    return withLifecycleTimeout(
+      scope.dispose(),
+      this.#lifecycleTimeoutMs,
+      `Feature "${scope.feature.name}" dispose`,
+      {
+        feature: scope.feature.name,
+        operation: 'feature-dispose',
+      },
+    );
+  }
+
+  #recordLifecycleError(error: unknown): void {
+    this.#lastLifecycleError = toErrorSnapshot(error);
   }
 
   /** dispose 在 starting 期间 abort 后，setup 循环应中断并进入回滚。 */

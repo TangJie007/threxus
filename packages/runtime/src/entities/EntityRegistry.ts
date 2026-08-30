@@ -4,6 +4,8 @@ import { ThrexusError, toError } from '../errors';
 import type { FeatureScope } from '../feature/FeatureScope';
 import { CleanupStack } from '../lifecycle/CleanupStack';
 import type { Cleanup, Disposable } from '../lifecycle/Disposable';
+import { withLifecycleTimeout } from '../lifecycle/LifecycleTimeout';
+import { createMount } from '../lifecycle/Mount';
 import type { RenderingRuntime } from '../rendering/RenderingRuntime';
 import type { Scheduler } from '../scheduler/Scheduler';
 import type {
@@ -22,10 +24,25 @@ export interface EntitySnapshot {
   readonly ownerFeature: string;
 }
 
+export type EntityRegistryListener = (
+  entities: readonly EntitySnapshot[],
+) => void;
+
+export interface EntityRegistryView {
+  readonly count: number;
+  get(id: string): EntityHandle<unknown> | undefined;
+  list(): readonly EntityHandle<unknown>[];
+  list<TProps, TApi>(
+    definition: EntityDefinition<TProps, TApi>,
+  ): readonly EntityHandle<TApi>[];
+  subscribe(listener: EntityRegistryListener): Disposable;
+}
+
 export interface EntityRegistryDeps {
   readonly canvas: HTMLCanvasElement;
   readonly assets: AssetManager;
   readonly scheduler: Scheduler;
+  readonly lifecycleTimeoutMs: number;
   readonly getRendering: () => RenderingRuntime;
 }
 
@@ -33,6 +50,7 @@ export interface EntityRegistryDeps {
 export class EntityRegistry implements Disposable {
   readonly #entries = new Map<string, RegisteredEntity>();
   readonly #sequences = new Map<string, number>();
+  readonly #listeners = new Set<EntityRegistryListener>();
   readonly #deps: EntityRegistryDeps;
 
   constructor(deps: EntityRegistryDeps) {
@@ -41,6 +59,34 @@ export class EntityRegistry implements Disposable {
 
   get size(): number {
     return this.#entries.size;
+  }
+
+  get count(): number {
+    return this.size;
+  }
+
+  get(id: string): EntityHandle<unknown> | undefined {
+    return this.#entries.get(id)?.handle;
+  }
+
+  list<TProps, TApi>(
+    definition?: EntityDefinition<TProps, TApi>,
+  ): readonly EntityHandle<TApi>[] {
+    return [...this.#entries.values()]
+      .filter(
+        (entry) =>
+          definition === undefined || entry.definitionId === definition.id,
+      )
+      .map((entry) => entry.handle as EntityHandle<TApi>);
+  }
+
+  subscribe(listener: EntityRegistryListener): Disposable {
+    this.#listeners.add(listener);
+    return {
+      dispose: () => {
+        this.#listeners.delete(listener);
+      },
+    };
   }
 
   async spawn<TProps, TApi>(
@@ -54,12 +100,20 @@ export class EntityRegistry implements Disposable {
       throw new ThrexusError(
         'ENTITY_STATE',
         'Entity id must be a non-empty string.',
+        { context: { feature: scope.feature.name, operation: 'spawn' } },
       );
     }
     if (this.#entries.has(id)) {
       throw new ThrexusError(
         'ENTITY_STATE',
         `Entity "${id}" is already registered.`,
+        {
+          context: {
+            feature: scope.feature.name,
+            entity: id,
+            operation: 'spawn',
+          },
+        },
       );
     }
 
@@ -74,11 +128,14 @@ export class EntityRegistry implements Disposable {
       unregister: () => {
         if (this.#entries.get(id) === runtime) {
           this.#entries.delete(id);
+          this.#notify();
         }
       },
+      changed: () => this.#notify(),
     });
 
     this.#entries.set(id, runtime);
+    this.#notify();
     scope.addCleanup(runtime);
 
     try {
@@ -110,6 +167,7 @@ export class EntityRegistry implements Disposable {
       }
     }
     this.#entries.clear();
+    this.#listeners.clear();
     if (errors.length > 0) {
       throw new AggregateError(errors, 'Entity registry disposal failed.');
     }
@@ -119,6 +177,18 @@ export class EntityRegistry implements Disposable {
     const next = (this.#sequences.get(type) ?? 0) + 1;
     this.#sequences.set(type, next);
     return `${type}#${next}`;
+  }
+
+  #notify(): void {
+    if (this.#listeners.size === 0) return;
+    const snapshot = this.inspect();
+    for (const listener of this.#listeners) {
+      try {
+        listener(snapshot);
+      } catch {
+        // 观察器不能破坏实体生命周期。
+      }
+    }
   }
 }
 
@@ -131,9 +201,12 @@ interface EntityRuntimeOptions<TProps, TApi> {
   readonly parentSignal: AbortSignal;
   readonly deps: EntityRegistryDeps;
   readonly unregister: () => void;
+  readonly changed: () => void;
 }
 
 interface RegisteredEntity extends Disposable {
+  readonly definitionId: symbol;
+  readonly handle: EntityHandle<unknown>;
   snapshot(): EntitySnapshot;
 }
 
@@ -141,6 +214,7 @@ class EntityRuntime<TProps, TApi> implements RegisteredEntity {
   readonly id: string;
   readonly type: string;
   readonly ownerFeature: string;
+  readonly definitionId: symbol;
   readonly #cleanup = new CleanupStack();
   readonly #controller = new AbortController();
   readonly #options: EntityRuntimeOptions<TProps, TApi>;
@@ -154,6 +228,7 @@ class EntityRuntime<TProps, TApi> implements RegisteredEntity {
     this.id = options.id;
     this.type = options.definition.type;
     this.ownerFeature = options.ownerFeature;
+    this.definitionId = options.definition.id;
     this.#options = options;
 
     const abortFromParent = () => {
@@ -208,10 +283,18 @@ class EntityRuntime<TProps, TApi> implements RegisteredEntity {
       return this.#disposePromise;
     }
     this.#state = 'disposing';
+    this.#options.changed();
     this.#controller.abort(
       new ThrexusError(
         'ENTITY_STATE',
         `Entity "${this.id}" is being disposed.`,
+        {
+          context: {
+            feature: this.ownerFeature,
+            entity: this.id,
+            operation: 'dispose',
+          },
+        },
       ),
     );
     this.#disposePromise = this.#runDispose();
@@ -220,9 +303,20 @@ class EntityRuntime<TProps, TApi> implements RegisteredEntity {
 
   async #runStart(): Promise<void> {
     try {
-      const result = await this.#options.definition.create(
+      // 与 Feature setup 一致，同步进入 create 以便立即注册 abort 监听。
+      const createResult = this.#options.definition.create(
         this.#createContext(),
         this.#options.props,
+      );
+      const result = await withLifecycleTimeout(
+        Promise.resolve(createResult),
+        this.#options.deps.lifecycleTimeoutMs,
+        `Entity "${this.id}" create`,
+        {
+          feature: this.ownerFeature,
+          entity: this.id,
+          operation: 'entity-create',
+        },
       );
       this.#registerResult(result);
 
@@ -230,15 +324,24 @@ class EntityRuntime<TProps, TApi> implements RegisteredEntity {
         throw this.#controller.signal.reason;
       }
       this.#state = 'active';
+      this.#options.changed();
     } catch (error) {
       if (this.#state !== 'disposing') {
         this.#state = 'failed';
+        this.#options.changed();
       }
       const cause = toError(error);
       throw new ThrexusError(
         'ENTITY_SETUP',
         `Failed to create entity "${this.id}": ${cause.message}`,
-        { cause },
+        {
+          cause,
+          context: {
+            feature: this.ownerFeature,
+            entity: this.id,
+            operation: 'create',
+          },
+        },
       );
     }
   }
@@ -252,10 +355,21 @@ class EntityRuntime<TProps, TApi> implements RegisteredEntity {
           // 创建失败后仍须清理由 EntityContext 已登记的资源。
         }
       }
-      await this.#cleanup.dispose();
+      await withLifecycleTimeout(
+        this.#cleanup.dispose(),
+        this.#options.deps.lifecycleTimeoutMs,
+        `Entity "${this.id}" dispose`,
+        {
+          feature: this.ownerFeature,
+          entity: this.id,
+          operation: 'entity-dispose',
+        },
+      );
       this.#state = 'disposed';
+      this.#options.changed();
     } catch (error) {
       this.#state = 'failed';
+      this.#options.changed();
       throw error;
     } finally {
       this.#options.unregister();
@@ -266,6 +380,16 @@ class EntityRuntime<TProps, TApi> implements RegisteredEntity {
     const rendering = () => this.#options.deps.getRendering();
     const addCleanup = (cleanup: Cleanup): Disposable =>
       this.#cleanup.add(cleanup);
+    const own = (object: Object3D): void => {
+      addCleanup(() => {
+        object.removeFromParent();
+      });
+    };
+    const mount = createMount({
+      getDefaultParent: () => rendering().scene,
+      addCleanup,
+      own,
+    });
 
     return {
       canvas: this.#options.deps.canvas,
@@ -275,14 +399,11 @@ class EntityRuntime<TProps, TApi> implements RegisteredEntity {
       assets: this.#options.deps.assets,
       signal: this.#controller.signal,
       addCleanup,
+      mount,
       retain: (handle) => {
         addCleanup(() => handle.dispose());
       },
-      own: (object) => {
-        addCleanup(() => {
-          object.removeFromParent();
-        });
-      },
+      own,
       onUpdate: (callback, options) => {
         const task = this.#options.deps.scheduler.onUpdate(
           `${this.ownerFeature}:${this.id}`,
@@ -325,6 +446,13 @@ class EntityRuntime<TProps, TApi> implements RegisteredEntity {
       throw new ThrexusError(
         'ENTITY_STATE',
         `Entity "${this.id}" has not finished creating.`,
+        {
+          context: {
+            feature: this.ownerFeature,
+            entity: this.id,
+            operation: 'access-root',
+          },
+        },
       );
     }
     return this.#root;

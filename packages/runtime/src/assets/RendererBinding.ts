@@ -3,6 +3,7 @@
  */
 
 import type { WebGLRenderer } from 'three';
+import { ThrexusError } from '../errors';
 
 export interface RendererBinding {
   current: WebGLRenderer | undefined;
@@ -18,8 +19,10 @@ export function requireBoundRenderer(
 ): WebGLRenderer {
   const renderer = binding?.current;
   if (!renderer) {
-    throw new Error(
+    throw new ThrexusError(
+      'ASSET_STATE',
       `${purpose} requires a WebGLRenderer. Call start() before acquiring this asset, or pass getRenderer.`,
+      { context: { operation: purpose } },
     );
   }
   return renderer;

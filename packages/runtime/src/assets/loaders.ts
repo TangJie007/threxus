@@ -9,6 +9,7 @@ import {
   Texture,
   TextureLoader,
 } from 'three';
+import { ThrexusError } from '../errors';
 import type { AssetLoader, AssetLoadContext } from './AssetLoader';
 
 export interface TextureLoaderOptions {
@@ -99,8 +100,10 @@ export function createFileAssetLoader(): AssetLoader<
     async load(source, options, context) {
       const response = await fetch(source, { signal: context.signal });
       if (!response.ok) {
-        throw new Error(
+        throw new ThrexusError(
+          'ASSET_LOAD',
           `Failed to fetch "${source}": ${response.status} ${response.statusText}`,
+          { context: { operation: 'load-file' } },
         );
       }
       if (options?.responseType === 'text') {

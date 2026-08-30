@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createLogger,
   createThreeApp,
   ManualRafDriver,
   Scheduler,
@@ -204,10 +205,12 @@ describe('Scheduler', () => {
 
   it('continues after task errors when errorPolicy is continue', () => {
     const driver = new ManualRafDriver();
+    const onTaskError = vi.fn();
     const scheduler = new Scheduler({
       rafDriver: driver,
       errorPolicy: 'continue',
       shouldRun: () => true,
+      onTaskError,
     });
     const order: string[] = [];
 
@@ -220,6 +223,19 @@ describe('Scheduler', () => {
     scheduler.start();
     driver.tick(16);
     expect(order).toEqual(['fail', 'next']);
+    expect(onTaskError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        owner: 'fail',
+        phase: 'update',
+        frame: 1,
+      }),
+    );
+    expect(scheduler.inspect().lastTaskError).toEqual({
+      message: 'boom',
+      owner: 'fail',
+      phase: 'update',
+      frame: 1,
+    });
   });
 
   it('stops the current frame when errorPolicy is stop', () => {
@@ -228,6 +244,7 @@ describe('Scheduler', () => {
       rafDriver: driver,
       errorPolicy: 'stop',
       shouldRun: () => true,
+      onTaskError: () => undefined,
     });
     const order: string[] = [];
 
@@ -245,6 +262,41 @@ describe('Scheduler', () => {
 });
 
 describe('ThreeApp scheduler integration', () => {
+  it('logs and reports frame task failures with owner metadata', async () => {
+    const driver = new ManualRafDriver();
+    const sink = vi.fn();
+    const onSchedulerError = vi.fn();
+    const app = createThreeApp({
+      ...createHeadlessThreeAppOptions(),
+      rafDriver: driver,
+      diagnostics: {
+        logger: createLogger({ level: 'error', sink }),
+        onSchedulerError,
+      },
+    });
+    app.use({
+      name: 'failing-update',
+      setup(context) {
+        context.onUpdate(() => {
+          throw new Error('frame failed');
+        });
+      },
+    });
+
+    await app.start();
+    driver.tick(16);
+
+    expect(sink).toHaveBeenCalledWith(
+      'error',
+      expect.stringContaining('owner="failing-update"'),
+      expect.any(Array),
+    );
+    expect(onSchedulerError).toHaveBeenCalledWith(
+      expect.objectContaining({ owner: 'failing-update', phase: 'update' }),
+    );
+    await app.dispose();
+  });
+
   it('starts the scheduler after app.start()', async () => {
     const driver = new ManualRafDriver();
     const app = createThreeApp({
@@ -315,7 +367,7 @@ describe('ThreeApp scheduler integration', () => {
       setup(context) {
         context.addCleanup(cleanup);
         context.onUpdate(() => {
-          disposePromise = app.dispose();
+          disposePromise = Promise.resolve(app.dispose());
         });
       },
     });

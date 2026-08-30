@@ -3,6 +3,7 @@
  */
 
 import type { ThreeFeature } from '../../feature/ThreeFeature';
+import { ThrexusError } from '../../errors';
 import { createServiceKey } from '../../services/ServiceKey';
 import {
   EffectComposerService,
@@ -60,7 +61,11 @@ export function qualityFeature(
 ): ThreeFeature {
   const tiers = options.tiers ?? DEFAULT_TIERS;
   if (tiers.length === 0) {
-    throw new Error('qualityFeature requires at least one tier.');
+    throw new ThrexusError(
+      'FEATURE_SETUP',
+      'qualityFeature requires at least one tier.',
+      { context: { feature: 'quality', operation: 'define' } },
+    );
   }
 
   return {
@@ -84,7 +89,11 @@ export function qualityFeature(
       const applyTier = (id: string): void => {
         const tier = tiers.find((item) => item.id === id);
         if (!tier) {
-          throw new Error(`Unknown quality tier "${id}".`);
+          throw new ThrexusError(
+            'APP_STATE',
+            `Unknown quality tier "${id}".`,
+            { context: { feature: 'quality', operation: 'set-tier' } },
+          );
         }
         tierId = id;
         if (tier.pixelRatio !== undefined) {

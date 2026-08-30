@@ -21,6 +21,7 @@ import {
   type Cleanup,
   type Disposable,
 } from '../../lifecycle/Disposable';
+import { createMount } from '../../lifecycle/Mount';
 import type { RenderingRuntime } from '../../rendering/RenderingRuntime';
 import type { Scheduler } from '../../scheduler/Scheduler';
 import type {
@@ -57,6 +58,11 @@ export function createThreeContext(
   );
 
   const rendering = () => deps.getRendering();
+  const mount = createMount({
+    getDefaultParent: () => rendering().scene,
+    addCleanup: (cleanup) => scope.addCleanup(cleanup),
+    own: (object) => rendering().own(scope, object),
+  });
 
   return {
     canvas: deps.canvas,
@@ -69,6 +75,7 @@ export function createThreeContext(
     signal: scope.signal,
 
     addCleanup: (cleanup: Cleanup): Disposable => scope.addCleanup(cleanup),
+    mount,
 
     retain: <T>(handle: AssetHandle<T>): void => {
       scope.addCleanup(() => {
@@ -88,6 +95,13 @@ export function createThreeContext(
         throw new ThrexusError(
           'SERVICE_CONTRACT',
           `Feature "${feature.name}" provided undeclared service "${key.description}".`,
+          {
+            context: {
+              feature: feature.name,
+              service: key.description,
+              operation: 'provide',
+            },
+          },
         );
       }
 
@@ -167,7 +181,6 @@ export function createThreeContext(
     },
   };
 }
-
 /** 确保 declares provides 的每个 Key 都在 setup 中实际 provide 了。 */
 export function verifyProvidedServices(scope: FeatureScope): void {
   for (const key of scope.feature.provides ?? []) {
@@ -175,6 +188,13 @@ export function verifyProvidedServices(scope: FeatureScope): void {
       throw new ThrexusError(
         'SERVICE_CONTRACT',
         `Feature "${scope.feature.name}" declared but did not provide service "${key.description}".`,
+        {
+          context: {
+            feature: scope.feature.name,
+            service: key.description,
+            operation: 'verify-provided-services',
+          },
+        },
       );
     }
   }
@@ -198,6 +218,13 @@ function assertDeclaredDependency(
     throw new ThrexusError(
       'SERVICE_CONTRACT',
       `Feature "${featureName}" injected undeclared service "${key.description}".`,
+      {
+        context: {
+          feature: featureName,
+          service: key.description,
+          operation: 'inject',
+        },
+      },
     );
   }
 }

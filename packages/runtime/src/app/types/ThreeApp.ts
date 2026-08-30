@@ -4,6 +4,7 @@
 
 import type { Camera, Scene, WebGLRenderer } from 'three';
 import type { AssetManager } from '../../assets';
+import type { EntityRegistryView } from '../../entities/EntityRegistry';
 import type { ThreeFeature } from '../../feature/ThreeFeature';
 import type { Disposable } from '../../lifecycle/Disposable';
 import type { GraphicsState } from '../../rendering/GraphicsState';
@@ -22,6 +23,8 @@ export interface ThreeApp extends Disposable {
   readonly camera: Camera;
   readonly renderer: WebGLRenderer;
   readonly assets: AssetManager;
+  /** App 级只读实体查询；业务操作仍建议通过 Service 暴露。 */
+  readonly entities: EntityRegistryView;
 
   use(feature: ThreeFeature): this;
   /**
@@ -32,6 +35,7 @@ export interface ThreeApp extends Disposable {
   /** 运行中卸载已安装 Feature；若仍有其它 Feature 依赖其 provides 则拒绝。 */
   uninstallFeature(name: string): Promise<void>;
   start(): Promise<void>;
+  dispose(): Promise<void>;
   pause(): void;
   resume(): void;
   render(): void;

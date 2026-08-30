@@ -135,7 +135,16 @@ describe('M12 memory soak', () => {
       expect(app.inspect().state).toBe('disposed');
       expect(app.inspect().scheduler.running).toBe(false);
       expect(app.inspect().scheduler.pendingRaf).toBe(false);
+      expect(
+        Object.values(app.inspect().scheduler.tasks).reduce(
+          (total, count) => total + count,
+          0,
+        ),
+      ).toBe(0);
       expect(app.inspect().assets.totalRefs).toBe(0);
+      expect(app.inspect().counts.entities).toBe(0);
+      expect(app.inspect().counts.services).toBe(0);
+      expect(app.inspect().leaks.detected).toBe(false);
       expect(app.inspect().input).toBeNull();
       expect(canvas.__listeners.get('pointerdown')?.size ?? 0).toBe(0);
     }

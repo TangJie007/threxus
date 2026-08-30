@@ -24,6 +24,7 @@ export {
   type AppState,
   type FeatureSnapshot,
   type GraphicsState,
+  type ResourceLeakSnapshot,
   type RuntimeCounts,
   type RuntimeSnapshot,
   type SetCameraOptions,
@@ -45,6 +46,11 @@ export {
   type Disposable,
   isDisposable,
 } from './lifecycle/Disposable';
+export type {
+  Mount,
+  MountableResource,
+  MountOptions,
+} from './lifecycle/Mount';
 export type {
   CameraChangedEvent,
   CameraOptions,
@@ -85,8 +91,10 @@ export {
   Scheduler,
   type RenderMode,
   type SchedulerErrorPolicy,
+  type SchedulerErrorSnapshot,
   type SchedulerOptions,
   type SchedulerSnapshot,
+  type SchedulerTaskError,
 } from './scheduler/Scheduler';
 export type { FrameInfo } from './scheduler/FrameInfo';
 export {
@@ -122,8 +130,18 @@ export {
   type EntityState,
   type SpawnEntityOptions,
 } from './entities/EntityDefinition';
-export type { EntitySnapshot } from './entities/EntityRegistry';
-export { ThrexusError, type ThrexusErrorCode } from './errors';
+export type {
+  EntityRegistryListener,
+  EntityRegistryView,
+  EntitySnapshot,
+} from './entities/EntityRegistry';
+export {
+  ThrexusError,
+  type ThrexusErrorCode,
+  type ThrexusErrorContext,
+  type ThrexusErrorOptions,
+  type ThrexusErrorSnapshot,
+} from './errors';
 export {
   ReleasedAssetHandleError,
   createAssetManager,

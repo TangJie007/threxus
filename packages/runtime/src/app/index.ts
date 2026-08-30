@@ -15,6 +15,7 @@ export type { AppState } from './types/AppState';
 export type { ThreeApp } from './types/ThreeApp';
 export type {
   FeatureSnapshot,
+  ResourceLeakSnapshot,
   RuntimeCounts,
   RuntimeSnapshot,
   SetCameraOptions,

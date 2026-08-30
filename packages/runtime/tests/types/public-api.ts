@@ -5,6 +5,8 @@ import {
   defineFeature,
   defineService,
   type EntityHandle,
+  type Disposable,
+  type MountOptions,
   type ThreeFeature,
 } from '../../src';
 
@@ -48,13 +50,25 @@ const DefinedClock = defineService<ClockService>({
   },
 });
 
+const ConfiguredClock = defineService<ClockService, { readonly offset: number }>({
+  name: 'configured-clock',
+  create(_context, options) {
+    return { now: () => options.offset };
+  },
+});
+// @ts-expect-error required service options must be provided
+ConfiguredClock.feature();
+ConfiguredClock.feature({ offset: 1 });
+
 const ModelEntity = defineEntity<
   { readonly id: string },
   { readonly select: () => void }
 >({
   type: 'model',
-  create(_context, props) {
+  create(context, props) {
     void props.id;
+    const mounted: import('three').Object3D = context.mount(mesh);
+    void mounted;
     return {
       root: mesh,
       api: { select: () => undefined },
@@ -65,10 +79,25 @@ const ModelEntity = defineEntity<
 const app = createThreeApp({ canvas, renderer, renderMode: 'on-demand', resize: false });
 app.use(provider).use(consumer).use(DefinedClock.feature());
 void app.start();
+const entityCount: number = app.entities.count;
+const modelEntities: readonly EntityHandle<{
+  readonly select: () => void;
+}>[] = app.entities.list(ModelEntity);
+void entityCount;
+void modelEntities;
 
 const interactive: ThreeFeature = defineFeature({
   name: 'interactive',
   async setup(context) {
+    const mountOptions: MountOptions = { parent: context.scene };
+    const mountedMesh: import('three').Object3D = context.mount(
+      mesh,
+      mountOptions,
+    );
+    const cleanupHandle: Disposable = context.mount(() => undefined);
+    void mountedMesh;
+    void cleanupHandle;
+
     const entity: EntityHandle<{ readonly select: () => void }> =
       await context.spawn(ModelEntity, { id: 'model-1' });
     entity.api.select();

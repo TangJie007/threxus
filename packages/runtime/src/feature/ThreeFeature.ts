@@ -19,6 +19,7 @@ import type {
 } from '../entities/EntityDefinition';
 import type { ScopedInputManager } from '../input/ScopedInputManager';
 import type { Cleanup, Disposable } from '../lifecycle/Disposable';
+import type { Mount } from '../lifecycle/Mount';
 import type { ScopedRendering } from '../rendering/ScopedRendering';
 import type { CameraChangedEvent } from '../rendering/types';
 import type {
@@ -69,6 +70,9 @@ export interface ThreeContext {
   inject<T>(key: ServiceKey<T>): T;
   injectOptional<T>(key: ServiceKey<T>): T | undefined;
   addCleanup(cleanup: Cleanup): Disposable;
+
+  /** 挂载场景节点、持有资产或登记清理，并绑定到当前 Feature。 */
+  readonly mount: Mount;
 
   /** 将 Handle 绑定到当前 Feature；Feature 销毁时自动 release。 */
   retain<T>(handle: AssetHandle<T>): void;

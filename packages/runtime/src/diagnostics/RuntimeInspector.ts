@@ -41,6 +41,18 @@ export function inspectRuntime(app: ThreeApp): DiagnosticSnapshot {
   if (snapshot.state === 'disposed') {
     issues.push('App is disposed.');
   }
+  if (snapshot.scheduler.lastTaskError) {
+    const taskError = snapshot.scheduler.lastTaskError;
+    issues.push(
+      `Last frame task error: owner="${taskError.owner}" phase="${taskError.phase}" message="${taskError.message}".`,
+    );
+  }
+  for (const entity of snapshot.entities) {
+    if (entity.state === 'failed') {
+      issues.push(`Entity "${entity.id}" is in failed state.`);
+    }
+  }
+  issues.push(...snapshot.leaks.issues);
 
   let renderer: RendererInfoSnapshot | null = null;
   if (snapshot.state === 'running' || snapshot.state === 'paused') {

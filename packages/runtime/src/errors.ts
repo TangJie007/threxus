@@ -24,23 +24,46 @@ export type ThrexusErrorCode =
   | 'MISSING_SERVICE'
   | 'PIPELINE_STATE'
   | 'GRAPHICS_RESTORE'
+  | 'LIFECYCLE_TIMEOUT'
   | 'RELEASED_ASSET_HANDLE'
   | 'SCOPE_STATE'
   | 'SERVICE_CONTRACT'
   | 'UNKNOWN_LOADER';
 
+export interface ThrexusErrorContext {
+  readonly feature?: string;
+  readonly entity?: string;
+  readonly service?: string;
+  readonly phase?: string;
+  readonly operation?: string;
+}
+
+export interface ThrexusErrorOptions extends ErrorOptions {
+  readonly context?: ThrexusErrorContext;
+}
+
+export interface ThrexusErrorSnapshot {
+  readonly name: string;
+  readonly message: string;
+  readonly code?: ThrexusErrorCode;
+  readonly context?: ThrexusErrorContext;
+  readonly occurredAt: number;
+}
+
 /** 带错误码的运行时异常。 */
 export class ThrexusError extends Error {
   readonly code: ThrexusErrorCode;
+  readonly context: ThrexusErrorContext | undefined;
 
   constructor(
     code: ThrexusErrorCode,
     message: string,
-    options?: ErrorOptions,
+    options?: ThrexusErrorOptions,
   ) {
     super(message, options);
     this.name = 'ThrexusError';
     this.code = code;
+    this.context = options?.context;
   }
 }
 
@@ -50,4 +73,22 @@ export class ThrexusError extends Error {
  */
 export function toError(value: unknown): Error {
   return value instanceof Error ? value : new Error(String(value));
+}
+
+export function toErrorSnapshot(value: unknown): ThrexusErrorSnapshot {
+  const error = toError(value);
+  if (error instanceof ThrexusError) {
+    return {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      ...(error.context ? { context: error.context } : {}),
+      occurredAt: Date.now(),
+    };
+  }
+  return {
+    name: error.name,
+    message: error.message,
+    occurredAt: Date.now(),
+  };
 }

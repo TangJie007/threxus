@@ -11,6 +11,8 @@ export {
 } from './EntityDefinition';
 export {
   EntityRegistry,
+  type EntityRegistryListener,
   type EntityRegistryDeps,
+  type EntityRegistryView,
   type EntitySnapshot,
 } from './EntityRegistry';

@@ -7,6 +7,7 @@ import {
   Vector3,
   type PerspectiveCamera,
 } from 'three';
+import { ThrexusError } from '../../errors';
 import type { ThreeFeature } from '../../feature/ThreeFeature';
 import { createServiceKey } from '../../services/ServiceKey';
 import { CameraControlService } from '../orbit-controls/CameraControlService';
@@ -111,8 +112,15 @@ export function cameraRigFeature(
         },
         setMode(next) {
           if (next === 'roam' && !roamCurve) {
-            throw new Error(
+            throw new ThrexusError(
+              'APP_STATE',
               'cameraRigFeature roam mode requires options.roamPath.',
+              {
+                context: {
+                  feature: 'camera-rig',
+                  operation: 'set-mode',
+                },
+              },
             );
           }
           mode = next;

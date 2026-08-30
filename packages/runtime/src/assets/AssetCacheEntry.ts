@@ -2,6 +2,7 @@
  * CacheEntry 状态机与等待者管理。
  */
 
+import { ThrexusError } from '../errors';
 import type { AssetKey } from './AssetKey';
 import type { AssetLoader } from './AssetLoader';
 import {
@@ -41,7 +42,11 @@ export class AssetCacheEntry<T = unknown> {
 
   createHandle(host: AssetHandleHost): ManagedAssetHandle<T> {
     if (this.asset === undefined) {
-      throw new Error(`Asset "${this.key.cacheKey}" has no value.`);
+      throw new ThrexusError(
+        'ASSET_STATE',
+        `Asset "${this.key.cacheKey}" has no value.`,
+        { context: { operation: 'create-asset-handle' } },
+      );
     }
     this.refs += 1;
     return new ManagedAssetHandle(this.asset, this.key, host);

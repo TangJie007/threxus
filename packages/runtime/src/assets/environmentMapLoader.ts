@@ -11,6 +11,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
+import { ThrexusError } from '../errors';
 import type { AssetLoader, AssetLoadContext } from './AssetLoader';
 import type { RendererBinding } from './RendererBinding';
 
@@ -35,8 +36,10 @@ export function createEnvironmentMapAssetLoader(
     const renderer =
       options.getRenderer?.() ?? options.rendererBinding?.current;
     if (!renderer) {
-      throw new Error(
+      throw new ThrexusError(
+        'ASSET_STATE',
         'environment-map requires a WebGLRenderer. Call start() before acquireEnvironmentMap().',
+        { context: { operation: 'acquire-environment-map' } },
       );
     }
     return renderer;

@@ -4,6 +4,7 @@
 
 import type { Logger } from '../../diagnostics/Logger';
 import type { EntitySnapshot } from '../../entities/EntityRegistry';
+import type { ThrexusErrorSnapshot } from '../../errors';
 import type {
   AssetLoader,
   AssetManagerOptions,
@@ -29,6 +30,7 @@ import type {
   RenderMode,
   SchedulerErrorPolicy,
   SchedulerSnapshot,
+  SchedulerTaskError,
 } from '../../scheduler/Scheduler';
 import type { ServiceSnapshot } from '../../services/ServiceContainer';
 import type { AppState } from './AppState';
@@ -71,6 +73,13 @@ export interface ThreeAppOptions {
     readonly logger?: Logger;
     /** 默认非 production 开启。 */
     readonly lifecycleWarnings?: boolean;
+    /** Scheduler 帧任务异常回调。 */
+    readonly onSchedulerError?: (event: SchedulerTaskError) => void;
+    /**
+     * 单次 Feature/Entity 创建或销毁的超时毫秒数。
+     * 默认 30_000；设为 0 可关闭。
+     */
+    readonly lifecycleTimeoutMs?: number;
   };
 }
 
@@ -79,6 +88,10 @@ export interface FeatureSnapshot {
   readonly name: string;
   readonly state: FeatureScopeState | 'registered';
   readonly cleanupCount: number;
+  readonly entityCount: number;
+  readonly providedServices: readonly string[];
+  readonly dependencies: readonly string[];
+  readonly optionalDependencies: readonly string[];
 }
 
 export interface RuntimeCounts {
@@ -86,6 +99,11 @@ export interface RuntimeCounts {
   readonly activeFeatures: number;
   readonly services: number;
   readonly entities: number;
+}
+
+export interface ResourceLeakSnapshot {
+  readonly detected: boolean;
+  readonly issues: readonly string[];
 }
 
 /** inspect() 返回的运行时快照，供调试与 E2E 断言。 */
@@ -102,6 +120,8 @@ export interface RuntimeSnapshot {
   readonly assets: AssetManagerSnapshot;
   readonly input: InputManagerSnapshot | null;
   readonly features: readonly FeatureSnapshot[];
+  readonly leaks: ResourceLeakSnapshot;
+  readonly lastLifecycleError: ThrexusErrorSnapshot | null;
 }
 
 export interface SetCameraOptions {

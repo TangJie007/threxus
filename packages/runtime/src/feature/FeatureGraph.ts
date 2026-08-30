@@ -165,7 +165,11 @@ export function resolveFeatureGraph(
     ordered: orderedIndexes.map((index) => {
       const feature = features[index];
       if (!feature) {
-        throw new Error(`Feature index ${index} does not exist.`);
+        throw new ThrexusError(
+          'APP_STATE',
+          `Feature index ${index} does not exist.`,
+          { context: { operation: 'resolve-feature-graph' } },
+        );
       }
       return feature;
     }),

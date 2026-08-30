@@ -37,6 +37,20 @@ import {
 export type RenderMode = 'continuous' | 'on-demand';
 export type SchedulerErrorPolicy = 'throw' | 'stop' | 'continue';
 
+export interface SchedulerTaskError {
+  readonly error: Error;
+  readonly owner: string;
+  readonly phase: SchedulerPhase;
+  readonly frame: number;
+}
+
+export interface SchedulerErrorSnapshot {
+  readonly message: string;
+  readonly owner: string;
+  readonly phase: SchedulerPhase;
+  readonly frame: number;
+}
+
 export interface SchedulerOptions {
   readonly renderMode?: RenderMode;
   readonly fixedStep?: number;
@@ -48,6 +62,8 @@ export interface SchedulerOptions {
   readonly shouldRun?: () => boolean;
   /** M5：在 beforeRender 与 afterRender 之间执行主渲染。 */
   readonly renderHook?: () => void;
+  /** 帧任务异常观察器；无论 errorPolicy 为何都会调用。 */
+  readonly onTaskError?: (event: SchedulerTaskError) => void;
 }
 
 export interface SchedulerSnapshot {
@@ -57,6 +73,7 @@ export interface SchedulerSnapshot {
   readonly frame: number;
   readonly pendingRaf: boolean;
   readonly invalidated: boolean;
+  readonly lastTaskError: SchedulerErrorSnapshot | null;
   readonly tasks: Readonly<Record<SchedulerPhase, number>>;
 }
 
@@ -71,6 +88,7 @@ export class Scheduler implements Disposable {
   readonly #errorPolicy: SchedulerErrorPolicy;
   readonly #raf: RafDriver;
   readonly #shouldRun: () => boolean;
+  readonly #onTaskError: (event: SchedulerTaskError) => void;
   #renderHook: (() => void) | undefined;
   readonly #fixedAccumulator: FixedStepAccumulator | undefined;
   readonly #phases: Record<SchedulerPhase, PhaseRegistry> = {
@@ -90,6 +108,7 @@ export class Scheduler implements Disposable {
   #lastTime: number | null = null;
   #elapsed = 0;
   #frame = 0;
+  #lastTaskError: SchedulerErrorSnapshot | null = null;
   #started = false;
 
   constructor(options: SchedulerOptions = {}) {
@@ -98,6 +117,14 @@ export class Scheduler implements Disposable {
     this.#errorPolicy = options.errorPolicy ?? 'continue';
     this.#raf = options.rafDriver ?? createBrowserRafDriver();
     this.#shouldRun = options.shouldRun ?? (() => true);
+    this.#onTaskError =
+      options.onTaskError ??
+      ((event) => {
+        console.error(
+          `[threxus:scheduler] Frame task failed: owner="${event.owner}" phase="${event.phase}" frame=${event.frame}.`,
+          event.error,
+        );
+      });
     this.#renderHook = options.renderHook;
 
     if (options.fixedStep !== undefined && options.fixedStep > 0) {
@@ -222,6 +249,7 @@ export class Scheduler implements Disposable {
       frame: this.#frame,
       pendingRaf: this.#rafId !== undefined,
       invalidated: this.#invalidated,
+      lastTaskError: this.#lastTaskError,
       tasks: {
         fixedUpdate: this.#countActive('fixedUpdate'),
         update: this.#countActive('update'),
@@ -356,13 +384,34 @@ export class Scheduler implements Disposable {
       try {
         task.run(frame, fixedStep);
       } catch (error) {
-        this.#handleTaskError(error);
+        this.#handleTaskError(error, task, phase);
       }
     }
   }
 
-  #handleTaskError(error: unknown): void {
+  #handleTaskError(
+    error: unknown,
+    task: SchedulerTask,
+    phase: SchedulerPhase,
+  ): void {
     const normalized = toError(error);
+    const event: SchedulerTaskError = {
+      error: normalized,
+      owner: task.owner,
+      phase,
+      frame: this.#frame,
+    };
+    this.#lastTaskError = {
+      message: normalized.message,
+      owner: task.owner,
+      phase,
+      frame: this.#frame,
+    };
+    try {
+      this.#onTaskError(event);
+    } catch {
+      // 诊断观察器不能破坏帧循环的异常策略。
+    }
     if (this.#errorPolicy === 'throw') {
       throw normalized;
     }

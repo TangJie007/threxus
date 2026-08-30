@@ -6,6 +6,7 @@ import type {
 } from 'three';
 import type { AssetHandle, AssetManager } from '../assets';
 import type { Cleanup, Disposable } from '../lifecycle/Disposable';
+import type { Mount } from '../lifecycle/Mount';
 import type { FrameInfo } from '../scheduler/FrameInfo';
 import type {
   TaskOptions,
@@ -29,6 +30,7 @@ export interface EntityContext {
   readonly signal: AbortSignal;
 
   addCleanup(cleanup: Cleanup): Disposable;
+  readonly mount: Mount;
   retain<T>(handle: AssetHandle<T>): void;
   own(object: Object3D): void;
   onUpdate(callback: UpdateCallback, options?: TaskOptions): Disposable;

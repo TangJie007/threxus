@@ -2,6 +2,7 @@
  * 根据 ThreeAppOptions 创建 Scheduler。
  */
 
+import { createLogger } from '../../diagnostics/Logger';
 import {
   Scheduler,
   type SchedulerOptions,
@@ -12,8 +13,18 @@ export function createAppScheduler(
   options: ThreeAppOptions,
   shouldRun: () => boolean,
 ): Scheduler {
+  const logger =
+    options.diagnostics?.logger?.child('scheduler') ??
+    createLogger({ level: 'warn', scope: 'threxus:scheduler' });
   const schedulerOptions: SchedulerOptions = {
     shouldRun,
+    onTaskError: (event) => {
+      logger.error(
+        `Frame task failed: owner="${event.owner}" phase="${event.phase}" frame=${event.frame}.`,
+        event.error,
+      );
+      options.diagnostics?.onSchedulerError?.(event);
+    },
     ...(options.renderMode !== undefined
       ? { renderMode: options.renderMode }
       : {}),
