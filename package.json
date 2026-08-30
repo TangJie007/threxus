@@ -11,9 +11,14 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "docs:dev": "vitepress dev docs --port 5175",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs --port 4175"
   },
   "devDependencies": {
-    "turbo": "^2.10.12"
+    "turbo": "^2.10.12",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.42"
   }
 }

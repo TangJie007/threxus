@@ -4,18 +4,32 @@
 
 Threxus 保留 Three.js 原生对象模型，集中管理 Feature 依赖、服务、异步初始化和结构化销毁。
 
-完整设计见 [THREEJS-ENCAPSULATION-DESIGN.md](./THREEJS-ENCAPSULATION-DESIGN.md)，实施顺序见 [THREEJS-IMPLEMENTATION-ROADMAP.md](./THREEJS-IMPLEMENTATION-ROADMAP.md)。浏览器矩阵见 [docs/BROWSER_MATRIX.md](./docs/BROWSER_MATRIX.md)。
+完整设计见 [THREEJS-ENCAPSULATION-DESIGN.md](./THREEJS-ENCAPSULATION-DESIGN.md)，实施顺序见 [THREEJS-IMPLEMENTATION-ROADMAP.md](./THREEJS-IMPLEMENTATION-ROADMAP.md)。
+
+## 使用文档（VitePress）
+
+```bash
+pnpm docs:dev      # http://localhost:5175
+pnpm docs:build
+pnpm docs:preview
+```
+
+源码在 `docs/`：指南、API、示例说明。
 
 ## 项目结构
 
 ```text
 packages/
   runtime/    @threxus/runtime —— App / Feature / Assets / Input / Rendering / Features / Diagnostics
-examples/
-  vue3/       M0–M12 演示
-  test/       独立 Three.js 实验项目
 docs/
-  BROWSER_MATRIX.md
+  .vitepress/   VitePress 配置与主题
+  guide/        使用指南
+  api/          API 摘要
+  examples/     示例说明
+  reference/    浏览器矩阵等
+examples/
+  vue3/         M0–M12 演示
+  test/         独立 Three.js 实验项目
 ```
 
 ## 当前实现范围
