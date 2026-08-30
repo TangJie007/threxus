@@ -4,11 +4,10 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { mat } from '../../materials/Presets';
 import type { FactoryWorld } from '../types';
 
 export function buildStructure(world: FactoryWorld): void {
-  const { root, bounds } = world;
+  const { root, bounds, materials } = world;
   const parts: THREE.BufferGeometry[] = [];
   const colW = 0.55;
   const spanX = 21;
@@ -51,7 +50,7 @@ export function buildStructure(world: FactoryWorld): void {
   }
   merged.computeBoundingSphere();
 
-  const steel = new THREE.Mesh(merged, mat('steel'));
+  const steel = new THREE.Mesh(merged, materials.steel);
   steel.castShadow = true;
   steel.receiveShadow = true;
   steel.name = 'SteelStructure';

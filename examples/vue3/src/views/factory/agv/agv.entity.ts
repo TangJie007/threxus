@@ -4,11 +4,12 @@
 
 import * as THREE from 'three';
 import { DEFAULT_PICK_LAYER, defineEntity, markPickable } from '@threxus/runtime';
-import { mat } from '../materials/Presets';
+import type { FactoryPalette } from '../materials/create-palette';
 import type { ModelAssets } from '../factory/models';
 
 export interface AgvEntityProps {
   readonly models: ModelAssets | null;
+  readonly materials: FactoryPalette;
 }
 
 export interface AgvEntityApi {
@@ -51,16 +52,17 @@ export const AgvEntity = defineEntity<AgvEntityProps, AgvEntityApi>({
     if (agvModel) {
       agv.add(agvModel);
     } else {
+      const { materials } = props;
       const chassis = new THREE.Mesh(
         new THREE.BoxGeometry(1.6, 0.45, 1.1),
-        mat('machine'),
+        materials.machine,
       );
       chassis.position.y = 0.36;
       chassis.castShadow = true;
       agv.add(chassis);
       const cargo = new THREE.Mesh(
         new THREE.BoxGeometry(1.2, 0.5, 0.9),
-        mat('plastic'),
+        materials.plastic,
       );
       cargo.position.y = 0.83;
       cargo.castShadow = true;
@@ -69,7 +71,7 @@ export const AgvEntity = defineEntity<AgvEntityProps, AgvEntityApi>({
         for (const sz of [-0.42, 0.42]) {
           const wheel = new THREE.Mesh(
             new THREE.CylinderGeometry(0.16, 0.16, 0.14, 12),
-            mat('rubber'),
+            materials.rubber,
           );
           wheel.rotateZ(Math.PI / 2);
           wheel.position.set(sx, 0.16, sz);
@@ -78,7 +80,7 @@ export const AgvEntity = defineEntity<AgvEntityProps, AgvEntityApi>({
       }
       const agvLight = new THREE.Mesh(
         new THREE.SphereGeometry(0.08, 10, 8),
-        mat('emissiveOk'),
+        materials.emissiveOk,
       );
       agvLight.position.set(0.82, 0.62, 0);
       agv.add(agvLight);

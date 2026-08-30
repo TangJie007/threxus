@@ -4,6 +4,7 @@
 
 import type { Group, Material, Matrix4, Object3D } from 'three'
 import type { DeviceRecord, DeviceStatus } from '../data/devices'
+import type { FactoryPalette } from '../materials/create-palette'
 import type { ElectricFence } from './elements/electric-fence'
 import type { FlowPipe } from './elements/flow-pipe'
 import type { ScanRing } from './elements/scan-ring'
@@ -27,6 +28,7 @@ export type FactoryAnimator = (delta: number, elapsed: number) => void
 export interface FactoryWorld {
   readonly root: Group
   readonly bounds: FactoryBounds
+  readonly materials: FactoryPalette
   readonly devices: DeviceRecord[]
   readonly animated: FactoryAnimator[]
   readonly pipes: FlowPipe[]
@@ -41,6 +43,7 @@ export interface FactoryWorld {
 /** factory-scene Feature 对外提供的服务值（含 UI 常用方法）。 */
 export interface FactorySceneApi {
   readonly world: FactoryWorld
+  readonly materials: FactoryPalette
   readonly models: ModelAssets
   readonly root: Object3D
   readonly devices: DeviceRecord[]

@@ -1,14 +1,14 @@
 /**
- * Factory 场景 Feature：materials → world → build* → provide 场景 API。
+ * Factory 场景 Feature：palette → world → build* → provide 场景 API。
  * 不再单独拆 Runtime Facade；UI/桥接直接 inject 本服务。
  */
 
-import { Group, type Material } from 'three'
+import { Group } from 'three'
 import {
   createServiceKey,
   defineFeature,
 } from '@threxus/runtime'
-import { buildMaterials, disposeMaterials, mat, statusMaterial } from '../materials/Presets'
+import { createFactoryPalette } from '../materials/create-palette'
 import { loadModelAssets } from './models'
 import {
   FACTORY_BOUNDS,
@@ -33,8 +33,8 @@ export const factorySceneFeature = defineFeature({
   name: 'factory-scene',
   provides: [FactorySceneService],
   async setup(context) {
-    buildMaterials()
-    context.addCleanup(() => disposeMaterials())
+    const materials = createFactoryPalette()
+    context.addCleanup(() => materials.dispose())
 
     const root = new Group()
     root.name = 'Factory'
@@ -43,12 +43,13 @@ export const factorySceneFeature = defineFeature({
     const world: FactoryWorld = {
       root,
       bounds: FACTORY_BOUNDS,
+      materials,
       devices: [],
       animated: [],
       pipes: [],
       fences: [],
       scanRing: null,
-      clippableMaterials: [],
+      clippableMaterials: [...materials.clippable],
       pendingInstances: new Map(),
       pendingInstanceOwners: new Map(),
       models: null,
@@ -81,14 +82,6 @@ export const factorySceneFeature = defineFeature({
       world.scanRing = null
     })
 
-    world.clippableMaterials.push(
-      mat('floor') as Material,
-      mat('steel') as Material,
-      mat('machine') as Material,
-      mat('plastic') as Material,
-      mat('hazard') as Material,
-    )
-
     let elapsed = 0
     context.onUpdate(({ delta }) => {
       elapsed += delta
@@ -115,6 +108,7 @@ export const factorySceneFeature = defineFeature({
 
     const api: FactorySceneApi = {
       world,
+      materials,
       models,
       get root() {
         return world.root
@@ -131,7 +125,7 @@ export const factorySceneFeature = defineFeature({
       applyStatus(device: DeviceRecord, status: DeviceStatus) {
         device.status = status
         if (device.indicator) {
-          device.indicator.material = statusMaterial(status)
+          device.indicator.material = materials.statusMaterial(status)
         }
         if (device.beacon) {
           device.beacon.visible = status === 'error'

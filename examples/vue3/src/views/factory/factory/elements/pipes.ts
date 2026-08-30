@@ -3,7 +3,6 @@
  */
 
 import * as THREE from 'three'
-import { mat } from '../../materials/Presets'
 import { FlowPipe, makePipeCurve } from './flow-pipe'
 import type { FactoryWorld } from '../types'
 
@@ -51,7 +50,11 @@ export function buildPipeRack(world: FactoryWorld): void {
   })
 
   const bracketGeo = new THREE.BoxGeometry(0.14, 1.2, 0.14)
-  const brackets = new THREE.InstancedMesh(bracketGeo, mat('steel'), 24)
+  const brackets = new THREE.InstancedMesh(
+    bracketGeo,
+    world.materials.steel,
+    24,
+  )
   const m = new THREE.Matrix4()
   let k = 0
   for (const z of zs) {

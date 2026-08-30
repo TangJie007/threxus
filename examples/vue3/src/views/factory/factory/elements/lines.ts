@@ -1,15 +1,18 @@
-﻿/**
- * 产线 + 工位（LOD / 指示灯 / 机械臂）+ 输送带流动。
+/**
+ * ?? + ???LOD / ??? / ????+ ??????
  */
 
 import * as THREE from 'three';
-import { mat, statusMaterial } from '../../materials/Presets';
+import type { FactoryPalette } from '../../materials/create-palette';
 import { AlertBeacon } from './scan-ring'
 import { makeDeviceSeed, makeRng, type DeviceRecord } from '../../data/devices';
 import { DEFAULT_PICK_LAYER, markPickable } from '@threxus/runtime';
 import type { FactoryWorld } from '../types';
 
-function createProceduralRobotArm(phase = Math.random() * Math.PI * 2): {
+function createProceduralRobotArm(
+  materials: FactoryPalette,
+  phase = Math.random() * Math.PI * 2,
+): {
   group: THREE.Group;
   update: (_delta: number, elapsed: number) => void;
 } {
@@ -17,7 +20,7 @@ function createProceduralRobotArm(phase = Math.random() * Math.PI * 2): {
 
   const base = new THREE.Mesh(
     new THREE.CylinderGeometry(0.55, 0.68, 0.5, 20),
-    mat('steel'),
+    materials.steel,
   );
   base.position.y = 0.25;
   base.castShadow = true;
@@ -29,7 +32,7 @@ function createProceduralRobotArm(phase = Math.random() * Math.PI * 2): {
 
   const shoulder = new THREE.Mesh(
     new THREE.BoxGeometry(0.5, 0.9, 0.5),
-    mat('machine'),
+    materials.machine,
   );
   shoulder.position.y = 0.45;
   shoulder.castShadow = true;
@@ -41,7 +44,7 @@ function createProceduralRobotArm(phase = Math.random() * Math.PI * 2): {
 
   const upper = new THREE.Mesh(
     new THREE.BoxGeometry(0.34, 1.9, 0.34),
-    mat('machine'),
+    materials.machine,
   );
   upper.position.y = 0.95;
   upper.castShadow = true;
@@ -53,7 +56,7 @@ function createProceduralRobotArm(phase = Math.random() * Math.PI * 2): {
 
   const fore = new THREE.Mesh(
     new THREE.BoxGeometry(0.26, 1.5, 0.26),
-    mat('machine'),
+    materials.machine,
   );
   fore.position.y = 0.75;
   fore.castShadow = true;
@@ -61,13 +64,13 @@ function createProceduralRobotArm(phase = Math.random() * Math.PI * 2): {
 
   const tool = new THREE.Mesh(
     new THREE.CylinderGeometry(0.1, 0.16, 0.42, 12),
-    mat('steel'),
+    materials.steel,
   );
   tool.position.y = 1.62;
   j3.add(tool);
   const tip = new THREE.Mesh(
     new THREE.SphereGeometry(0.07, 10, 8),
-    mat('emissiveOk'),
+    materials.emissiveOk,
   );
   tip.position.y = 1.86;
   j3.add(tip);
@@ -88,6 +91,7 @@ function buildConveyor(
   z: number,
   lineIndex: number,
 ): void {
+  const { materials } = world;
   const len = 58;
   const group = new THREE.Group();
   group.position.set(0, 0, z);
@@ -104,7 +108,7 @@ function buildConveyor(
   } else {
     const belt = new THREE.Mesh(
       new THREE.BoxGeometry(len, 0.18, 1.9),
-      mat('rubber'),
+      materials.rubber,
     );
     belt.position.y = 1.05;
     belt.castShadow = true;
@@ -114,7 +118,7 @@ function buildConveyor(
     for (const s of [-1, 1]) {
       const rail = new THREE.Mesh(
         new THREE.BoxGeometry(len, 0.3, 0.12),
-        mat('steel'),
+        materials.steel,
       );
       rail.position.set(0, 1.22, s * 1.0);
       rail.castShadow = true;
@@ -122,7 +126,7 @@ function buildConveyor(
     }
 
     const legGeo = new THREE.BoxGeometry(0.16, 1.0, 1.6);
-    const legs = new THREE.InstancedMesh(legGeo, mat('steel'), 20);
+    const legs = new THREE.InstancedMesh(legGeo, materials.steel, 20);
     legs.castShadow = true;
     const m = new THREE.Matrix4();
     for (let i = 0; i < 20; i++) {
@@ -134,7 +138,7 @@ function buildConveyor(
 
     const rollerGeo = new THREE.CylinderGeometry(0.11, 0.11, 1.85, 10);
     rollerGeo.rotateX(Math.PI / 2);
-    const rollers = new THREE.InstancedMesh(rollerGeo, mat('steel'), 40);
+    const rollers = new THREE.InstancedMesh(rollerGeo, materials.steel, 40);
     const m2 = new THREE.Matrix4();
     for (let i = 0; i < 40; i++) {
       m2.makeTranslation(-len / 2 + 0.8 + i * ((len - 1.6) / 39), 0.94, 0);
@@ -192,6 +196,7 @@ function buildStation(
   stationIndex: number,
   rng: () => number,
 ): void {
+  const { materials } = world;
   const seed = makeDeviceSeed(stationIndex, lineIndex, rng);
   const zOff = stationIndex % 2 === 0 ? -3.2 : 3.2;
   const group = new THREE.Group();
@@ -212,7 +217,7 @@ function buildStation(
   const high = new THREE.Group();
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(2.6, 2.4, 2.0),
-    mat('machine'),
+    materials.machine,
   );
   body.position.y = 1.2;
   body.castShadow = true;
@@ -222,7 +227,7 @@ function buildStation(
   if (!useCabinetModel) {
     const cabinet = new THREE.Mesh(
       new THREE.BoxGeometry(0.9, 1.8, 1.2),
-      mat('plastic'),
+      materials.plastic,
     );
     cabinet.position.set(1.75, 0.9, 0);
     cabinet.castShadow = true;
@@ -231,14 +236,14 @@ function buildStation(
 
   const screen = new THREE.Mesh(
     new THREE.PlaneGeometry(0.62, 0.44),
-    mat('glass'),
+    materials.glass,
   );
   screen.position.set(1.755, 1.45, 0);
   screen.rotateY(Math.PI / 2);
   high.add(screen);
 
   const finGeo = new THREE.BoxGeometry(1.6, 0.05, 0.06);
-  const fins = new THREE.InstancedMesh(finGeo, mat('plastic'), 8);
+  const fins = new THREE.InstancedMesh(finGeo, materials.plastic, 8);
   const mf = new THREE.Matrix4();
   for (let i = 0; i < 8; i++) {
     mf.makeTranslation(-0.3, 1.7 + i * 0.07, 1.02);
@@ -250,14 +255,14 @@ function buildStation(
   const mid = new THREE.Group();
   const body2 = new THREE.Mesh(
     new THREE.BoxGeometry(2.6, 2.4, 2.0),
-    mat('machine'),
+    materials.machine,
   );
   body2.position.y = 1.2;
   mid.add(body2);
   if (!useCabinetModel) {
     const cab2 = new THREE.Mesh(
       new THREE.BoxGeometry(0.9, 1.8, 1.2),
-      mat('plastic'),
+      materials.plastic,
     );
     cab2.position.set(1.75, 0.9, 0);
     mid.add(cab2);
@@ -265,7 +270,7 @@ function buildStation(
 
   const low = new THREE.Mesh(
     new THREE.BoxGeometry(2.8, 2.4, 2.2),
-    mat('machine'),
+    materials.machine,
   );
   low.position.y = 1.2;
 
@@ -276,7 +281,7 @@ function buildStation(
 
   const indicator = new THREE.Mesh(
     new THREE.SphereGeometry(0.16, 16, 12),
-    statusMaterial(seed.status),
+    world.materials.statusMaterial(seed.status),
   );
   indicator.position.set(1.75, 2.05, 0);
   group.add(indicator);
@@ -294,7 +299,7 @@ function buildStation(
       group.add(armFromModel.root);
       world.animated.push((_d, e) => armFromModel.update(e));
     } else {
-      const arm = createProceduralRobotArm();
+      const arm = createProceduralRobotArm(world.materials);
       arm.group.position.set(-2.0, 0, 0);
       group.add(arm.group);
       world.animated.push((d, e) => arm.update(d, e));

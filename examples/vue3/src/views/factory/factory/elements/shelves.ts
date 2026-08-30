@@ -3,13 +3,13 @@
  */
 
 import * as THREE from 'three';
-import { mat } from '../../materials/Presets';
 import { makeRng } from '../../data/devices';
 import type { FactoryWorld } from '../types';
 
 export function buildShelves(world: FactoryWorld): void {
+  const { materials } = world;
   const postGeo = new THREE.BoxGeometry(0.14, 6, 0.14);
-  const posts = new THREE.InstancedMesh(postGeo, mat('steel'), 4 * 6);
+  const posts = new THREE.InstancedMesh(postGeo, materials.steel, 4 * 6);
   const m = new THREE.Matrix4();
   let i = 0;
   for (let rack = 0; rack < 6; rack++) {
@@ -29,7 +29,7 @@ export function buildShelves(world: FactoryWorld): void {
   world.root.add(posts);
 
   const boxGeo = new THREE.BoxGeometry(1.2, 0.9, 1.0);
-  const boxes = new THREE.InstancedMesh(boxGeo, mat('plastic'), 54);
+  const boxes = new THREE.InstancedMesh(boxGeo, materials.plastic, 54);
   const rng = makeRng(4242);
   const dummy = new THREE.Object3D();
   let n = 0;

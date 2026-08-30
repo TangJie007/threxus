@@ -10,10 +10,10 @@ export const agvFeature = defineFeature({
   name: 'agv',
   dependencies: [FactorySceneService],
   async setup(context) {
-    const { world, models } = context.inject(FactorySceneService)
+    const { world, models, materials } = context.inject(FactorySceneService)
     await context.spawn(
       AgvEntity,
-      { models },
+      { models, materials },
       { id: 'AGV-01', parent: world.root },
     )
   },
