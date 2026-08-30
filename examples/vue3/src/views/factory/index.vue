@@ -22,6 +22,7 @@ import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 import { markRaw, onBeforeUnmount, onMounted, ref, shallowReactive, shallowRef } from 'vue';
 import { factoryCamera, factoryRoamPath, factorySceneConfig } from './config';
 import { factorySceneFeature } from './factory/factory.feature';
+import { proceduralTexturesFeature } from './materials/textures.feature';
 import { clipFeature } from './clip/clip.feature';
 import { agvFeature } from './agv/agv.feature';
 import { createBridgeFeature } from './bridge/bridge.feature';
@@ -175,6 +176,7 @@ onMounted(async () => {
       occludedOpacity: 0.2,
     }),
   );
+  runtime.use(proceduralTexturesFeature);
   runtime.use(factorySceneFeature);
   runtime.use(clipFeature);
   runtime.use(agvFeature);

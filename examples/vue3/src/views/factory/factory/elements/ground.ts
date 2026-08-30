@@ -3,11 +3,10 @@
  */
 
 import * as THREE from 'three';
-import { gridLines } from '../../materials/ProceduralTextures';
 import type { FactoryWorld } from '../types';
 
 export function buildGround(world: FactoryWorld): void {
-  const { root, bounds, materials } = world;
+  const { root, bounds, materials, textures } = world;
 
   const floorGeo = new THREE.PlaneGeometry(bounds.width, bounds.depth);
   floorGeo.rotateX(-Math.PI / 2);
@@ -19,7 +18,7 @@ export function buildGround(world: FactoryWorld): void {
   const gridGeo = new THREE.PlaneGeometry(bounds.width, bounds.depth);
   gridGeo.rotateX(-Math.PI / 2);
   const gridMat = new THREE.MeshBasicMaterial({
-    map: gridLines(512, 1),
+    map: textures.gridLines(512, 1),
     transparent: true,
     opacity: 0.14,
     depthWrite: false,

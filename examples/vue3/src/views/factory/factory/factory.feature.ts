@@ -9,6 +9,7 @@ import {
   defineFeature,
 } from '@threxus/runtime'
 import { createFactoryPalette } from '../materials/create-palette'
+import { ProceduralTexturesService } from '../materials/textures.feature'
 import { loadModelAssets } from './models'
 import {
   FACTORY_BOUNDS,
@@ -31,9 +32,11 @@ export const FactorySceneService =
 
 export const factorySceneFeature = defineFeature({
   name: 'factory-scene',
+  dependencies: [ProceduralTexturesService],
   provides: [FactorySceneService],
   async setup(context) {
-    const materials = createFactoryPalette()
+    const textures = context.inject(ProceduralTexturesService)
+    const materials = createFactoryPalette(textures)
     context.addCleanup(() => materials.dispose())
 
     const root = new Group()
@@ -44,6 +47,7 @@ export const factorySceneFeature = defineFeature({
       root,
       bounds: FACTORY_BOUNDS,
       materials,
+      textures,
       devices: [],
       animated: [],
       pipes: [],

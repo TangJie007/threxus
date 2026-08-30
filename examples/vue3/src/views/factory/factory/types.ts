@@ -5,6 +5,7 @@
 import type { Group, Material, Matrix4, Object3D } from 'three'
 import type { DeviceRecord, DeviceStatus } from '../data/devices'
 import type { FactoryPalette } from '../materials/create-palette'
+import type { ProceduralTexturesApi } from '../materials/ProceduralTextures'
 import type { ElectricFence } from './elements/electric-fence'
 import type { FlowPipe } from './elements/flow-pipe'
 import type { ScanRing } from './elements/scan-ring'
@@ -29,6 +30,7 @@ export interface FactoryWorld {
   readonly root: Group
   readonly bounds: FactoryBounds
   readonly materials: FactoryPalette
+  readonly textures: ProceduralTexturesApi
   readonly devices: DeviceRecord[]
   readonly animated: FactoryAnimator[]
   readonly pipes: FlowPipe[]

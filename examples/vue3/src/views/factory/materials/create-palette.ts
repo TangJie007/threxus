@@ -9,7 +9,7 @@
 
 import * as THREE from 'three'
 import type { DeviceStatus } from '../data/devices'
-import { brushedMetal, concrete, hazardStripes } from './ProceduralTextures'
+import type { ProceduralTexturesApi } from './ProceduralTextures'
 
 export interface FactoryPalette {
   readonly floor: THREE.MeshStandardMaterial
@@ -29,7 +29,9 @@ export interface FactoryPalette {
   dispose(): void
 }
 
-export function createFactoryPalette(): FactoryPalette {
+export function createFactoryPalette(
+  textures: ProceduralTexturesApi,
+): FactoryPalette {
   const pool: THREE.Material[] = []
 
   function own<T extends THREE.Material>(key: string, m: T): T {
@@ -38,7 +40,7 @@ export function createFactoryPalette(): FactoryPalette {
     return m
   }
 
-  const floorMaps = concrete(512, 40, 7)
+  const floorMaps = textures.concrete(512, 40, 7)
   const floor = own(
     'floor',
     new THREE.MeshStandardMaterial({
@@ -53,7 +55,7 @@ export function createFactoryPalette(): FactoryPalette {
   )
   floor.normalScale.set(0.55, 0.55)
 
-  const steelMaps = brushedMetal(512, 2, '#9aa6b4')
+  const steelMaps = textures.brushedMetal(512, 2, '#9aa6b4')
   const steel = own(
     'steel',
     new THREE.MeshStandardMaterial({
@@ -112,7 +114,7 @@ export function createFactoryPalette(): FactoryPalette {
   const hazard = own(
     'hazard',
     new THREE.MeshStandardMaterial({
-      map: hazardStripes(256, 8),
+      map: textures.hazardStripes(256, 8),
       roughness: 0.7,
       metalness: 0.05,
     }),
