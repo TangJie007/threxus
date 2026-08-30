@@ -56,6 +56,8 @@ export class ThreeAppRuntime implements ThreeApp {
   readonly #controller = new AbortController();
   readonly #scheduler: Scheduler;
   readonly #assets: AssetManager;
+  readonly #rendererBinding: import('../../assets').RendererBinding;
+  readonly #disposeAssetLoaders: () => void;
   readonly #logger: Logger | undefined;
   readonly #lifecycleWarnings: boolean;
   #input: InputManager | undefined;
@@ -77,7 +79,10 @@ export class ThreeAppRuntime implements ThreeApp {
       options,
       () => this.#state === 'running' && this.#graphicsState === 'available',
     );
-    this.#assets = createAppAssets(options);
+    const assetBundle = createAppAssets(options);
+    this.#assets = assetBundle.assets;
+    this.#rendererBinding = assetBundle.rendererBinding;
+    this.#disposeAssetLoaders = () => assetBundle.disposeLoaders();
   }
 
   get state(): AppState {
@@ -336,6 +341,8 @@ export class ThreeAppRuntime implements ThreeApp {
     const errors = await this.#disposeScopes();
     this.#disposeInput();
     await this.#disposeRendering();
+    this.#rendererBinding.current = undefined;
+    this.#disposeAssetLoaders();
     this.#scheduler.dispose();
     try {
       await this.#assets.dispose();
@@ -388,6 +395,7 @@ export class ThreeAppRuntime implements ThreeApp {
     );
     this.#pendingCamera = undefined;
     this.#graphicsState = this.#rendering.graphicsState;
+    this.#rendererBinding.current = this.#rendering.renderer;
 
     this.#scheduler.setRenderHook(() => {
       this.#rendering?.render();

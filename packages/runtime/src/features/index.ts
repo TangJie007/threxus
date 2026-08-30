@@ -1,5 +1,5 @@
 /**
- * 内置通用 Feature 导出（M11）。
+ * 内置通用 Feature 导出（M11+）。
  */
 
 export {
@@ -50,3 +50,17 @@ export {
   postprocessingFeature,
   type PostprocessingFeatureOptions,
 } from './postprocessing/postprocessingFeature';
+export {
+  EffectComposerService,
+  effectComposerFeature,
+  type EffectComposerFeatureOptions,
+  type EffectComposerService as EffectComposerServiceType,
+} from './postprocessing/effectComposerFeature';
+
+export {
+  LabelsService,
+  labelsFeature,
+  type LabelDescriptor,
+  type LabelsFeatureOptions,
+  type LabelsService as LabelsServiceType,
+} from './labels/labelsFeature';

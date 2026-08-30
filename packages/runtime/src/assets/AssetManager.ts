@@ -77,6 +77,14 @@ export interface AssetManager extends Disposable {
     source: string,
     options?: AcquireOptions,
   ): Promise<AssetHandle<GltfAsset>>;
+  /**
+   * 加载 HDR（或其它等距柱状）环境贴图并经 PMREM 预卷积。
+   * 需要 App `start()` 后（renderer 已绑定）再调用。
+   */
+  acquireEnvironmentMap(
+    source: string,
+    options?: AcquireOptions,
+  ): Promise<AssetHandle<import('three').Texture>>;
   preload(
     type: string,
     source: string,
@@ -200,6 +208,13 @@ class AssetManagerRuntime implements AssetManager, AssetHandleHost {
     options: AcquireOptions = {},
   ): Promise<AssetHandle<GltfAsset>> {
     return this.acquire('gltf', source, options);
+  }
+
+  acquireEnvironmentMap(
+    source: string,
+    options: AcquireOptions = {},
+  ): Promise<AssetHandle<import('three').Texture>> {
+    return this.acquire('environment-map', source, options);
   }
 
   async preload(

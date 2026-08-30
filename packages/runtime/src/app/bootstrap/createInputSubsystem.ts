@@ -24,6 +24,15 @@ export function createInputSubsystem(
     ...(inputOptions?.allIntersections !== undefined
       ? { allIntersections: inputOptions.allIntersections }
       : {}),
+    ...(inputOptions?.layersMask !== undefined
+      ? { layersMask: inputOptions.layersMask }
+      : {}),
+    ...(inputOptions?.pickIdKey !== undefined
+      ? { pickIdKey: inputOptions.pickIdKey }
+      : {}),
+    ...(inputOptions?.pointerMoveThrottleMs !== undefined
+      ? { pointerMoveThrottleMs: inputOptions.pointerMoveThrottleMs }
+      : {}),
     ...(inputOptions?.touchAction !== undefined
       ? { touchAction: inputOptions.touchAction }
       : {}),

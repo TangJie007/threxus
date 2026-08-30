@@ -4,7 +4,7 @@ import {
   MeshStandardMaterial,
   SRGBColorSpace,
 } from 'three';
-import type { ThreeFeature } from '@threxus/runtime';
+import { markPickable, type ThreeFeature } from '@threxus/runtime';
 import { cubeBoxes, cubeTextureUrl } from '../config';
 import type { CubeLogger } from '../types';
 
@@ -71,6 +71,7 @@ export function createRotatingBoxFeature(log: CubeLogger): ThreeFeature {
 
       for (const [index, mesh] of meshes.entries()) {
         mesh.name = `cube-box-${index}`;
+        markPickable(mesh, mesh.name);
         context.input.on(mesh, 'pointerenter', () => {
           mesh.scale.setScalar(cubeBoxes[index]!.size * 1.08);
           context.invalidate();

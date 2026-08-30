@@ -39,8 +39,11 @@ Validate against the lowest supported (`0.180.0`) and a recent release before cu
 | 05-gltf-instances | `/cube` M7 |
 | 06-pointer-interaction | `/cube` M8 click/hover + M11 selection/highlight |
 | 07-on-demand-rendering | runtime unit tests (`renderMode`) + orbit invalidate |
-| 08-postprocessing | `/cube` `postprocessingFeature` + unit tests |
-| 09-context-restore | `/cube` simulate buttons + `webgl-context` unit tests |
+| 08-postprocessing | `/cube` postprocessing + `effectComposerFeature` browser tests |
+| 09-context-restore | `/cube` simulate + EffectComposer restore browser test |
 | 10-complete-disposal | soak test (20× create/dispose) |
 | M11 built-ins | `/cube` environment / orbit / selection / highlight / stats / post |
 | M12 diagnostics | `/cube` `createLogger` + `inspectRuntime` panel |
+| Assets DRACO/KTX2/HDR | `createGltfAssetLoader` / `acquireEnvironmentMap` unit tests |
+| Input pickId / layers | `markPickable` + InputManager unit tests |
+| CSS2D labels | `labelsFeature` browser tests |

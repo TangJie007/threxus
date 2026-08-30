@@ -50,10 +50,17 @@ export interface ThreeAppOptions {
   readonly errorPolicy?: SchedulerErrorPolicy;
   /** 自定义 RAF 驱动（测试用）。 */
   readonly rafDriver?: RafDriver;
-  /** AssetManager 选项；默认注册 texture / cube-texture / file / gltf Loader。 */
+  /** AssetManager 选项；默认注册 texture / cube-texture / file / gltf / environment-map Loader。 */
   readonly assets?: AssetManagerOptions & {
     readonly registerDefaultLoaders?: boolean;
     readonly loaders?: readonly AssetLoader[];
+    /** 默认 GLTF Loader 的压缩管线选项。 */
+    readonly gltf?: {
+      readonly dracoPath?: string;
+      readonly ktx2Path?: string;
+      /** 默认 true。 */
+      readonly meshopt?: boolean;
+    };
   };
   /** InputManager 选项（click 容差、touch-action、穿透分发等）。 */
   readonly input?: Omit<InputManagerOptions, 'canvas' | 'getCamera'>;

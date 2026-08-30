@@ -11,6 +11,7 @@ import {
   clientToNdc,
   createInputManager,
   createThreeApp,
+  markPickable,
   type ThreePointerEvent,
 } from '../../src';
 import {
@@ -382,6 +383,43 @@ describe('InputManager', () => {
     expect(canvas.__listeners.get('pointerdown')?.size).toBe(1);
     input.dispose();
     expect(canvas.__listeners.get('pointerdown')?.size ?? 0).toBe(0);
+  });
+
+  it('resolves pickId ancestor as logical hit target', () => {
+    const canvas = createTestCanvas();
+    const { scene, camera, mesh } = createSceneWithMesh();
+    const root = markPickable(new Group(), 'cabinet-7');
+    root.add(mesh);
+    scene.add(root);
+    camera.updateMatrixWorld(true);
+    root.updateMatrixWorld(true);
+
+    const hits: string[] = [];
+    const input = createInputManager({
+      canvas,
+      getCamera: () => camera,
+    });
+    disposables.push(input);
+
+    input.on(
+      root,
+      'click',
+      (event: ThreePointerEvent) => {
+        hits.push(String(event.object.userData.pickId ?? event.object.name));
+      },
+      'test',
+    );
+
+    const { clientX, clientY } = centerClient(canvas);
+    canvas.dispatchTestEvent(
+      'pointerdown',
+      createPointerEventLike('pointerdown', { clientX, clientY, timeStamp: 0 }),
+    );
+    canvas.dispatchTestEvent(
+      'pointerup',
+      createPointerEventLike('pointerup', { clientX, clientY, timeStamp: 30 }),
+    );
+    expect(hits).toEqual(['cabinet-7']);
   });
 });
 

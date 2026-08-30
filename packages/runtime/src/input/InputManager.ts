@@ -25,7 +25,7 @@ import type {
 export interface InputManagerOptions {
   readonly canvas: HTMLCanvasElement;
   readonly getCamera: () => Camera;
-  /** 单击允许的最大移动距离（CSS px），默认 4。 */
+  /** 单击允许的最大移动距离（CSS px），默认 4。拖拽超过此值不触发 click。 */
   readonly clickMoveTolerance?: number;
   /** 单击允许的最大按下时长（ms），默认 500。 */
   readonly clickDuration?: number;
@@ -33,6 +33,18 @@ export interface InputManagerOptions {
    * 为 true 时按距离对所有交点做穿透分发；默认只向最近命中冒泡。
    */
   readonly allIntersections?: boolean;
+  /**
+   * Raycaster.layers.mask；用于排除地面/辅助体等。
+   * 例如仅拾取 layer 1：`1 << 1`。
+   */
+  readonly layersMask?: number;
+  /**
+   * 命中 Mesh 后向上查找 `userData[pickIdKey]` 作为逻辑目标。
+   * 默认 `'pickId'`；传 `false` 关闭。
+   */
+  readonly pickIdKey?: string | false;
+  /** pointermove 射线检测节流（ms），默认 0。 */
+  readonly pointerMoveThrottleMs?: number;
   /**
    * 设置 canvas.style.touchAction；传 `false` 表示不修改。
    * 默认 `'none'`，避免触摸滚动抢事件。
@@ -96,6 +108,15 @@ class InputManagerImpl implements InputManager {
       clickMoveTolerance: options.clickMoveTolerance ?? 4,
       clickDuration: options.clickDuration ?? 500,
       allIntersections: options.allIntersections ?? false,
+      ...(options.layersMask !== undefined
+        ? { layersMask: options.layersMask }
+        : {}),
+      ...(options.pickIdKey !== undefined
+        ? { pickIdKey: options.pickIdKey }
+        : {}),
+      ...(options.pointerMoveThrottleMs !== undefined
+        ? { pointerMoveThrottleMs: options.pointerMoveThrottleMs }
+        : {}),
       setDomPointerCapture: (pointerId) => {
         try {
           this.#canvas.setPointerCapture(pointerId);

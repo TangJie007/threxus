@@ -6,15 +6,18 @@ import {
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   ManualRafDriver,
+  LabelsService,
   PostprocessingService,
   SelectionService,
   StatsService,
   createThreeApp,
   environmentFeature,
   highlightFeature,
+  labelsFeature,
   postprocessingFeature,
   selectionFeature,
   statsFeature,
+  type LabelsServiceType,
   type SelectionServiceType,
   type StatsServiceType,
 } from '../../src';
@@ -187,5 +190,64 @@ describe('M11 built-in features', () => {
     app.simulateContextLost();
     await app.simulateContextRestored();
     expect(restored).toEqual(['outline']);
+  });
+
+  it('labelsFeature provides LabelsService', async () => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const options = createHeadlessThreeAppOptions();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const app = createThreeApp(options);
+    apps.push(app);
+
+    let labels!: LabelsServiceType;
+    app.use(labelsFeature({ container: host }));
+    app.use({
+      name: 'probe',
+      dependencies: [LabelsService],
+      setup(context) {
+        labels = context.inject(LabelsService);
+      },
+    });
+
+    await app.start();
+    const el = document.createElement('div');
+    el.textContent = 'AGV-1';
+    const handle = labels.add({
+      id: 'agv-1',
+      anchor: { x: 0, y: 1, z: 0 },
+      element: el,
+    });
+    expect(labels.size).toBe(1);
+    handle.dispose();
+    expect(labels.size).toBe(0);
+    host.remove();
+  });
+
+  it('environmentFeature can enable shadows and ground receiveShadow', async () => {
+    const options = createHeadlessThreeAppOptions();
+    const app = createThreeApp(options);
+    apps.push(app);
+
+    app.use(
+      environmentFeature({
+        ground: { size: 40, receiveShadow: true },
+        shadows: {
+          enabled: true,
+          mapSize: 1024,
+          fitBounds: { width: 40, depth: 30, height: 20 },
+        },
+      }),
+    );
+
+    await app.start();
+    expect(options.renderer.shadowMap.enabled).toBe(true);
+    const light = options.scene.getObjectByName('environment-key-light') as
+      | import('three').DirectionalLight
+      | undefined;
+    expect(light?.castShadow).toBe(true);
+    expect(light?.shadow.camera.left).toBe(-20);
   });
 });

@@ -10,7 +10,9 @@
  * - InputManager / ScopedInputManager / ThreePointerEvent
  * - RenderPipeline / RenderStage / ScopedRendering
  * - WebGL Context lost/restored（GraphicsState）
- * - 内置 Feature：Environment / OrbitControls / Selection / Highlight / Stats / Postprocessing
+ * - 内置 Feature：Environment / OrbitControls / Selection / Highlight / Stats / Postprocessing / EffectComposer / Labels
+ * - 资产：Texture / CubeTexture / File / GLTF(DRACO/KTX2/Meshopt) / EnvironmentMap(HDR→PMREM)
+ * - 输入：Layer / pickId / pointermove 节流
  * - 诊断：Logger / inspectRuntime / lifecycle warnings
  * - 生命周期原语（CleanupStack / Disposable）
  * - 服务标识（createServiceKey）
@@ -107,8 +109,10 @@ export {
   createAssetManager,
   createCubeTextureAssetLoader,
   createDeferredTestLoader,
+  createEnvironmentMapAssetLoader,
   createFileAssetLoader,
   createGltfAssetLoader,
+  createRendererBinding,
   createTextureAssetLoader,
   normalizeAssetKey,
   resolveAssetSource,
@@ -130,8 +134,12 @@ export {
   type BindableAsset,
   type CubeTextureLoaderOptions,
   type DeferredTestLoader,
+  type EnvironmentMapAssetLoader,
+  type EnvironmentMapLoaderOptions,
   type FileAssetResult,
   type FileLoaderOptions,
+  type GltfAssetLoader,
+  type GltfAssetLoaderOptions,
   type GltfInstance,
   type GltfInstantiateOptions,
   type GltfMaterialMode,
@@ -139,24 +147,34 @@ export {
   type GltfTextureMode,
   type GltfTreeMode,
   type NormalizeAssetKeyOptions,
+  type RendererBinding,
   type TextureLoaderOptions,
 } from './assets';
 export {
   CameraControlService,
+  EffectComposerService,
+  LabelsService,
   PostprocessingService,
   SelectionService,
   StatsService,
   createPassRegistry,
+  effectComposerFeature,
   environmentFeature,
   highlightFeature,
+  labelsFeature,
   orbitControlsFeature,
   postprocessingFeature,
   selectionFeature,
   sortPasses,
   statsFeature,
   type CameraControlServiceType,
+  type EffectComposerFeatureOptions,
+  type EffectComposerServiceType,
   type EnvironmentFeatureOptions,
   type HighlightFeatureOptions,
+  type LabelDescriptor,
+  type LabelsFeatureOptions,
+  type LabelsServiceType,
   type OrbitControlsFeatureOptions,
   type PostPass,
   type PostprocessingFeatureOptions,
@@ -183,6 +201,9 @@ export {
 export {
   clientToNdc,
   createInputManager,
+  markPickable,
+  resolvePickTarget,
+  DEFAULT_PICK_ID_KEY,
   type InputManager,
   type InputManagerOptions,
   type InputManagerSnapshot,

@@ -40,6 +40,16 @@ export {
   type TextureLoaderOptions,
 } from './loaders';
 export {
+  createEnvironmentMapAssetLoader,
+  type EnvironmentMapAssetLoader,
+  type EnvironmentMapLoaderOptions,
+} from './environmentMapLoader';
+export {
+  createRendererBinding,
+  requireBoundRenderer,
+  type RendererBinding,
+} from './RendererBinding';
+export {
   createDeferredTestLoader,
   type DeferredTestLoader,
 } from './testing';
@@ -52,6 +62,8 @@ export {
   disposeOwnedInstanceResources,
   disposeSharedResources,
   hasSkinnedMesh,
+  type GltfAssetLoader,
+  type GltfAssetLoaderOptions,
   type GltfInstance,
   type GltfInstantiateOptions,
   type GltfMaterialMode,

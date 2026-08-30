@@ -5,6 +5,7 @@ import {
   environmentFeature,
   highlightFeature,
   inspectRuntime,
+  labelsFeature,
   orbitControlsFeature,
   postprocessingFeature,
   selectionFeature,
@@ -46,6 +47,7 @@ const bridge: CubeDemoBridge = {
   selection: null,
   stats: null,
   postprocessing: null,
+  labels: null,
   selectedNames: [],
   latestStats: null,
   passRestores: 0,
@@ -158,6 +160,7 @@ onMounted(async () => {
         intensity: cubeSceneConfig.lightIntensity,
         position: cubeSceneConfig.lightPosition,
       },
+      roomEnvironment: true,
     }),
   );
   runtime.use(
@@ -170,6 +173,7 @@ onMounted(async () => {
   runtime.use(selectionFeature());
   runtime.use(highlightFeature());
   runtime.use(statsFeature({ sampleEverySeconds: 0.25 }));
+  runtime.use(labelsFeature({ className: 'cube-labels' }));
   runtime.use(createSceneFeature());
   runtime.use(createRotatingBoxFeature(log));
   runtime.use(createGltfBoxesFeature(log));
@@ -211,9 +215,9 @@ onBeforeUnmount(() => {
       <p class="hint">
         M6/M7 资产；M8 点击/悬停；M9 overlay；
         M10 模拟 WebGL context lost/restore；
-        M11 environment / orbit / selection / highlight / stats / postprocessing；
+        M11 environment（含 RoomEnvironment）/ orbit / selection / highlight / stats / post / labels；
         M12 <code>createLogger</code> + <code>inspectRuntime</code>。
-        拖拽旋转视角；点击场景物体选中高亮。
+        拖拽旋转视角；点击场景物体选中高亮并显示 CSS2D 标签。
       </p>
     </header>
 
@@ -306,7 +310,9 @@ onBeforeUnmount(() => {
 
       <article class="panel scene-panel">
         <h2>WebGL 场景</h2>
-        <canvas ref="canvasRef" class="cube-canvas" />
+        <div class="scene-frame">
+          <canvas ref="canvasRef" class="cube-canvas" />
+        </div>
         <p class="scene-meta">
           drawCalls {{ latestStats?.drawCalls ?? diagnostics?.renderer?.drawCalls ?? '—' }}
           · tris {{ latestStats?.triangles ?? diagnostics?.renderer?.triangles ?? '—' }}
@@ -331,6 +337,12 @@ onBeforeUnmount(() => {
   aspect-ratio: 16 / 10;
   border-radius: 8px;
   background: #0b1220;
+}
+
+.scene-frame {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .actions {

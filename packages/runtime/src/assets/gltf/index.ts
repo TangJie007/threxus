@@ -9,7 +9,11 @@ export {
   ManagedGltfInstance,
   type GltfInstance,
 } from './GltfInstance';
-export { createGltfAssetLoader } from './GltfAssetLoader';
+export {
+  createGltfAssetLoader,
+  type GltfAssetLoader,
+  type GltfAssetLoaderOptions,
+} from './GltfAssetLoader';
 export {
   cloneMaterialsOnObject,
   collectSharedResources,

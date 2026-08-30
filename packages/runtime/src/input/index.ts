@@ -29,3 +29,8 @@ export {
   type PointerDownAnchor,
   type PointerRuntimeState,
 } from './PointerState';
+export {
+  DEFAULT_PICK_ID_KEY,
+  markPickable,
+  resolvePickTarget,
+} from './pickTarget';

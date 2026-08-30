@@ -21,6 +21,7 @@ import {
   createThreePointerEvent,
   type ThreePointerEventType,
 } from './ThreePointerEvent';
+import { resolvePickTarget } from './pickTarget';
 
 export interface PointerDispatcherOptions {
   readonly registry: InteractiveObjectRegistry;
@@ -28,6 +29,15 @@ export interface PointerDispatcherOptions {
   readonly clickMoveTolerance: number;
   readonly clickDuration: number;
   readonly allIntersections: boolean;
+  /** Raycaster.layers mask；默认不过滤。 */
+  readonly layersMask?: number;
+  /**
+   * 命中后沿 parent 查找 `userData[pickIdKey]` 作为逻辑目标。
+   * 传 `false` 关闭；默认 `'pickId'`。
+   */
+  readonly pickIdKey?: string | false;
+  /** pointermove 射线检测最小间隔（ms），默认 0（每事件检测）。 */
+  readonly pointerMoveThrottleMs?: number;
   readonly setDomPointerCapture: (pointerId: number) => void;
   readonly releaseDomPointerCapture: (pointerId: number) => void;
 }
@@ -45,11 +55,20 @@ export class PointerDispatcher {
   readonly #clickMoveTolerance: number;
   readonly #clickDuration: number;
   readonly #allIntersections: boolean;
+  readonly #pickIdKey: string | false;
+  readonly #pointerMoveThrottleMs: number;
   readonly #setDomPointerCapture: (pointerId: number) => void;
   readonly #releaseDomPointerCapture: (pointerId: number) => void;
   readonly #raycaster = new Raycaster();
   readonly #ndc = new Vector2();
   readonly #pointers = new Map<number, PointerRuntimeState>();
+  #lastMoveRaycastAt = 0;
+  #pendingMove: {
+    nativeEvent: PointerEvent;
+    ndcX: number;
+    ndcY: number;
+  } | null = null;
+  #moveThrottleTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: PointerDispatcherOptions) {
     this.#registry = options.registry;
@@ -57,8 +76,14 @@ export class PointerDispatcher {
     this.#clickMoveTolerance = options.clickMoveTolerance;
     this.#clickDuration = options.clickDuration;
     this.#allIntersections = options.allIntersections;
+    this.#pickIdKey = options.pickIdKey === false ? false : (options.pickIdKey ?? 'pickId');
+    this.#pointerMoveThrottleMs = options.pointerMoveThrottleMs ?? 0;
     this.#setDomPointerCapture = options.setDomPointerCapture;
     this.#releaseDomPointerCapture = options.releaseDomPointerCapture;
+
+    if (options.layersMask !== undefined) {
+      this.#raycaster.layers.mask = options.layersMask;
+    }
   }
 
   getPointerState(pointerId: number): PointerRuntimeState {
@@ -93,6 +118,44 @@ export class PointerDispatcher {
   }
 
   handlePointerMove(
+    nativeEvent: PointerEvent,
+    ndcX: number,
+    ndcY: number,
+  ): void {
+    if (this.#pointerMoveThrottleMs <= 0) {
+      this.#processPointerMove(nativeEvent, ndcX, ndcY);
+      return;
+    }
+
+    this.#pendingMove = { nativeEvent, ndcX, ndcY };
+    const now =
+      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const elapsed = now - this.#lastMoveRaycastAt;
+    if (elapsed >= this.#pointerMoveThrottleMs) {
+      this.#flushPendingMove();
+      return;
+    }
+
+    if (this.#moveThrottleTimer === null) {
+      this.#moveThrottleTimer = setTimeout(() => {
+        this.#moveThrottleTimer = null;
+        this.#flushPendingMove();
+      }, this.#pointerMoveThrottleMs - elapsed);
+    }
+  }
+
+  #flushPendingMove(): void {
+    const pending = this.#pendingMove;
+    if (!pending) {
+      return;
+    }
+    this.#pendingMove = null;
+    this.#lastMoveRaycastAt =
+      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    this.#processPointerMove(pending.nativeEvent, pending.ndcX, pending.ndcY);
+  }
+
+  #processPointerMove(
     nativeEvent: PointerEvent,
     ndcX: number,
     ndcY: number,
@@ -222,6 +285,11 @@ export class PointerDispatcher {
   }
 
   dispose(): void {
+    if (this.#moveThrottleTimer !== null) {
+      clearTimeout(this.#moveThrottleTimer);
+      this.#moveThrottleTimer = null;
+    }
+    this.#pendingMove = null;
     for (const [pointerId, state] of this.#pointers) {
       if (state.captureTarget) {
         this.#releaseCapture(pointerId, state);
@@ -261,7 +329,11 @@ export class PointerDispatcher {
     }
 
     const primary = intersections[0] ?? null;
-    const hitObject = primary?.object ?? null;
+    const rawHit = primary?.object ?? null;
+    const hitObject =
+      rawHit && this.#pickIdKey !== false
+        ? resolvePickTarget(rawHit, this.#pickIdKey)
+        : rawHit;
     const path = hitObject
       ? this.#registry.buildRegisteredPath(hitObject)
       : [];
