@@ -4,9 +4,9 @@
 
 import type { Group, Material, Matrix4, Object3D } from 'three'
 import type { DeviceRecord, DeviceStatus } from '../data/devices'
-import type { ElectricFence } from '../fx/electric-fence'
-import type { FlowPipe } from '../fx/flow-pipe'
-import type { ScanRing } from '../fx/scan-ring'
+import type { ElectricFence } from './elements/electric-fence'
+import type { FlowPipe } from './elements/flow-pipe'
+import type { ScanRing } from './elements/scan-ring'
 import type { ModelAssets, ModelKey } from './models'
 
 export interface FactoryBounds {

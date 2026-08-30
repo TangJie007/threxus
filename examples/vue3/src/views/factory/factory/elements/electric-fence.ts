@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { GLSL_FRESNEL, GLSL_NOISE } from './shaders'
+import { GLSL_FRESNEL, GLSL_NOISE } from '../shaders'
 
 /**
  * 电子围栏 / 安全区边界。

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { GLSL_FRESNEL, GLSL_NOISE } from './shaders'
+import { GLSL_FRESNEL, GLSL_NOISE } from '../shaders'
 
 /**
  * 管道流动效果（工业孪生里的"介质流向"）。

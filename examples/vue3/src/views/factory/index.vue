@@ -310,7 +310,7 @@ onBeforeUnmount(() => {
       </div>
     </aside>
 
-    <div class="hud panel toolbar">
+    <div class="hud toolbar">
       <button
         type="button"
         :class="{ on: bridge.cameraMode === 'orbit' }"
@@ -668,6 +668,9 @@ onBeforeUnmount(() => {
   gap: 6px;
   padding: 6px;
   pointer-events: auto;
+  background: #111827;
+  border: 1px solid #273249;
+  border-radius: 12px;
 }
 
 .toolbar button {
@@ -680,6 +683,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
   font-family: inherit;
   transition: all 0.15s;
+  margin-top: 0;
 }
 
 .toolbar button:hover {

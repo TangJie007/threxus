@@ -2,7 +2,7 @@
  * 电子围栏安全区。
  */
 
-import { ElectricFence } from '../../fx/electric-fence'
+import { ElectricFence } from './electric-fence'
 import type { FactoryWorld } from '../types'
 
 export function buildSafetyZones(world: FactoryWorld): void {

@@ -4,7 +4,7 @@
 
 import * as THREE from 'three'
 import { mat } from '../../materials/Presets'
-import { FlowPipe, makePipeCurve } from '../../fx/flow-pipe'
+import { FlowPipe, makePipeCurve } from './flow-pipe'
 import type { FactoryWorld } from '../types'
 
 export function buildPipeRack(world: FactoryWorld): void {

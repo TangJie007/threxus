@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { mat, statusMaterial } from '../../materials/Presets';
-import { AlertBeacon } from '../../fx/scan-ring';
+import { AlertBeacon } from './scan-ring'
 import { makeDeviceSeed, makeRng, type DeviceRecord } from '../../data/devices';
 import { markPickable } from '../../lib/pickable';
 import type { FactoryWorld } from '../types';

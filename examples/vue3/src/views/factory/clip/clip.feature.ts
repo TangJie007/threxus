@@ -4,7 +4,7 @@
 
 import { createServiceKey, defineFeature } from '@threxus/runtime'
 import { FactorySceneService } from '../factory/factory.feature'
-import { ClipController } from '../fx/clip-controller'
+import { ClipController } from './clip-controller'
 
 export const ClipService = createServiceKey<ClipController>('factory-clip')
 
