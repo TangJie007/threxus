@@ -1,5 +1,6 @@
 ﻿/**
- * 产线 + 工位（LOD / 指示�?/ 机械臂）+ 输送带流动�? */
+ * 产线 + 工位（LOD / 指示灯 / 机械臂）+ 输送带流动。
+ */
 
 import * as THREE from 'three';
 import { mat, statusMaterial } from '../../materials/Presets';

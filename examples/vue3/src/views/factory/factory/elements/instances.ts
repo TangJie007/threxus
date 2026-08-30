@@ -1,5 +1,6 @@
 ﻿/**
- * 冲刷 pendingInstances �?InstancedMesh（须在产线构建之后）�? */
+ * 冲刷 pendingInstances → InstancedMesh（须在产线构建之后）。
+ */
 
 import type { FactoryWorld } from '../types';
 
@@ -17,7 +18,7 @@ export function buildInstancedModels(world: FactoryWorld): void {
     }
 
     console.info(
-      `[factory-instances] ${key}: ${matrices.length} 个实�?�?${meshes.length} �?draw call`,
+      `[factory-instances] ${key}: ${matrices.length} 个实例 → ${meshes.length} 个 draw call`,
     );
   }
 

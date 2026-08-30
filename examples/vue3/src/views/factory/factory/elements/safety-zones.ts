@@ -1,5 +1,6 @@
 ﻿/**
- * 电子围栏安全区 */
+ * 电子围栏安全区。
+ */
 
 import { createElectricFence } from '../../fx/electric-fence';
 import type { FactoryWorld } from '../types';

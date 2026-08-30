@@ -1,5 +1,6 @@
 ﻿/**
- * 顶部灯带 InstancedMesh�? */
+ * 顶部灯带 InstancedMesh。
+ */
 
 import * as THREE from 'three';
 import type { FactoryWorld } from '../types';

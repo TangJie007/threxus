@@ -1,5 +1,6 @@
 ﻿/**
- * 管廊流动特效 */
+ * 管廊流动特效。
+ */
 
 import * as THREE from 'three';
 import { mat } from '../../materials/Presets';

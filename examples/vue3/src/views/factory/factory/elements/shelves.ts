@@ -1,5 +1,6 @@
 ﻿/**
- * 货架 InstancedMesh�? */
+ * 货架 InstancedMesh。
+ */
 
 import * as THREE from 'three';
 import { mat } from '../../materials/Presets';

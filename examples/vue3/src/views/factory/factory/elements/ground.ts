@@ -1,5 +1,6 @@
 ﻿/**
- * 地面 + 网格 + 安全通道�? */
+ * 地面 + 网格 + 安全通道。
+ */
 
 import * as THREE from 'three';
 import { mat } from '../../materials/Presets';

@@ -1,5 +1,6 @@
 /**
- * 厂房钢结构：mergeGeometries �?�?Draw Call�? */
+ * 厂房钢结构：mergeGeometries 合并为 1 个 Draw Call。
+ */
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';

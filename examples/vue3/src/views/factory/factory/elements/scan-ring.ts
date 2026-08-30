@@ -1,5 +1,6 @@
 ﻿/**
- * 地面扫描圈 */
+ * 地面扫描圈。
+ */
 
 import { createScanRing } from '../../fx/scan-ring';
 import type { ScanRingController } from '../../types';
