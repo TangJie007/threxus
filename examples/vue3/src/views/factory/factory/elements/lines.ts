@@ -1,152 +1,31 @@
 /**
- * ?? + ???LOD / ??? / ????+ ??????
+ * 产线 + 工位（LOD / 指示灯 / 机械臂）+ 输送带流动。
  */
 
 import * as THREE from 'three';
-import type { FactoryPalette } from '../../materials/create-palette';
 import { AlertBeacon } from './scan-ring'
 import { makeDeviceSeed, makeRng, type DeviceRecord } from '../../data/devices';
 import { DEFAULT_PICK_LAYER, markPickable } from '@threxus/runtime';
+import type { FactoryModelsApi } from '../../models/models.service';
 import type { FactoryWorld } from '../types';
-
-function createProceduralRobotArm(
-  materials: FactoryPalette,
-  phase = Math.random() * Math.PI * 2,
-): {
-  group: THREE.Group;
-  update: (_delta: number, elapsed: number) => void;
-} {
-  const group = new THREE.Group();
-
-  const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.55, 0.68, 0.5, 20),
-    materials.steel,
-  );
-  base.position.y = 0.25;
-  base.castShadow = true;
-  group.add(base);
-
-  const j1 = new THREE.Group();
-  j1.position.y = 0.5;
-  group.add(j1);
-
-  const shoulder = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 0.9, 0.5),
-    materials.machine,
-  );
-  shoulder.position.y = 0.45;
-  shoulder.castShadow = true;
-  j1.add(shoulder);
-
-  const j2 = new THREE.Group();
-  j2.position.y = 0.9;
-  j1.add(j2);
-
-  const upper = new THREE.Mesh(
-    new THREE.BoxGeometry(0.34, 1.9, 0.34),
-    materials.machine,
-  );
-  upper.position.y = 0.95;
-  upper.castShadow = true;
-  j2.add(upper);
-
-  const j3 = new THREE.Group();
-  j3.position.y = 1.9;
-  j2.add(j3);
-
-  const fore = new THREE.Mesh(
-    new THREE.BoxGeometry(0.26, 1.5, 0.26),
-    materials.machine,
-  );
-  fore.position.y = 0.75;
-  fore.castShadow = true;
-  j3.add(fore);
-
-  const tool = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.1, 0.16, 0.42, 12),
-    materials.steel,
-  );
-  tool.position.y = 1.62;
-  j3.add(tool);
-  const tip = new THREE.Mesh(
-    new THREE.SphereGeometry(0.07, 10, 8),
-    materials.emissiveOk,
-  );
-  tip.position.y = 1.86;
-  j3.add(tip);
-
-  return {
-    group,
-    update(_delta: number, elapsed: number) {
-      const t = elapsed * 0.85 + phase;
-      j1.rotation.y = Math.sin(t * 0.5) * 1.15;
-      j2.rotation.x = Math.sin(t * 0.7) * 0.42 - 0.28;
-      j3.rotation.x = Math.sin(t * 0.7 + 1.1) * 0.55 + 0.35;
-    },
-  };
-}
 
 function buildConveyor(
   world: FactoryWorld,
   z: number,
   lineIndex: number,
 ): void {
-  const { materials } = world;
   const len = 58;
   const group = new THREE.Group();
   group.position.set(0, 0, z);
 
-  if (world.models?.has('conveyor')) {
-    const MODULE_LEN = 4;
-    const count = Math.round(len / MODULE_LEN);
-    const list = world.pendingInstances.get('conveyor') ?? [];
-    for (let i = 0; i < count; i++) {
-      const x = -len / 2 + MODULE_LEN / 2 + i * (len / count);
-      list.push(new THREE.Matrix4().makeTranslation(x, 0, z));
-    }
-    world.pendingInstances.set('conveyor', list);
-  } else {
-    const belt = new THREE.Mesh(
-      new THREE.BoxGeometry(len, 0.18, 1.9),
-      materials.rubber,
-    );
-    belt.position.y = 1.05;
-    belt.castShadow = true;
-    belt.receiveShadow = true;
-    group.add(belt);
-
-    for (const s of [-1, 1]) {
-      const rail = new THREE.Mesh(
-        new THREE.BoxGeometry(len, 0.3, 0.12),
-        materials.steel,
-      );
-      rail.position.set(0, 1.22, s * 1.0);
-      rail.castShadow = true;
-      group.add(rail);
-    }
-
-    const legGeo = new THREE.BoxGeometry(0.16, 1.0, 1.6);
-    const legs = new THREE.InstancedMesh(legGeo, materials.steel, 20);
-    legs.castShadow = true;
-    const m = new THREE.Matrix4();
-    for (let i = 0; i < 20; i++) {
-      m.makeTranslation(-len / 2 + 1.5 + i * ((len - 3) / 19), 0.5, 0);
-      legs.setMatrixAt(i, m);
-    }
-    legs.instanceMatrix.needsUpdate = true;
-    group.add(legs);
-
-    const rollerGeo = new THREE.CylinderGeometry(0.11, 0.11, 1.85, 10);
-    rollerGeo.rotateX(Math.PI / 2);
-    const rollers = new THREE.InstancedMesh(rollerGeo, materials.steel, 40);
-    const m2 = new THREE.Matrix4();
-    for (let i = 0; i < 40; i++) {
-      m2.makeTranslation(-len / 2 + 0.8 + i * ((len - 1.6) / 39), 0.94, 0);
-      rollers.setMatrixAt(i, m2);
-    }
-    rollers.instanceMatrix.needsUpdate = true;
-    group.add(rollers);
+  const moduleLength = 4;
+  const count = Math.round(len / moduleLength);
+  const list = world.pendingInstances.get('conveyor') ?? [];
+  for (let i = 0; i < count; i++) {
+    const x = -len / 2 + moduleLength / 2 + i * (len / count);
+    list.push(new THREE.Matrix4().makeTranslation(x, 0, z));
   }
+  world.pendingInstances.set('conveyor', list);
 
   const flowGeo = new THREE.PlaneGeometry(len, 1.5);
   flowGeo.rotateX(-Math.PI / 2);
@@ -190,6 +69,7 @@ function buildConveyor(
 
 function buildStation(
   world: FactoryWorld,
+  models: FactoryModelsApi,
   x: number,
   z: number,
   lineIndex: number,
@@ -203,15 +83,12 @@ function buildStation(
   group.position.set(x, 0, z + zOff);
   group.userData.deviceId = seed.id;
 
-  const useCabinetModel = !!world.models?.has('cabinet');
-  if (useCabinetModel) {
-    const list = world.pendingInstances.get('cabinet') ?? [];
-    list.push(new THREE.Matrix4().makeTranslation(x + 1.75, 0, z + zOff));
-    world.pendingInstances.set('cabinet', list);
-    const owners = world.pendingInstanceOwners.get('cabinet') ?? [];
-    owners.push(seed.id);
-    world.pendingInstanceOwners.set('cabinet', owners);
-  }
+  const cabinets = world.pendingInstances.get('cabinet') ?? [];
+  cabinets.push(new THREE.Matrix4().makeTranslation(x + 1.75, 0, z + zOff));
+  world.pendingInstances.set('cabinet', cabinets);
+  const cabinetOwners = world.pendingInstanceOwners.get('cabinet') ?? [];
+  cabinetOwners.push(seed.id);
+  world.pendingInstanceOwners.set('cabinet', cabinetOwners);
 
   const lod = new THREE.LOD();
   const high = new THREE.Group();
@@ -223,16 +100,6 @@ function buildStation(
   body.castShadow = true;
   body.receiveShadow = true;
   high.add(body);
-
-  if (!useCabinetModel) {
-    const cabinet = new THREE.Mesh(
-      new THREE.BoxGeometry(0.9, 1.8, 1.2),
-      materials.plastic,
-    );
-    cabinet.position.set(1.75, 0.9, 0);
-    cabinet.castShadow = true;
-    high.add(cabinet);
-  }
 
   const screen = new THREE.Mesh(
     new THREE.PlaneGeometry(0.62, 0.44),
@@ -259,14 +126,6 @@ function buildStation(
   );
   body2.position.y = 1.2;
   mid.add(body2);
-  if (!useCabinetModel) {
-    const cab2 = new THREE.Mesh(
-      new THREE.BoxGeometry(0.9, 1.8, 1.2),
-      materials.plastic,
-    );
-    cab2.position.set(1.75, 0.9, 0);
-    mid.add(cab2);
-  }
 
   const low = new THREE.Mesh(
     new THREE.BoxGeometry(2.8, 2.4, 2.2),
@@ -293,17 +152,10 @@ function buildStation(
   world.animated.push((d) => beacon.update(d))
 
   if (stationIndex % 3 === 0) {
-    const armFromModel = world.models?.createRobotArm(stationIndex * 1.7);
-    if (armFromModel) {
-      armFromModel.root.position.set(-2.0, 0, 0);
-      group.add(armFromModel.root);
-      world.animated.push((_d, e) => armFromModel.update(e));
-    } else {
-      const arm = createProceduralRobotArm(world.materials);
-      arm.group.position.set(-2.0, 0, 0);
-      group.add(arm.group);
-      world.animated.push((d, e) => arm.update(d, e));
-    }
+    const arm = models.createRobotArm(stationIndex * 1.7);
+    arm.root.position.set(-2.0, 0, 0);
+    group.add(arm.root);
+    world.animated.push((_d, e) => arm.update(e));
   }
 
   markPickable(group, seed.id, { layer: DEFAULT_PICK_LAYER });
@@ -319,7 +171,10 @@ function buildStation(
   world.devices.push(record);
 }
 
-export function buildLines(world: FactoryWorld): void {
+export function buildLines(
+  world: FactoryWorld,
+  models: FactoryModelsApi,
+): void {
   const rng = makeRng(20260829);
   const lineZ = [-16, 0, 16];
   const stationX = [-24, -14.4, -4.8, 4.8, 14.4, 24];
@@ -327,7 +182,7 @@ export function buildLines(world: FactoryWorld): void {
   lineZ.forEach((z, li) => {
     buildConveyor(world, z, li);
     stationX.forEach((x, si) => {
-      buildStation(world, x, z, li, si, rng);
+      buildStation(world, models, x, z, li, si, rng);
     });
   });
 }

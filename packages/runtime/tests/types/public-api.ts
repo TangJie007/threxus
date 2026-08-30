@@ -43,22 +43,22 @@ declare const canvas: HTMLCanvasElement;
 declare const renderer: import('three').WebGLRenderer;
 declare const mesh: import('three').Object3D;
 
-const DefinedClock = defineService<ClockService>({
-  name: 'defined-clock',
-  create() {
-    return { now: () => 1 };
-  },
+const DefinedClock = defineService<ClockService>(
+  'defined-clock',
+  () => ({ now: () => 1 }),
+);
+const definedClockProvider = defineFeature({
+  name: 'defined-clock-provider',
+  provides: [DefinedClock],
 });
-
-const ConfiguredClock = defineService<ClockService, { readonly offset: number }>({
-  name: 'configured-clock',
-  create(_context, options) {
-    return { now: () => options.offset };
+const definedClockConsumer: ThreeFeature = {
+  name: 'defined-clock-consumer',
+  dependencies: [DefinedClock],
+  setup(context) {
+    const value: number = context.inject(DefinedClock).now();
+    void value;
   },
-});
-// @ts-expect-error required service options must be provided
-ConfiguredClock.feature();
-ConfiguredClock.feature({ offset: 1 });
+};
 
 const ModelEntity = defineEntity<
   { readonly id: string },
@@ -77,7 +77,7 @@ const ModelEntity = defineEntity<
 });
 
 const app = createThreeApp({ canvas, renderer, renderMode: 'on-demand', resize: false });
-app.use(provider).use(consumer).use(DefinedClock.feature());
+app.use(provider).use(consumer).use(definedClockProvider).use(definedClockConsumer);
 void app.start();
 const entityCount: number = app.entities.count;
 const modelEntities: readonly EntityHandle<{

@@ -4,12 +4,10 @@
 
 import * as THREE from 'three';
 import { DEFAULT_PICK_LAYER, defineEntity, markPickable } from '@threxus/runtime';
-import type { FactoryPalette } from '../materials/create-palette';
-import type { ModelAssets } from '../factory/models';
+import type { FactoryModelsApi } from '../models/models.service';
 
 export interface AgvEntityProps {
-  readonly models: ModelAssets | null;
-  readonly materials: FactoryPalette;
+  readonly models: FactoryModelsApi;
 }
 
 export interface AgvEntityApi {
@@ -44,47 +42,10 @@ export const AgvEntity = defineEntity<AgvEntityProps, AgvEntityApi>({
       }),
     );
     guide.position.y = 0.03;
-    context.own(guide);
+    context.mount(guide, { gpu: 'owned' });
 
     const agv = new THREE.Group();
-    const agvModel = props.models?.clone('agv');
-
-    if (agvModel) {
-      agv.add(agvModel);
-    } else {
-      const { materials } = props;
-      const chassis = new THREE.Mesh(
-        new THREE.BoxGeometry(1.6, 0.45, 1.1),
-        materials.machine,
-      );
-      chassis.position.y = 0.36;
-      chassis.castShadow = true;
-      agv.add(chassis);
-      const cargo = new THREE.Mesh(
-        new THREE.BoxGeometry(1.2, 0.5, 0.9),
-        materials.plastic,
-      );
-      cargo.position.y = 0.83;
-      cargo.castShadow = true;
-      agv.add(cargo);
-      for (const sx of [-0.5, 0.5]) {
-        for (const sz of [-0.42, 0.42]) {
-          const wheel = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.16, 0.16, 0.14, 12),
-            materials.rubber,
-          );
-          wheel.rotateZ(Math.PI / 2);
-          wheel.position.set(sx, 0.16, sz);
-          agv.add(wheel);
-        }
-      }
-      const agvLight = new THREE.Mesh(
-        new THREE.SphereGeometry(0.08, 10, 8),
-        materials.emissiveOk,
-      );
-      agvLight.position.set(0.82, 0.62, 0);
-      agv.add(agvLight);
-    }
+    agv.add(props.models.clone('agv'));
 
     markPickable(agv, 'AGV-01', { layer: DEFAULT_PICK_LAYER });
 

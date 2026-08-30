@@ -3,13 +3,15 @@
  */
 
 import { DEFAULT_PICK_LAYER, enablePickLayer } from '@threxus/runtime';
+import type { FactoryModelsApi } from '../../models/models.service';
 import type { FactoryWorld } from '../types';
 
-export function buildInstancedModels(world: FactoryWorld): void {
-  if (!world.models) return;
-
+export function buildInstancedModels(
+  world: FactoryWorld,
+  models: FactoryModelsApi,
+): void {
   for (const [key, matrices] of world.pendingInstances) {
-    const meshes = world.models.instance(key, matrices);
+    const meshes = models.instance(key, matrices);
     const owners = world.pendingInstanceOwners.get(key);
 
     for (const im of meshes) {

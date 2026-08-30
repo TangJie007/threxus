@@ -110,17 +110,16 @@ describe('runtime definitions', () => {
 
   it('defines a typed service provider and exposes service metadata', async () => {
     const dispose = vi.fn();
-    const CounterService = defineService<
-      { value: number; dispose(): void },
-      { initial: number }
-    >({
-      name: 'counter',
-      featureName: 'counter-provider',
-      create(_context, options) {
-        return { value: options.initial, dispose };
-      },
+    const setupOrder: string[] = [];
+    const CounterService = defineService<{
+      value: number;
+      dispose(): void;
+    }>('counter', () => {
+      setupOrder.push('service');
+      return { value: 4, dispose };
     });
     let injected = 0;
+    let providerInjected = 0;
     const app = createThreeApp(createHeadlessThreeAppOptions());
 
     app.use({
@@ -130,11 +129,22 @@ describe('runtime definitions', () => {
         injected = context.inject(CounterService).value;
       },
     });
-    app.use(CounterService.feature({ initial: 4 }));
+    app.use(
+      defineFeature({
+        name: 'counter-provider',
+        provides: [CounterService],
+        setup(context) {
+          setupOrder.push('feature');
+          providerInjected = context.inject(CounterService).value;
+        },
+      }),
+    );
 
     await app.start();
 
     expect(injected).toBe(4);
+    expect(providerInjected).toBe(4);
+    expect(setupOrder).toEqual(['service', 'feature']);
     expect(app.inspect().counts).toMatchObject({
       features: 2,
       activeFeatures: 2,

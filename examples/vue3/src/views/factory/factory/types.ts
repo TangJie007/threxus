@@ -9,7 +9,7 @@ import type { ProceduralTexturesApi } from '../materials/ProceduralTextures'
 import type { ElectricFence } from './elements/electric-fence'
 import type { FlowPipe } from './elements/flow-pipe'
 import type { ScanRing } from './elements/scan-ring'
-import type { ModelAssets, ModelKey } from './models'
+import type { ModelKey } from '../models/models.service'
 
 export interface FactoryBounds {
   width: number
@@ -39,14 +39,12 @@ export interface FactoryWorld {
   readonly clippableMaterials: Material[]
   readonly pendingInstances: Map<ModelKey, Matrix4[]>
   readonly pendingInstanceOwners: Map<ModelKey, string[]>
-  models: ModelAssets | null
 }
 
 /** factory-scene Feature 对外提供的服务值（含 UI 常用方法）。 */
 export interface FactorySceneApi {
   readonly world: FactoryWorld
   readonly materials: FactoryPalette
-  readonly models: ModelAssets
   readonly root: Object3D
   readonly devices: DeviceRecord[]
   readonly scanRing: ScanRing

@@ -1,69 +1,49 @@
 /**
- * Service 定义辅助：把强类型 Token 与单服务 provider Feature 收敛到一处。
+ * Service 定义辅助：把强类型 Token 与服务创建函数组合为声明式 provider。
  */
 
-import type {
-  ProvideServiceOptions,
-  ThreeContext,
-  ThreeFeature,
-} from '../feature/ThreeFeature';
+import type { ProvideServiceOptions, ThreeContext } from '../feature/ThreeFeature';
 import { createServiceKey, type ServiceKey } from './ServiceKey';
 
-export interface DefineServiceOptions<T, TOptions = void> {
-  /** ServiceKey 的可读名称；默认也作为 provider Feature 名称。 */
-  readonly name: string;
-  /** provider Feature 名称；未提供时使用 name。 */
-  readonly featureName?: string;
-  readonly dependencies?: readonly ServiceKey<unknown>[];
-  readonly optionalDependencies?: readonly ServiceKey<unknown>[];
+export type ServiceHandler<T> = (
+  context: ThreeContext,
+) => T | Promise<T>;
+
+export interface DefineServiceOptions {
   /** 服务从容器移除时的释放策略，默认 auto。 */
   readonly dispose?: ProvideServiceOptions['dispose'];
-  /** 创建服务值；返回后由生成的 Feature 自动 provide。 */
-  create(context: ThreeContext, options: TOptions): T | Promise<T>;
 }
 
 /**
- * defineService 的返回值本身就是 ServiceKey，可直接用于 dependencies / inject。
+ * ServiceKey 与创建函数的组合。
+ *
+ * 定义本身兼容 ServiceKey，可直接用于 provides / dependencies / inject；
+ * 当它出现在 Feature.provides 中时，运行时自动执行 handler 并注册返回值。
  */
-export interface ServiceDefinition<T, TOptions = void> extends ServiceKey<T> {
-  /** 为当前服务创建一个 provider Feature。 */
-  feature(
-    ...args: [TOptions] extends [void]
-      ? [options?: TOptions]
-      : [options: TOptions]
-  ): ThreeFeature;
+export interface ServiceDefinition<T> extends ServiceKey<T> {
+  readonly key: ServiceKey<T>;
+  readonly handler: ServiceHandler<T>;
+  readonly dispose?: ProvideServiceOptions['dispose'];
 }
 
-export function defineService<T, TOptions = void>(
-  options: DefineServiceOptions<T, TOptions>,
-): ServiceDefinition<T, TOptions> {
-  const key = createServiceKey<T>(options.name);
-  const featureName = options.featureName ?? options.name;
-
-  const definition: ServiceDefinition<T, TOptions> = {
+export function defineService<T>(
+  name: string,
+  handler: ServiceHandler<T>,
+  options: DefineServiceOptions = {},
+): ServiceDefinition<T> {
+  const key = createServiceKey<T>(name);
+  const definition: ServiceDefinition<T> = {
     ...key,
-    feature: (...args): ThreeFeature => ({
-      name: featureName,
-      provides: [definition],
-      ...(options.dependencies
-        ? { dependencies: options.dependencies }
-        : {}),
-      ...(options.optionalDependencies
-        ? { optionalDependencies: options.optionalDependencies }
-        : {}),
-      async setup(context) {
-        const value = await options.create(
-          context,
-          args[0] as TOptions,
-        );
-        context.provide(
-          definition,
-          value,
-          options.dispose ? { dispose: options.dispose } : undefined,
-        );
-      },
-    }),
+    key,
+    handler,
+    ...(options.dispose ? { dispose: options.dispose } : {}),
   };
 
   return Object.freeze(definition);
+}
+
+export function isServiceDefinition(
+  value: ServiceKey<unknown>,
+): value is ServiceDefinition<unknown> {
+  return 'key' in value && 'handler' in value;
 }

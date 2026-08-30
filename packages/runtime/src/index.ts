@@ -117,6 +117,7 @@ export {
   defineService,
   type DefineServiceOptions,
   type ServiceDefinition,
+  type ServiceHandler,
 } from './services/defineService';
 export type { ServiceSnapshot } from './services/ServiceContainer';
 export {

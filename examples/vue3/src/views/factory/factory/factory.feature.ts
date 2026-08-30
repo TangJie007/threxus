@@ -10,7 +10,7 @@ import {
 } from '@threxus/runtime'
 import { createFactoryPalette } from '../materials/create-palette'
 import { ProceduralTexturesService } from '../materials/textures.feature'
-import { loadModelAssets } from './models'
+import { FactoryModelsService } from '../models/models.service'
 import {
   FACTORY_BOUNDS,
   type FactorySceneApi,
@@ -32,10 +32,11 @@ export const FactorySceneService =
 
 export const factorySceneFeature = defineFeature({
   name: 'factory-scene',
-  dependencies: [ProceduralTexturesService],
+  dependencies: [ProceduralTexturesService, FactoryModelsService],
   provides: [FactorySceneService],
   async setup(context) {
     const textures = context.inject(ProceduralTexturesService)
+    const models = context.inject(FactoryModelsService)
     const materials = createFactoryPalette(textures)
     context.addCleanup(() => materials.dispose())
 
@@ -56,45 +57,16 @@ export const factorySceneFeature = defineFeature({
       clippableMaterials: [...materials.clippable],
       pendingInstances: new Map(),
       pendingInstanceOwners: new Map(),
-      models: null,
     }
-
-    const models = await loadModelAssets(async (key, url) => {
-      const result = await context.assets.acquireWithFallback<{
-        scene: import('three').Object3D
-      } | null>({
-        signal: context.signal,
-        primary: async () => {
-          const handle = await context.assets.acquireGLTF(url, {
-            signal: context.signal,
-          })
-          const asset = context.mount(handle)
-          return { scene: asset.scene }
-        },
-        fallback: () => null,
-        onFallback: (error) => {
-          console.warn(
-            `[ModelAssets] ✗ ${key} 加载失败，将回退到程序化几何体`,
-            error,
-          )
-        },
-      })
-      return result.value
-    })
-    world.models = models
-    context.addCleanup(() => {
-      models.dispose()
-      world.models = null
-    })
 
     buildGround(world)
     buildStructure(world)
     buildCeilingLights(world)
-    buildLines(world)
+    buildLines(world, models)
     buildPipeRack(world)
     buildShelves(world)
     buildSafetyZones(world)
-    buildInstancedModels(world)
+    buildInstancedModels(world, models)
     const scanRing = buildScanRing(world)
     context.addCleanup(() => {
       scanRing.dispose()
@@ -114,8 +86,13 @@ export const factorySceneFeature = defineFeature({
       world.pipes.forEach((p) => p.dispose())
       world.fences.forEach((f) => f.dispose())
       world.root.traverse((o) => {
-        const mesh = o as { geometry?: { dispose(): void } }
-        mesh.geometry?.dispose()
+        const mesh = o as import('three').Mesh
+        if (
+          mesh.isMesh &&
+          !models.isManagedGeometry(mesh.geometry)
+        ) {
+          mesh.geometry.dispose()
+        }
       })
       world.root.clear()
       world.devices.length = 0
@@ -128,7 +105,6 @@ export const factorySceneFeature = defineFeature({
     const api: FactorySceneApi = {
       world,
       materials,
-      models,
       get root() {
         return world.root
       },

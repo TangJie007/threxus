@@ -31,6 +31,7 @@ import type { GraphicsState } from '../../rendering/GraphicsState';
 import type { RenderingRuntime } from '../../rendering/RenderingRuntime';
 import type { Scheduler } from '../../scheduler/Scheduler';
 import { ServiceContainer } from '../../services/ServiceContainer';
+import { isServiceDefinition } from '../../services/defineService';
 import {
   createLogger,
   shouldEnableLifecycleWarnings,
@@ -712,10 +713,24 @@ export class ThreeAppRuntime implements ThreeApp {
     feature: ThreeFeature,
     context: import('../../feature/ThreeFeature').ThreeContext,
   ): Promise<void> {
-    let setupResult: void | Promise<void>;
+    let setupResult: Promise<void>;
     try {
-      // 保持 setup 同步进入，使其能在 start() 返回前注册 abort 监听。
-      setupResult = feature.setup(context);
+      setupResult = (async () => {
+        for (const service of feature.provides ?? []) {
+          if (!isServiceDefinition(service)) {
+            continue;
+          }
+          const value = await service.handler(context);
+          context.provide(
+            service.key,
+            value,
+            service.dispose ? { dispose: service.dispose } : undefined,
+          );
+        }
+
+        // 保持 setup 同步进入，使其能在 start() 返回前注册 abort 监听。
+        await feature.setup?.(context);
+      })();
     } catch (error) {
       return Promise.reject(error);
     }

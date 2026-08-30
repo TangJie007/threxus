@@ -110,7 +110,8 @@ export interface ThreeContext {
  *
  * 实现约定：
  * - `name` 全局唯一，用于日志、错误信息和 inspect。
- * - `provides` 中声明的每个 Key 必须在 setup 内调用 `ctx.provide()`。
+ * - `provides` 接受 ServiceKey 或 defineService 返回的声明式 provider。
+ * - ServiceKey 必须在 setup 内手动 provide；声明式 provider 由运行时自动注册。
  * - `inject` / `injectOptional` 只能访问 dependencies + optionalDependencies + provides 中声明的 Key。
  * - setup 可以是 async；若 App 在 starting 期间 dispose，应通过 signal 协作取消。
  */
@@ -124,5 +125,5 @@ export interface ThreeFeature {
   /** 可选依赖；无提供者时 injectOptional 返回 undefined。 */
   readonly optionalDependencies?: readonly ServiceKey<unknown>[];
 
-  setup(context: ThreeContext): void | Promise<void>;
+  setup?(context: ThreeContext): void | Promise<void>;
 }

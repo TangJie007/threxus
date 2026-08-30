@@ -4,16 +4,18 @@
 
 import { defineFeature } from '@threxus/runtime'
 import { FactorySceneService } from '../factory/factory.feature'
+import { FactoryModelsService } from '../models/models.service'
 import { AgvEntity } from './agv.entity'
 
 export const agvFeature = defineFeature({
   name: 'agv',
-  dependencies: [FactorySceneService],
+  dependencies: [FactorySceneService, FactoryModelsService],
   async setup(context) {
-    const { world, models, materials } = context.inject(FactorySceneService)
+    const { world } = context.inject(FactorySceneService)
+    const models = context.inject(FactoryModelsService)
     await context.spawn(
       AgvEntity,
-      { models, materials },
+      { models },
       { id: 'AGV-01', parent: world.root },
     )
   },

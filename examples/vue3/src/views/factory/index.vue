@@ -22,6 +22,7 @@ import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 import { markRaw, onBeforeUnmount, onMounted, ref, shallowReactive, shallowRef } from 'vue';
 import { factoryCamera, factoryRoamPath, factorySceneConfig } from './config';
 import { factorySceneFeature } from './factory/factory.feature';
+import { factoryModelsFeature } from './models/models.feature';
 import { proceduralTexturesFeature } from './materials/textures.feature';
 import { clipFeature } from './clip/clip.feature';
 import { agvFeature } from './agv/agv.feature';
@@ -177,6 +178,7 @@ onMounted(async () => {
     }),
   );
   runtime.use(proceduralTexturesFeature);
+  runtime.use(factoryModelsFeature);
   runtime.use(factorySceneFeature);
   runtime.use(clipFeature);
   runtime.use(agvFeature);
