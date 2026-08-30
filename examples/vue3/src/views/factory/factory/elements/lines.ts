@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { mat, statusMaterial } from '../../materials/Presets';
-import { createAlertBeacon } from '../../fx/scan-ring';
+import { AlertBeacon } from '../../fx/scan-ring';
 import { makeDeviceSeed, makeRng, type DeviceRecord } from '../../data/devices';
 import { markPickable } from '../../lib/pickable';
 import type { FactoryWorld } from '../types';
@@ -282,11 +282,11 @@ function buildStation(
   indicator.position.set(1.75, 2.05, 0);
   group.add(indicator);
 
-  const beaconHandle = createAlertBeacon(7.5, 0.5, 0xff4d5e);
-  const beacon = beaconHandle.root;
-  beacon.position.set(0, 0.05, 0);
-  beacon.visible = seed.status === 'error';
-  group.add(beacon);
+  const beacon = new AlertBeacon(7.5, 0.5, 0xff4d5e)
+  beacon.position.set(0, 0.05, 0)
+  beacon.visible = seed.status === 'error'
+  group.add(beacon)
+  world.animated.push((d) => beacon.update(d))
 
   if (stationIndex % 3 === 0) {
     const armFromModel = world.models?.createRobotArm(stationIndex * 1.7);

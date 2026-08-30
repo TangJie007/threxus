@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * FactoryTwin（define* 范式）—— defineService / defineFeature / defineEntity。
+ * FactoryTwin（defineFeature / defineEntity + 内置 Feature）。
  */
 import {
   createLogger,
@@ -20,7 +20,8 @@ import {
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 import { markRaw, onBeforeUnmount, onMounted, ref, shallowReactive, shallowRef } from 'vue';
 import { factoryCamera, factoryRoamPath, factorySceneConfig } from './config';
-import { FactorySceneService } from './factory/factory.service';
+import { factorySceneFeature } from './factory/factory.feature';
+import { clipFeature } from './clip/clip.feature';
 import { agvFeature } from './agv/agv.feature';
 import { createBridgeFeature } from './bridge/bridge.feature';
 import { statusText, type DeviceRecord } from './data/devices';
@@ -35,8 +36,7 @@ const error = ref<string | null>(null);
 const loading = ref(true);
 
 const bridge = shallowReactive<FactoryBridge>({
-  factory: null,
-  clip: null,
+  scene: null,
   selection: null,
   stats: null,
   composer: null,
@@ -174,7 +174,8 @@ onMounted(async () => {
       occludedOpacity: 0.2,
     }),
   );
-  runtime.use(FactorySceneService.feature());
+  runtime.use(factorySceneFeature);
+  runtime.use(clipFeature);
   runtime.use(agvFeature);
   runtime.use(createBridgeFeature(bridge));
 

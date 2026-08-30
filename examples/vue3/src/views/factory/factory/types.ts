@@ -1,68 +1,52 @@
 /**
- * Factory scene shared state + service types.
+ * Factory 场景共享类型（World + Feature provide 的 API）。
  */
 
-import type { Group, Material, Matrix4, Object3D } from 'three';
-import type { DeviceRecord, DeviceStatus } from '../data/devices';
-import type {
-  ClipController,
-  FenceController,
-  FlowController,
-  ScanRingController,
-} from '../types';
-import type { ModelAssets, ModelKey } from './models';
+import type { Group, Material, Matrix4, Object3D } from 'three'
+import type { DeviceRecord, DeviceStatus } from '../data/devices'
+import type { ElectricFence } from '../fx/electric-fence'
+import type { FlowPipe } from '../fx/flow-pipe'
+import type { ScanRing } from '../fx/scan-ring'
+import type { ModelAssets, ModelKey } from './models'
 
 export interface FactoryBounds {
-  width: number;
-  depth: number;
-  height: number;
+  width: number
+  depth: number
+  height: number
 }
 
 export const FACTORY_BOUNDS: FactoryBounds = {
   width: 100,
   depth: 70,
   height: 11,
-};
+}
 
-export type FactoryAnimator = (delta: number, elapsed: number) => void;
+export type FactoryAnimator = (delta: number, elapsed: number) => void
 
-/** Shared mutable world for build + runtime. */
+/** build* / peer Feature 共享的可变世界状态。 */
 export interface FactoryWorld {
-  readonly root: Group;
-  readonly bounds: FactoryBounds;
-  readonly devices: DeviceRecord[];
-  readonly animated: FactoryAnimator[];
-  readonly pipes: FlowController[];
-  readonly fences: FenceController[];
-  scanRing: ScanRingController | null;
-  readonly clippableMaterials: Material[];
-  readonly pendingInstances: Map<ModelKey, Matrix4[]>;
-  readonly pendingInstanceOwners: Map<ModelKey, string[]>;
-  models: ModelAssets | null;
+  readonly root: Group
+  readonly bounds: FactoryBounds
+  readonly devices: DeviceRecord[]
+  readonly animated: FactoryAnimator[]
+  readonly pipes: FlowPipe[]
+  readonly fences: ElectricFence[]
+  scanRing: ScanRing | null
+  readonly clippableMaterials: Material[]
+  readonly pendingInstances: Map<ModelKey, Matrix4[]>
+  readonly pendingInstanceOwners: Map<ModelKey, string[]>
+  models: ModelAssets | null
 }
 
-/** Runtime facade for bridge / UI (Factory-like API). */
-export interface FactoryRuntime {
-  readonly root: Object3D;
-  readonly devices: DeviceRecord[];
-  readonly scanRing: ScanRingController;
-  readonly clippableMaterials: Material[];
-  applyStatus(device: DeviceRecord, status: DeviceStatus): void;
-  setFlowEnabled(v: boolean): void;
-  setFenceAlert(v: boolean): void;
-  findDevice(id: string): DeviceRecord | undefined;
-}
-
+/** factory-scene Feature 对外提供的服务值（含 UI 常用方法）。 */
 export interface FactorySceneApi {
-  readonly factory: FactoryRuntime;
-  readonly models: ModelAssets;
-  readonly clip: ClipController;
-  readonly world: FactoryWorld;
+  readonly world: FactoryWorld
+  readonly models: ModelAssets
+  readonly root: Object3D
+  readonly devices: DeviceRecord[]
+  readonly scanRing: ScanRing
+  applyStatus(device: DeviceRecord, status: DeviceStatus): void
+  setFlowEnabled(v: boolean): void
+  setFenceAlert(v: boolean): void
+  findDevice(id: string): DeviceRecord | undefined
 }
-
-export type {
-  ClipController,
-  FenceController,
-  FlowController,
-  ScanRingController,
-} from '../types';

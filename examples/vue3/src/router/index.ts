@@ -27,15 +27,6 @@ export const router = createRouter({
       },
     },
     {
-      path: '/twin',
-      name: 'twin',
-      component: () => import('../views/twin/index.vue'),
-      meta: {
-        title: '工厂孪生',
-        description: 'Threxus 复刻 examples/test FactoryTwin，便于对照差异',
-      },
-    },
-    {
       path: '/factory',
       name: 'factory',
       component: () => import('../views/factory/index.vue'),
